@@ -9,17 +9,25 @@ let
   inherit (microvmConfig) vcpu mem balloon initialBalloonMem deflateOnOOM hotplugMem hotpluggedMem user interfaces volumes shares socket devices hugepageMem graphics storeDisk storeOnDisk kernel initrdPath;
   inherit (microvmConfig.cloud-hypervisor) platformOEMStrings extraArgs;
 
+  hasUserConsole = (extractOptValues "--console" extraArgs).values != [];
+  hasUserSerial = (extractOptValues "--serial" extraArgs).values != [];
+  userSerial = if hasUserSerial then (extractOptValues "--serial" extraArgs).values else "";
+
   kernelPath = {
     x86_64-linux = "${kernel.dev}/vmlinux";
     aarch64-linux = "${kernel.out}/${pkgs.stdenv.hostPlatform.linux-kernel.target}";
   }.${pkgs.stdenv.system};
 
-  kernelConsole =
+  kernelConsoleDefault =
     if pkgs.stdenv.system == "x86_64-linux"
     then "earlyprintk=ttyS0 console=ttyS0"
     else if pkgs.stdenv.system == "aarch64-linux"
     then "console=ttyAMA0"
     else "";
+
+  kernelConsole = if (!hasUserSerial || userSerial == "tty") then kernelConsoleDefault else "";
+
+  kernelCmdLine = "${kernelConsole} reboot=t panic=-1 ${builtins.unsafeDiscardStringContext (toString microvmConfig.kernelParams)}";
 
   useHotPlugMemory = hotplugMem > 0;
 
@@ -145,15 +153,17 @@ in {
         )
         "--cpus" "boot=${toString vcpu}"
         "--watchdog"
-        "--console" "null"
-        "--serial" "tty"
         "--kernel" kernelPath
         "--initramfs" initrdPath
-        "--cmdline" "${kernelConsole} reboot=t panic=-1 ${builtins.unsafeDiscardStringContext (toString microvmConfig.kernelParams)}"
+        "--cmdline" kernelCmdLine
         "--seccomp" "true"
         "--memory" memOps
         "--platform" platformOps
       ]
+      ++
+      lib.optionals (!hasUserConsole) ["--console" "null"]
+      ++
+      lib.optionals (!hasUserSerial) ["--serial" "tty"]
       ++
       lib.optionals supportsNotifySocket [
         "--vsock" "cid=3,socket=notify.vsock"
