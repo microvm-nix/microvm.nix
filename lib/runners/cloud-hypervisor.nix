@@ -5,8 +5,9 @@
 
 let
   inherit (pkgs) lib;
+  inherit (import ../. { inherit (pkgs) lib; }) extractOptValues;
   inherit (microvmConfig) vcpu mem balloon initialBalloonMem deflateOnOOM hotplugMem hotpluggedMem user interfaces volumes shares socket devices hugepageMem graphics storeDisk storeOnDisk kernel initrdPath;
-  inherit (microvmConfig.cloud-hypervisor) platformOEMStrings extraPlatformOpts extraArgs;
+  inherit (microvmConfig.cloud-hypervisor) platformOEMStrings extraArgs;
 
   kernelPath = {
     x86_64-linux = "${kernel.dev}/vmlinux";
@@ -95,7 +96,9 @@ let
 
   oemStringValues = (lib.optionals supportsNotifySocket ["io.systemd.credential:vmm.notify_socket=vsock-stream:2:8888"]) ++ platformOEMStrings;
   oemStringOptions = lib.optionals  (oemStringValues != [])  ["oem_strings=[${lib.concatStringsSep "," oemStringValues}]"];
-  platformOps = lib.concatStringsSep "," (oemStringOptions ++ extraPlatformOpts);
+  extraArgsWithoutPlatform = (extractOptValues "--platform" extraArgs).args;
+  userPlatformOpts = (extractOptValues "--platform" extraArgs).values;
+  platformOps = lib.concatStringsSep "," (oemStringOptions ++ userPlatformOpts);
 in {
   inherit tapMultiQueue;
 
@@ -225,7 +228,7 @@ in {
           usb = throw "USB passthrough is not supported on cloud-hypervisor";
         }.${bus}) devices
       )
-    ) + " " + lib.escapeShellArgs extraArgs;
+    ) + " " + lib.escapeShellArgs extraArgsWithoutPlatform;
 
   canShutdown = socket != null;
 

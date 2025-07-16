@@ -519,24 +519,17 @@ in
       type = with types; listOf str;
       default = [];
       description = ''
-      Extra arguments to pass to cloud-hypervisor's --platform oem_strings= argument.
+        Extra arguments to pass to cloud-hypervisor's --platform oem_strings= argument.
 
-      All the oem strings will be concatenated with a comma (,) and wrapped in oem_string=[].
+        All the oem strings will be concatenated with a comma (,) and wrapped in oem_string=[].
+
+        The resulting string will be combined with any --platform options in
+        `config.microvm.cloud-hypervisor.extraArgs` and passed as a single
+        --platform option to cloud-hypervisor
       '';
-      example = literalExpression /* nix */ ''
-      [ "io.systemd.credential:APIKEY=supersecret" ]
-      '';
-    };
-    cloud-hypervisor.extraPlatformOpts = mkOption {
-      type = with types; listOf str;
-      default = [];
-      description = ''
-      Extra arguments to pass to cloud-hypervisor's --platform argument.
-      All --platform args will be concatended with a comma (,).
-      '';
-      example = literalExpression /* nix */ ''
-      [ "uuid=<dmi_device_uuid>" ]
-      '';
+      example = lib.literalExpression /* nix */ ''
+          [ "io.systemd.credential:APIKEY=supersecret" ]
+        '';
     };
 
     cloud-hypervisor.extraArgs = mkOption {
