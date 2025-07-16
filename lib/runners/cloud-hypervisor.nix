@@ -5,9 +5,15 @@
 
 let
   inherit (pkgs) lib;
-  inherit (import ../. { inherit (pkgs) lib; }) extractOptValues;
-  inherit (microvmConfig) vcpu mem balloon initialBalloonMem deflateOnOOM hotplugMem hotpluggedMem user interfaces volumes shares socket devices hugepageMem graphics storeDisk storeOnDisk kernel initrdPath;
+  inherit (import ../. { inherit (pkgs) lib; }) extractOptValues extractParamValue;
+  inherit (microvmConfig) vcpu mem balloon initialBalloonMem deflateOnOOM hotplugMem hotpluggedMem user interfaces volumes shares socket devices hugepageMem graphics storeDisk storeOnDisk kernel initrdPath vsock;
   inherit (microvmConfig.cloud-hypervisor) platformOEMStrings extraArgs;
+
+  # extract all the extra args that we merge with up front
+  processedExtraArgs = builtins.foldl'
+    (args: opt: (extractOptValues opt args).args)
+    extraArgs
+    ["--vsock" "--platform"];
 
   hasUserConsole = (extractOptValues "--console" extraArgs).values != [];
   hasUserSerial = (extractOptValues "--serial" extraArgs).values != [];
@@ -28,6 +34,24 @@ let
   kernelConsole = if (!hasUserSerial || userSerial == "tty") then kernelConsoleDefault else "";
 
   kernelCmdLine = "${kernelConsole} reboot=t panic=-1 ${builtins.unsafeDiscardStringContext (toString microvmConfig.kernelParams)}";
+
+
+  userVSockOpts = (extractOptValues "--vsock" extraArgs).values;
+  userVSockStr = if userVSockOpts == [] then null else builtins.head userVSockOpts;
+  userVSockPath = extractParamValue "socket" userVSockStr;
+  userVSockCID = extractParamValue "cid" userVSockStr;
+  vsockCID = if vsock.cid != null && userVSockCID != null
+             then throw "Cannot set vsock.cid and --vsock 'cid=${userVSockCID}...' at the same time"
+             else if vsock.cid != null
+                  then vsock.cid
+                  else userVSockCID;
+  supportsNotifySocket = vsockCID != null;
+  vsockPath = if userVSockPath != null then userVSockPath else "notify.vsock";
+  vsockOpts =
+    if vsockCID == null then
+      lib.warn "cloud-hypervisor supports systemd-notify via vsock, but `microvm.vsock.cid` must be set to enable this." ""
+    else
+      "cid=${toString vsockCID},socket=${vsockPath}";
 
   useHotPlugMemory = hotplugMem > 0;
 
@@ -100,13 +124,16 @@ let
     vulkan = true;
   };
 
-  supportsNotifySocket = true;
-
   oemStringValues = (lib.optionals supportsNotifySocket ["io.systemd.credential:vmm.notify_socket=vsock-stream:2:8888"]) ++ platformOEMStrings;
   oemStringOptions = lib.optionals  (oemStringValues != [])  ["oem_strings=[${lib.concatStringsSep "," oemStringValues}]"];
-  extraArgsWithoutPlatform = (extractOptValues "--platform" extraArgs).args;
   userPlatformOpts = (extractOptValues "--platform" extraArgs).values;
-  platformOps = lib.concatStringsSep "," (oemStringOptions ++ userPlatformOpts);
+  userPlatformStr = if userPlatformOpts == [] then "" else builtins.head userPlatformOpts;
+  userHasOemStrings = (extractParamValue "oem_strings" userPlatformStr) != null;
+  platformOps =
+    if userHasOemStrings then
+      throw "Use `microvm.cloud-hypervisor.platformOEMStrings` instead of passing oem_strings via --platform"
+    else
+      lib.concatStringsSep "," (oemStringOptions ++ userPlatformOpts);
 in {
   inherit tapMultiQueue;
 
@@ -120,13 +147,13 @@ in {
 
   '' + lib.optionalString supportsNotifySocket ''
     # Ensure notify sockets are removed if cloud-hypervisor didn't exit cleanly the last time
-    rm -f notify.vsock notify.vsock_8888
+    rm -f ${vsockPath} ${vsockPath}_8888
 
     # Start socat to forward systemd notify socket over vsock
     if [ -n "''${NOTIFY_SOCKET:-}" ]; then
       # -T2 is required because cloud-hypervisor does not handle partial
       # shutdown of the stream, like systemd v256+ does.
-      ${pkgs.socat}/bin/socat -T2 UNIX-LISTEN:notify.vsock_8888,fork UNIX-SENDTO:$NOTIFY_SOCKET &
+      ${pkgs.socat}/bin/socat -T2 UNIX-LISTEN:${vsockPath}_8888,fork UNIX-SENDTO:$NOTIFY_SOCKET &
     fi
   '' + lib.optionalString graphics.enable ''
     rm -f ${graphics.socket}
@@ -140,7 +167,6 @@ in {
     done
   '';
 
-  inherit supportsNotifySocket;
 
   command =
     if user != null
@@ -165,9 +191,7 @@ in {
       ++
       lib.optionals (!hasUserSerial) ["--serial" "tty"]
       ++
-      lib.optionals supportsNotifySocket [
-        "--vsock" "cid=3,socket=notify.vsock"
-      ]
+      lib.optionals (vsockOpts != "") ["--vsock" vsockOpts]
       ++
       lib.optionals graphics.enable [
         "--gpu" "socket=${graphics.socket}"
@@ -238,7 +262,7 @@ in {
           usb = throw "USB passthrough is not supported on cloud-hypervisor";
         }.${bus}) devices
       )
-    ) + " " + lib.escapeShellArgs extraArgsWithoutPlatform;
+    ) + " " + lib.escapeShellArgs processedExtraArgs;
 
   canShutdown = socket != null;
 

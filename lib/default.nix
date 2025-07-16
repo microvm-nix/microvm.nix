@@ -133,4 +133,26 @@ rec {
           processArgs (builtins.tail args) values (acc ++ [(builtins.head args)]);
     in
       processArgs extraArgs [] [];
+
+  /*
+    extractParamValue - Extract a parameter value from comma-separated key=value options
+
+    Description:
+      Extracts the value of a specified parameter from a comma-separated string
+      of key=value pairs (e.g., "key1=val1,key2=val2"). Returns the first match.
+
+    Parameters:
+      param :: String - The parameter name to search for
+      opts :: String -  The options string
+
+    Returns:
+      String | null - The parameter value if found, null otherwise
+
+    Example:
+      extractParamValue "socket" "cid=5,socket=notify.vsock" => "notify.vsock"
+  */
+  extractParamValue = param: opts:
+    if opts == "" || opts == null then null
+    else let m = builtins.match ".*${param}=([^,]+).*" opts;
+         in if m == null then null else builtins.head m;
 }
