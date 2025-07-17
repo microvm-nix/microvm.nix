@@ -332,38 +332,8 @@ lib.warnIf (mem == 2048) ''
       ''
         (
           ${writeQmp { execute = "qmp_capabilities"; }}
-          ${writeQmp {
-            execute = "input-send-event";
-            arguments.events = [ {
-              type = "key";
-              data = {
-                down = true;
-                key = {
-                  type = "qcode";
-                  data = "ctrl";
-                };
-              };
-            } {
-              type = "key";
-              data = {
-                down = true;
-                key = {
-                  type = "qcode";
-                  data = "alt";
-                };
-              };
-            } {
-              type = "key";
-              data = {
-                down = true;
-                key = {
-                  type = "qcode";
-                  data = "delete";
-                };
-              };
-            } ];
-          }}
-           # wait for exit
+          ${writeQmp { execute = "system_powerdown"; }}
+          # wait for exit
           cat
         ) | \
         ${pkgs.socat}/bin/socat STDIO UNIX:${socket},shut-none
@@ -371,7 +341,7 @@ lib.warnIf (mem == 2048) ''
     else throw "Cannot shutdown without socket";
 
   setBalloonScript =
-    if socket != null
+    if socket != null && balloon
     then ''
       VALUE=$(( $SIZE * 1024 * 1024 ))
       SIZE=$( (
