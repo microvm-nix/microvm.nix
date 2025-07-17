@@ -7,7 +7,7 @@
 
 
         <!-- Custom HTML head -->
-        <script defer data-domain="astro.github.io" src="https://p.spaceboyz.net/js/script.js"></script>
+        <script defer data-domain="microvm-nix.github.io" src="https://p.spaceboyz.net/js/script.js"></script>
 
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -130,7 +130,7 @@
                         <a href="print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
-                        <a href="https://github.com/astro/microvm.nix" title="Git repository" aria-label="Git repository">
+                        <a href="https://github.com/microvm-nix/microvm.nix" title="Git repository" aria-label="Git repository">
                             <i id="git-repository-button" class="fa fa-github"></i>
                         </a>
 
@@ -170,7 +170,7 @@ augmented by importing this flake's <code>nixosModule.microvm</code>:</p>
 <pre><code class="language-nix"># Example flake.nix
 {
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-  inputs.microvm.url = "github:astro/microvm.nix";
+  inputs.microvm.url = "github:microvm-nix/microvm.nix";
   inputs.microvm.inputs.nixpkgs.follows = "nixpkgs";
 
   outputs = { self, nixpkgs, microvm }: {
@@ -190,7 +190,7 @@ augmented by importing this flake's <code>nixosModule.microvm</code>:</p>
   };
 }
 </code></pre>
-<p>To get you started quickly, a Flake template is included. Run <code>nix flake init -t github:astro/microvm.nix</code> in a new project directory.</p>
+<p>To get you started quickly, a Flake template is included. Run <code>nix flake init -t github:microvm-nix/microvm.nix</code> in a new project directory.</p>
 
                     </main>
 
