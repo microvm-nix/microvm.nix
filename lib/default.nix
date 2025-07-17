@@ -1,6 +1,6 @@
-{ lib }:
+{ lib, vmHostPackages }:
 let
-  fsTypeToUtil = pkgs: fs: with pkgs;{
+  fsTypeToUtil = fs: with vmHostPackages; {
     "ext2" = e2fsprogs;
     "ext3" = e2fsprogs;
     "ext4" = e2fsprogs;
@@ -9,7 +9,7 @@ let
     "vfat" = dosfstools;
   }.${fs};
   collectFsTypes = volumes: map (v: v.fsType) volumes;
-  collectFsUtils = volumes: pkgs: map (fsType: fsTypeToUtil pkgs fsType) (collectFsTypes volumes);
+  collectFsUtils = volumes: map (fsType: fsTypeToUtil fsType) (collectFsTypes volumes);
 in
 rec {
   hypervisors = [
@@ -41,12 +41,12 @@ rec {
       lib.drop offset lib.strings.lowerChars
     ));
 
-  createVolumesScript = pkgs: volumes:
+  createVolumesScript = volumes:
     lib.optionalString (volumes != []) (
       lib.optionalString (lib.any (v: v.autoCreate) volumes) ''
-        PATH=$PATH:${with pkgs.buildPackages; lib.makeBinPath ([ coreutils ] ++ (collectFsUtils volumes pkgs))}
+        PATH=$PATH:${lib.makeBinPath ([ vmHostPackages.coreutils ] ++ (collectFsUtils volumes))}
       '' +
-      pkgs.lib.concatMapStringsSep "\n" (
+      lib.concatMapStringsSep "\n" (
         { image
         , label
         , size ? throw "Specify a size for volume ${image} or use autoCreate = false"
@@ -54,13 +54,13 @@ rec {
         , fsType ? defaultFsType
         , autoCreate ? true
         , ...
-        }: pkgs.lib.warnIf
+        }: lib.warnIf
           (label != null && !autoCreate) "Volume is not automatically labeled unless autoCreate is true. Volume has to be labeled manually, otherwise it will not be identified"
           (let labelOption =
                  if autoCreate then
                    (if builtins.elem fsType ["ext2" "ext3" "ext4" "xfs" "btrfs"] then "-L"
                     else if fsType == "vfat" then "-n"
-                    else (pkgs.lib.warnIf (label != null)
+                    else (lib.warnIf (label != null)
                       "Will not label volume ${label} with filesystem type ${fsType}. Open an issue on the microvm.nix project to request a fix."
                       null))
                  else null;

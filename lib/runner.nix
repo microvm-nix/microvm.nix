@@ -8,7 +8,7 @@ let
 
   inherit (microvmConfig) hostName;
 
-  inherit (import ./. { inherit lib; }) createVolumesScript makeMacvtap;
+  inherit (import ./. { inherit lib vmHostPackages; }) createVolumesScript makeMacvtap;
   inherit (makeMacvtap {
     inherit microvmConfig hypervisorConfig;
   }) openMacvtapFds macvtapFds;
