@@ -4,6 +4,7 @@ let
     inherit lib;
   };
 
+  cfg = config.microvm;
   hostName = config.networking.hostName or "$HOSTNAME";
   kernelAtLeast = lib.versionAtLeast config.boot.kernelPackages.kernel.version;
 in
@@ -481,6 +482,13 @@ in
       description = ''
         Path of vhost-user socket
       '';
+    };
+
+    vmHostPackages = mkOption {
+      description = "If set, overrides the default host package.";
+      example = "nixpkgs.legacyPackages.aarch64-darwin.pkgs";
+      type = types.nullOr types.pkgs;
+      default = if cfg.cpu == null then pkgs else pkgs.buildPackages;
     };
 
     qemu.machine = mkOption {
