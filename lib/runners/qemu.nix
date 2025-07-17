@@ -1,5 +1,4 @@
 { pkgs
-, vmHostPackages
 , microvmConfig
 , macvtapFds
 }:
@@ -7,6 +6,7 @@
 let
   inherit (pkgs) lib;
   inherit (pkgs.stdenv) system;
+  inherit (microvmConfig) vmHostPackages;
 
   enableLibusb = pkg: pkg.overrideAttrs (oa: {
     configureFlags = oa.configureFlags ++ [
@@ -366,7 +366,7 @@ lib.warnIf (mem == 2048) ''
            # wait for exit
           cat
         ) | \
-        ${pkgs.socat}/bin/socat STDIO UNIX:${socket},shut-none
+        ${vmHostPackages.socat}/bin/socat STDIO UNIX:${socket},shut-none
     ''
     else throw "Cannot shutdown without socket";
 
@@ -378,9 +378,9 @@ lib.warnIf (mem == 2048) ''
         ${writeQmp { execute = "qmp_capabilities"; }}
         ${writeQmp { execute = "balloon"; arguments.value = 987; }}
       ) | sed -e s/987/$VALUE/ | \
-        ${pkgs.socat}/bin/socat STDIO UNIX:${socket},shut-none | \
+        ${vmHostPackages.socat}/bin/socat STDIO UNIX:${socket},shut-none | \
         tail -n 1 | \
-        ${pkgs.jq}/bin/jq -r .data.actual \
+        ${vmHostPackages.jq}/bin/jq -r .data.actual \
       )
       echo $(( $SIZE / 1024 / 1024 ))
     ''
