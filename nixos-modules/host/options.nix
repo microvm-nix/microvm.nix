@@ -118,7 +118,6 @@
             default = true;
           };
 
-
           restartIfChanged = mkOption {
             type = types.bool;
             default = config.config != null;
