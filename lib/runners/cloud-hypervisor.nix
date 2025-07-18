@@ -1,13 +1,14 @@
 { pkgs
 , microvmConfig
 , macvtapFds
+, extractOptValues
 , ...
 }:
 
 let
   inherit (pkgs) lib;
   inherit (microvmConfig) vcpu mem balloon initialBalloonMem deflateOnOOM hotplugMem hotpluggedMem user interfaces volumes shares socket devices hugepageMem graphics storeDisk storeOnDisk kernel initrdPath;
-  inherit (microvmConfig.cloud-hypervisor) extraArgs;
+  inherit (microvmConfig.cloud-hypervisor) platformOEMStrings extraArgs;
 
   kernelPath = {
     x86_64-linux = "${kernel.dev}/vmlinux";
@@ -94,6 +95,12 @@ let
 
   supportsNotifySocket = true;
 
+  oemStringValues = platformOEMStrings ++ lib.optional supportsNotifySocket "io.systemd.credential:vmm.notify_socket=vsock-stream:2:8888";
+  oemStringOptions = lib.optional (oemStringValues != []) "oem_strings=[${lib.concatStringsSep "," oemStringValues}]";
+  platformExtracted = extractOptValues "--platform" extraArgs;
+  extraArgsWithoutPlatform = platformExtracted.args;
+  userPlatformOpts = platformExtracted.values;
+  platformOps = lib.concatStringsSep "," (oemStringOptions ++ userPlatformOpts);
 in {
   inherit tapMultiQueue;
 
@@ -147,10 +154,10 @@ in {
         "--cmdline" "${kernelConsole} reboot=t panic=-1 ${builtins.unsafeDiscardStringContext (toString microvmConfig.kernelParams)}"
         "--seccomp" "true"
         "--memory" memOps
+        "--platform" platformOps
       ]
       ++
       lib.optionals supportsNotifySocket [
-        "--platform" "oem_strings=[io.systemd.credential:vmm.notify_socket=vsock-stream:2:8888]"
         "--vsock" "cid=3,socket=notify.vsock"
       ]
       ++
@@ -223,7 +230,7 @@ in {
           usb = throw "USB passthrough is not supported on cloud-hypervisor";
         }.${bus}) devices
       )
-    ) + " " + lib.escapeShellArgs extraArgs;
+    ) + " " + lib.escapeShellArgs extraArgsWithoutPlatform;
 
   canShutdown = socket != null;
 

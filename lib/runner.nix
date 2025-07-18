@@ -8,13 +8,13 @@ let
 
   inherit (microvmConfig) hostName;
 
-  inherit (import ./. { inherit lib; }) createVolumesScript makeMacvtap withDriveLetters;
+  inherit (import ./. { inherit lib; }) createVolumesScript makeMacvtap withDriveLetters extractOptValues;
   inherit (makeMacvtap {
     inherit microvmConfig hypervisorConfig;
   }) openMacvtapFds macvtapFds;
 
   hypervisorConfig = import (./runners + "/${microvmConfig.hypervisor}.nix") {
-    inherit pkgs microvmConfig macvtapFds withDriveLetters;
+    inherit pkgs microvmConfig macvtapFds withDriveLetters extractOptValues;
   };
 
   inherit (hypervisorConfig) command canShutdown shutdownCommand;

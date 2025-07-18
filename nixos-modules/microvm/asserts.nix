@@ -105,7 +105,16 @@ lib.mkIf config.microvm.guest.enable {
       message = ''
         MicroVM ${hostName}: `config.microvm.forwardPorts` works only with qemu and one network interface with `type = "user"`
       '';
+    } ]
+    ++
+    # cloud-hypervisor specific asserts
+    lib.optionals (config.microvm.hypervisor == "cloud-hypervisor") [ {
+      assertion = ! (lib.any (str: lib.hasInfix "oem_strings" str) config.microvm.cloud-hypervisor.platformOEMStrings);
+      message = ''
+        MicroVM ${hostName}: `config.microvm.cloud-hypervisor.platformOEMStrings` items must not contain `oem_strings`
+      '';
     } ];
+
 
   warnings =
     # 32 MB is just an optimistic guess, not based on experience
