@@ -533,6 +533,12 @@ in
       description = "A Hypervisor's sandbox directory";
     };
 
+    firecracker.cpuConfig = mkOption {
+      type = with types; nullOr attrs;
+      default = null;
+      description = "Custom CPU template passed to firecracker.";
+    };
+
     prettyProcnames = mkOption {
       type = types.bool;
       default = true;
