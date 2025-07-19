@@ -49,7 +49,7 @@ let
 
   qemu = overrideQemu qemuPkg;
 
-  inherit (microvmConfig) hostName vcpu mem balloon initialBalloonMem deflateOnOOM hotplugMem hotpluggedMem user interfaces shares socket forwardPorts devices vsock graphics storeOnDisk kernel initrdPath storeDisk;
+  inherit (microvmConfig) hostName vcpu mem balloon initialBalloonMem deflateOnOOM hotplugMem hotpluggedMem user interfaces shares socket forwardPorts devices vsock graphics storeOnDisk kernel initrdPath storeDisk credentialFiles;
   inherit (microvmConfig.qemu) machine extraArgs serialConsole;
 
 
@@ -155,6 +155,8 @@ let
     then "console=ttyAMA0"
     else "";
 
+  systemdCredentialStrings = lib.mapAttrsToList (name: path: "name=opt/io.systemd.credentials/${name},file=${path}" ) credentialFiles;
+  fwCfgOptions = systemdCredentialStrings;
 
 in
 lib.warnIf (mem == 2048) ''
@@ -187,6 +189,9 @@ lib.warnIf (mem == 2048) ''
 
       "-chardev" "stdio,id=stdio,signal=off"
       "-device" "virtio-rng-${devType}"
+    ] ++
+    lib.optionals (fwCfgOptions != [])  [
+      "-fw_cfg" (lib.concatStringsSep "," fwCfgOptions)
     ] ++
     lib.optionals serialConsole [
       "-serial" "chardev:stdio"
