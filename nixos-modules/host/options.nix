@@ -9,6 +9,11 @@
         Whether to enable the microvm.nix host module.
       '';
     };
+    host.startupTimeout = mkOption {
+      description = "Start up timeout for the VMs in seconds";
+      type = types.ints.positive;
+      default = 150;
+    };
 
     host.useNotifySockets = mkOption {
       type = types.bool;
