@@ -11,11 +11,14 @@ let
     interfaces volumes shares devices
     kernel initrdPath
     storeDisk;
+  inherit (microvmConfig.firecracker) cpuConfig;
 
   kernelPath = {
     x86_64-linux = "${kernel.dev}/vmlinux";
     aarch64-linux = "${kernel.out}/${pkgs.stdenv.hostPlatform.linux-kernel.target}";
   }.${system};
+
+  cpu-config = lib.optionalAttrs (cpuConfig != null) pkgs.writeText "cpu-config.json" (builtins.toJSON cpuConfig);
 
   # Firecracker config, as JSON in `configFile`
   config = {
@@ -60,6 +63,7 @@ let
       else throw "Network interface type ${type} not implemented for Firecracker"
     ) interfaces;
     vsock = null;
+    inherit cpu-config;
   };
 
   configFile = pkgs.writers.writeJSON "firecracker-${hostName}.json" config;
