@@ -533,7 +533,7 @@ in
       description = "A Hypervisor's sandbox directory";
     };
 
-    firecracker.cpuConfig = mkOption {
+    firecracker.cpu = mkOption {
       type = with types; nullOr attrs;
       default = null;
       description = "Custom CPU template passed to firecracker.";
