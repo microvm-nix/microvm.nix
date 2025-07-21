@@ -15,7 +15,7 @@ augmented by importing this flake's `nixosModule.microvm`:
 # Example flake.nix
 {
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-  inputs.microvm.url = "github:astro/microvm.nix";
+  inputs.microvm.url = "github:microvm-nix/microvm.nix";
   inputs.microvm.inputs.nixpkgs.follows = "nixpkgs";
 
   outputs = { self, nixpkgs, microvm }: {
@@ -37,4 +37,4 @@ augmented by importing this flake's `nixosModule.microvm`:
 ```
 
 To get you started quickly, a Flake template is included. Run `nix
-flake init -t github:astro/microvm.nix` in a new project directory.
+flake init -t github:microvm-nix/microvm.nix` in a new project directory.

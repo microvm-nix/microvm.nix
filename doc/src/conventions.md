@@ -31,5 +31,5 @@ virtualize other operating systems than NixOS.
 - The runner package must have a file layout as described in the table
   above.
 
-[microvm-solo5-spt](https://github.com/astro/microvm-solo5-spt) is an
+[microvm-solo5-spt](https://github.com/microvm-nix/microvm-solo5-spt) is an
 example of a Flake that can run on a microvm.nix host.

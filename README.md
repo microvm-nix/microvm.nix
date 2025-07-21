@@ -2,14 +2,12 @@
 
 <p align="center">
   <strong>Handbook:</strong>
-  <a href="https://astro.github.io/microvm.nix/">HTML</a>
+  <a href="https://microvm-nix.github.io/microvm.nix/">HTML</a>
   <a href="doc/src/SUMMARY.md">Markdown</a>
   •
   <strong><a href="https://matrix.to/#/#microvm.nix:envs.net">Matrix chat</a></strong>
   •
   <strong><a href="./CHANGELOG.md">Changelog</a></strong>
-  •
-  <strong><a href="https://github.com/sponsors/astro">Support the project</a></strong>
 </p>
 <p align="center">
   <img src="doc/src/demo.gif" alt="Demo GIF">
@@ -61,11 +59,11 @@ imperatively with the provided `microvm` command.
 ## Installation
 
 ```shell
-nix registry add microvm github:astro/microvm.nix
+nix registry add microvm github:microvm-nix/microvm.nix
 ```
 
 (If you do not want to inflict this change on your system, just
-replace `microvm` with `github:astro/microvm.nix` in the following
+replace `microvm` with `github:microvm-nix/microvm.nix` in the following
 examples.)
 
 ## Start writing your own NixOS MicroVM definitions

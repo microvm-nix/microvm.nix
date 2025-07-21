@@ -17,7 +17,7 @@ Prepare your host by including the microvm.nix `host` nixosModule:
 # Your server's flake.nix
 {
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-  inputs.microvm.url = "github:astro/microvm.nix";
+  inputs.microvm.url = "github:microvm-nix/microvm.nix";
   inputs.microvm.inputs.nixpkgs.follows = "nixpkgs";
 
   outputs = { self, nixpkgs, microvm }: {
@@ -51,6 +51,6 @@ module directly in your NixOS configuration:
 
 ```nix
 imports = [ (builtins.fetchGit {
-  url = "https://github.com/astro/microvm.nix";
+  url = "https://github.com/microvm-nix/microvm.nix";
 } + "/nixos-modules/host") ];
 ```

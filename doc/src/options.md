@@ -20,5 +20,5 @@ available for customization. These are the most important ones:
 | `microvm.writableStoreOverlay` | Optional string of the path where all writes to `/nix/store` should go to.                          |
 
 See [the options declarations](
-https://github.com/astro/microvm.nix/blob/main/nixos-modules/microvm/options.nix)
+https://github.com/microvm-nix/microvm.nix/blob/main/nixos-modules/microvm/options.nix)
 for a full reference.

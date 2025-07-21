@@ -10,10 +10,6 @@ let
   inherit (pkgs.python3Packages) supervisor;
   supervisord = lib.getExe' supervisor "supervisord";
   supervisorctl = lib.getExe' supervisor "supervisorctl";
-
-  # TODO: don't hardcode
-  group = "kvm";
-
 in
 {
   microvm.binScripts = lib.mkIf requiresVirtiofsd {
@@ -45,13 +41,18 @@ in
                 fi
                 exec ${lib.getExe pkgs.virtiofsd} \
                   --socket-path=${lib.escapeShellArg socket} \
-                  --socket-group=${group} \
+                  ${lib.optionalString (config.microvm.virtiofsd.group != null)
+                  "--socket-group=${config.microvm.virtiofsd.group}"
+                  } \
                   --shared-dir=${lib.escapeShellArg source} \
                   $OPT_RLIMIT \
                   --thread-pool-size ${toString config.microvm.virtiofsd.threadPoolSize} \
                   --posix-acl --xattr \
                   ${lib.optionalString (config.microvm.virtiofsd.inodeFileHandles != null)
                     "--inode-file-handles=${config.microvm.virtiofsd.inodeFileHandles}"
+                  } \
+                  ${lib.optionalString (config.microvm.hypervisor == "crosvm")
+                    "--tag=${tag}"
                   } \
                   ${lib.concatStringsSep " " config.microvm.virtiofsd.extraArgs}
               '';

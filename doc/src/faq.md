@@ -61,7 +61,7 @@ up using the `-m`/`--merge` switch.
 
 Yes. This scenario is enabled through the flake's `lib.buildRunner`
 function. See the [`nix run
-microvm#build-microvm`](https://github.com/astro/microvm.nix/blob/main/pkgs/build-microvm.nix)
+microvm#build-microvm`](https://github.com/microvm-nix/microvm.nix/blob/main/pkgs/build-microvm.nix)
 script that you will need to customize to fit your deployment scenario.
 
 ## How can I deploy imperatively from Continuous Integration?

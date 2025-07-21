@@ -1,9 +1,6 @@
-name: doc
+name: Documentation
 
-on:
-  push:
-    branches:
-      - main
+on: [merge_group, push, pull_request]
 
 jobs:
   deploy:
@@ -17,11 +14,12 @@ jobs:
           echo >> doc/book.toml
           echo 'theme="theme"' >> doc/book.toml
           mkdir doc/theme
-          echo '<script defer data-domain="astro.github.io" src="https://p.spaceboyz.net/js/script.js"></script>' > doc/theme/head.hbs
+          echo '<script defer data-domain="microvm-nix.github.io" src="https://p.spaceboyz.net/js/script.js"></script>' > doc/theme/head.hbs
           git add doc/theme
       - name: Build
         run: nix build .#doc
       - name: Deploy
+        if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

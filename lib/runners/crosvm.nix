@@ -98,16 +98,14 @@ in {
         ]
       ) volumes
       ++
-      builtins.concatMap ({ proto, tag, source, ... }:
-        let
-          type = {
-            "9p" = "p9";
-            "virtiofs" = "fs";
-          }.${proto};
-        in [
-          "--shared-dir" "${source}:${tag}:type=${type}"
-        ]
-      ) shares
+      builtins.concatMap ({ proto, tag, source, socket, ... }: {
+        "virtiofs" = [
+          "--vhost-user" "type=fs,socket=${socket}"
+        ];
+        "9p" = [
+          "--shared-dir" "${source}:${tag}:type=p9"
+        ];
+      }.${proto}) shares
       ++
       (builtins.concatMap ({ id, type, mac, ... }: [
         "--net"
@@ -138,7 +136,7 @@ in {
       ]
     )
     + " " + # Move vfio-pci outside of
-      (lib.concatMapStringsSep " " ({ bus, path, ... }: {
+      lib.concatStringsSep " " (lib.concatMap ({ bus, path, ... }: {
         pci = [ "--vfio" "/sys/bus/pci/devices/${path},iommu=viommu" ];
         usb = throw "USB passthrough is not supported on crosvm";
       }.${bus}) devices)

@@ -1,6 +1,7 @@
 { pkgs
 , microvmConfig
 , macvtapFds
+, withDriveLetters
 , ...
 }:
 
@@ -15,7 +16,6 @@ let
 
   tapMultiQueue = vcpu > 1;
 
-  inherit (import ../. { inherit (pkgs) lib; }) withDriveLetters;
   volumes = withDriveLetters microvmConfig;
 
   # PCI required by vfio-pci for PCI passthrough

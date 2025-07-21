@@ -30,7 +30,7 @@ let
           # Rewrite links from ../. in the /nix/store to the source on Github
           then {
             name = "microvm.nix${declPath}";
-            url = "https://github.com/astro/microvm.nix/tree/main${declPath}";
+            url = "https://github.com/microvm-nix/microvm.nix/tree/main${declPath}";
           }
           else decl
       ) opt.declarations;

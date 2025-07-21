@@ -18,6 +18,7 @@
 * `bin/virtiofsd-run` (`microvm-virtiofsd@.service`) now starts the
   multiple virtiofsd instances through supervisord.
 * The `microvm` module allows configuration of
+  `microvm.virtiofsd.group` and
   `microvm.virtiofsd.inodeFileHandles` and
   `microvm.virtiofsd.threadPoolSize` now.
 * Add the [alioth VMM](https://github.com/google/alioth)

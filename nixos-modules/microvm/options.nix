@@ -541,6 +541,12 @@ in
       description = "A Hypervisor's sandbox directory";
     };
 
+    firecracker.cpu = mkOption {
+      type = with types; nullOr attrs;
+      default = null;
+      description = "Custom CPU template passed to firecracker.";
+    };
+
     prettyProcnames = mkOption {
       type = types.bool;
       default = true;
@@ -570,6 +576,15 @@ in
       description = ''
         The amounts of threads virtiofsd should spawn. This option also takes the special
         string `\`nproc\`` which spawns as many threads as the host has cores.
+      '';
+    };
+
+    virtiofsd.group = mkOption {
+      type = with types; nullOr str;
+      default = "kvm";
+      description = ''
+        The name of the group that will own the Unix domain socket file that virtiofsd creates for communication with the hypervisor.
+        If null, the socket will have group ownership of the user running the hypervisor.
       '';
     };
 

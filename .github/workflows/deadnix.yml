@@ -1,6 +1,6 @@
-on: [push]
-
 name: Dead code analysis
+
+on: [merge_group, push, pull_request]
 
 jobs:
   deadnix:

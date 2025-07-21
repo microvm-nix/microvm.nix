@@ -6,4 +6,4 @@ src = "src"
 title = "microvm.nix"
 
 [output.html]
-git-repository-url = "https://github.com/astro/microvm.nix"
+git-repository-url = "https://github.com/microvm-nix/microvm.nix"
