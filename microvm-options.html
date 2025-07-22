@@ -194,6 +194,23 @@ list of string</p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
 </ul>
+<h2 id="microvmcloud-hypervisorplatformoemstrings"><a class="header" href="#microvmcloud-hypervisorplatformoemstrings">microvm.cloud-hypervisor.platformOEMStrings</a></h2>
+<p>Extra arguments to pass to cloud-hypervisor’s --platform oem_strings=[] argument.</p>
+<p>All the oem strings will be concatenated with a comma (,) and wrapped in oem_string=[].</p>
+<p>Do not include oem_string= or the [] brackets in the value.</p>
+<p>The resulting string will be combined with any --platform options in
+<code>config.microvm.cloud-hypervisor.extraArgs</code> and passed as a single
+–platform option to cloud-hypervisor</p>
+<p><em>Type:</em>
+list of string</p>
+<p><em>Default:</em>
+<code>[ ]</code></p>
+<p><em>Example:</em>
+<code>[ "io.systemd.credential:APIKEY=supersecret" ]</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
 <h2 id="microvmcpu"><a class="header" href="#microvmcpu">microvm.cpu</a></h2>
 <p>What CPU to emulate, if any. If different from the host
 architecture, it will have a serious performance hit.</p>
