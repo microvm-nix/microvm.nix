@@ -223,6 +223,22 @@ null or string</p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
 </ul>
+<h2 id="microvmcredentialfiles"><a class="header" href="#microvmcredentialfiles">microvm.credentialFiles</a></h2>
+<p>Key-value pairs of credential files that will be loaded into the vm using systemd’s io.systemd.credential feature.</p>
+<p><em>Type:</em>
+attribute set of absolute path</p>
+<p><em>Default:</em>
+<code>{ }</code></p>
+<p><em>Example:</em></p>
+<pre><code>{
+  SOPS_AGE_KEY = "/run/secrets/guest_microvm_age_key";
+}
+
+</code></pre>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
 <h2 id="microvmcrosvmextraargs"><a class="header" href="#microvmcrosvmextraargs">microvm.crosvm.extraArgs</a></h2>
 <p>Extra arguments to pass to crosvm.</p>
 <p><em>Type:</em>
