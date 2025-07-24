@@ -63,6 +63,16 @@ in
       type = types.lines;
     };
 
+    extraArgsScript = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = ''
+        A script to provide additional arguments for the hypervisor at runtime.
+
+        The script must output a single line with arguments for the hypervisor.
+      '';
+    };
+
     socket = mkOption {
       description = "Hypervisor control socket path";
       default = "${hostName}.sock";
