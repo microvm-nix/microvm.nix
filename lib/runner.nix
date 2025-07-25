@@ -40,11 +40,12 @@ let
   binScripts = microvmConfig.binScripts // {
     microvm-run = ''
       set -eou pipefail
+      unset EXTRA_ARGS
       ${preStart}
       ${createVolumesScript vmHostPackages microvmConfig.volumes}
       ${lib.optionalString (hypervisorConfig.requiresMacvtapAsFds or false) openMacvtapFds}
 
-      exec ${execArg} ${command}
+      exec ${execArg} ${command} ''${EXTRA_ARGS:-}
     '';
   } // lib.optionalAttrs canShutdown {
     microvm-shutdown = shutdownCommand;
