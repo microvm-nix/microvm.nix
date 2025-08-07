@@ -139,7 +139,7 @@ let
     else
       lib.concatStringsSep "," (oemStringOptions ++ userPlatformOpts);
 in {
-  inherit tapMultiQueue;
+  inherit tapMultiQueue supportsNotifySocket;
 
   preStart = ''
     ${microvmConfig.preStart}
