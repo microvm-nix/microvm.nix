@@ -58,7 +58,11 @@ in
     };
 
     preStart = mkOption {
-      description = "Commands to run before starting the hypervisor";
+      description = ''
+        Commands to run before starting the hypervisor.
+
+        Additional arguments can be passed to the hypervisor using the EXTRA_ARGS variable.
+      '';
       default = "";
       type = types.lines;
     };
