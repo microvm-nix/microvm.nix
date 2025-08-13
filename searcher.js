@@ -22,6 +22,7 @@ window.search = window.search || {};
     }
 
     const search_wrap = document.getElementById('search-wrapper'),
+        searchbar_outer = document.getElementById('searchbar-outer'),
         searchbar = document.getElementById('searchbar'),
         searchresults = document.getElementById('searchresults'),
         searchresults_outer = document.getElementById('searchresults-outer'),
@@ -33,13 +34,7 @@ window.search = window.search || {};
         mark_exclude = ['text'],
         marker = new Mark(content),
         URL_SEARCH_PARAM = 'search',
-        URL_MARK_PARAM = 'highlight',
-
-        SEARCH_HOTKEY_KEYCODE = 83,
-        ESCAPE_KEYCODE = 27,
-        DOWN_KEYCODE = 40,
-        UP_KEYCODE = 38,
-        SELECT_KEYCODE = 13;
+        URL_MARK_PARAM = 'highlight';
 
     let current_searchterm = '',
         doc_urls = [],
@@ -268,6 +263,18 @@ window.search = window.search || {};
         doc_urls = config.doc_urls;
         searchindex = elasticlunr.Index.load(config.index);
 
+        searchbar_outer.classList.remove('searching');
+
+        searchbar.focus();
+
+        const searchterm = searchbar.value.trim();
+        if (searchterm !== '') {
+            searchbar.classList.add('active');
+            doSearch(searchterm);
+        }
+    }
+
+    function initSearchInteractions(config) {
         // Set up events
         searchicon.addEventListener('click', () => {
             searchIconClickHandler();
@@ -293,6 +300,8 @@ window.search = window.search || {};
         // Exported functions
         config.hasFocus = hasFocus;
     }
+
+    initSearchInteractions(window.search);
 
     function unfocusSearchbar() {
         // hacky, but just focusing a div only works once
@@ -352,7 +361,7 @@ window.search = window.search || {};
             return;
         }
 
-        if (e.keyCode === ESCAPE_KEYCODE) {
+        if (e.key === 'Escape') {
             e.preventDefault();
             searchbar.classList.remove('active');
             setSearchUrlParameters('',
@@ -362,31 +371,38 @@ window.search = window.search || {};
             }
             showSearch(false);
             marker.unmark();
-        } else if (!hasFocus() && e.keyCode === SEARCH_HOTKEY_KEYCODE) {
+        } else if (!hasFocus() && (e.key === 's' || e.key === '/')) {
             e.preventDefault();
             showSearch(true);
             window.scrollTo(0, 0);
             searchbar.select();
-        } else if (hasFocus() && e.keyCode === DOWN_KEYCODE) {
+        } else if (hasFocus() && (e.key === 'ArrowDown'
+                               || e.key === 'Enter')) {
             e.preventDefault();
-            unfocusSearchbar();
-            searchresults.firstElementChild.classList.add('focus');
-        } else if (!hasFocus() && (e.keyCode === DOWN_KEYCODE
-                                || e.keyCode === UP_KEYCODE
-                                || e.keyCode === SELECT_KEYCODE)) {
+            const first = searchresults.firstElementChild;
+            if (first !== null) {
+                unfocusSearchbar();
+                first.classList.add('focus');
+                if (e.key === 'Enter') {
+                    window.location.assign(first.querySelector('a'));
+                }
+            }
+        } else if (!hasFocus() && (e.key === 'ArrowDown'
+                                || e.key === 'ArrowUp'
+                                || e.key === 'Enter')) {
             // not `:focus` because browser does annoying scrolling
             const focused = searchresults.querySelector('li.focus');
             if (!focused) {
                 return;
             }
             e.preventDefault();
-            if (e.keyCode === DOWN_KEYCODE) {
+            if (e.key === 'ArrowDown') {
                 const next = focused.nextElementSibling;
                 if (next) {
                     focused.classList.remove('focus');
                     next.classList.add('focus');
                 }
-            } else if (e.keyCode === UP_KEYCODE) {
+            } else if (e.key === 'ArrowUp') {
                 focused.classList.remove('focus');
                 const prev = focused.previousElementSibling;
                 if (prev) {
@@ -394,14 +410,34 @@ window.search = window.search || {};
                 } else {
                     searchbar.select();
                 }
-            } else { // SELECT_KEYCODE
+            } else { // Enter
                 window.location.assign(focused.querySelector('a'));
             }
         }
     }
 
+    function loadSearchScript(url, id) {
+        if (document.getElementById(id)) {
+            return;
+        }
+        searchbar_outer.classList.add('searching');
+
+        const script = document.createElement('script');
+        script.src = url;
+        script.id = id;
+        script.onload = () => init(window.search);
+        script.onerror = error => {
+            console.error(`Failed to load \`${url}\`: ${error}`);
+        };
+        document.head.append(script);
+    }
+
     function showSearch(yes) {
         if (yes) {
+            loadSearchScript(
+                window.path_to_searchindex_js ||
+                path_to_root + 'searchindex.js',
+                'search-index');
             search_wrap.classList.remove('hidden');
             searchicon.setAttribute('aria-expanded', 'true');
         } else {
@@ -484,13 +520,13 @@ window.search = window.search || {};
         // Don't search the same twice
         if (current_searchterm === searchterm) {
             return;
-        } else {
-            current_searchterm = searchterm;
         }
-
+        searchbar_outer.classList.add('searching');
         if (searchindex === null) {
             return;
         }
+
+        current_searchterm = searchterm;
 
         // Do the actual search
         const results = searchindex.search(searchterm, search_options);
@@ -510,19 +546,9 @@ window.search = window.search || {};
 
         // Display results
         showResults(true);
+        searchbar_outer.classList.remove('searching');
     }
 
-    function loadScript(url, id) {
-        const script = document.createElement('script');
-        script.src = url;
-        script.id = id;
-        script.onload = () => init(window.search);
-        script.onerror = error => {
-            console.error(`Failed to load \`${url}\`: ${error}`);
-        };
-        document.head.append(script);
-    }
-
-    loadScript(path_to_root + 'searchindex.js', 'search-index');
-
+    // Exported functions
+    search.hasFocus = hasFocus;
 })(window.search);
