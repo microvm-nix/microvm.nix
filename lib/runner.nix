@@ -6,9 +6,10 @@
 let
   inherit (pkgs) lib;
 
-  inherit (microvmConfig) hostName;
+  inherit (microvmConfig) hostName vmHostPackages;
 
-  inherit (import ./. { inherit lib; }) createVolumesScript makeMacvtap withDriveLetters extractOptValues extractParamValue;
+  inherit (import ./. { inherit lib; }) makeMacvtap withDriveLetters extractOptValues extractParamValue;
+  inherit (import ./volumes.nix { inherit lib microvmConfig; }) createVolumesScript;
   inherit (makeMacvtap {
     inherit microvmConfig hypervisorConfig;
   }) openMacvtapFds macvtapFds;
@@ -26,22 +27,12 @@ let
   execArg = lib.optionalString microvmConfig.prettyProcnames
     ''-a "microvm@${hostName}"'';
 
-  vmHostPackages =
-    if microvmConfig.cpu == null
-    then
-      # When cross-compiling for a target host, select packages for
-      # the target:
-      pkgs
-    else
-      # When cross-compiling for CPU emulation in qemu, select
-      # packages for the host:
-      pkgs.buildPackages;
 
   binScripts = microvmConfig.binScripts // {
     microvm-run = ''
       set -eou pipefail
       ${preStart}
-      ${createVolumesScript vmHostPackages microvmConfig.volumes}
+      ${createVolumesScript microvmConfig.volumes}
       ${lib.optionalString (hypervisorConfig.requiresMacvtapAsFds or false) openMacvtapFds}
 
       exec ${execArg} ${command}
@@ -63,11 +54,11 @@ let
   };
 
   binScriptPkgs = lib.mapAttrs (scriptName: lines:
-    pkgs.writeShellScript "microvm-${hostName}-${scriptName}" lines
+    vmHostPackages.writeShellScript "microvm-${hostName}-${scriptName}" lines
   ) binScripts;
 in
 
-pkgs.buildPackages.runCommand "microvm-${microvmConfig.hypervisor}-${hostName}"
+vmHostPackages.buildPackages.runCommand "microvm-${microvmConfig.hypervisor}-${hostName}"
 {
   # for `nix run`
   meta.mainProgram = "microvm-run";

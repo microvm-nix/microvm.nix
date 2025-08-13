@@ -8,6 +8,7 @@
 let
   inherit (pkgs) lib;
   inherit (pkgs.stdenv) system;
+  inherit (microvmConfig) vmHostPackages;
 
   enableLibusb = pkg: pkg.overrideAttrs (oa: {
     configureFlags = oa.configureFlags ++ [
@@ -38,16 +39,11 @@ let
     ++ lib.optional microvmConfig.optimize.enable minimizeQemuClosureSize
   );
 
-  qemuPkg =
-    if microvmConfig.cpu == null
-    then
-      # When cross-compiling for a target host, select qemu for the target:
-      pkgs.qemu_kvm
-    else
-      # When cross-compiling for CPU emulation, select qemu for the host:
-      pkgs.buildPackages.qemu;
+  qemu = overrideQemu vmHostPackages.qemu;
 
-  qemu = overrideQemu qemuPkg;
+  aioEngine = if vmHostPackages.stdenv.hostPlatform.isLinux
+    then "io_uring"
+    else "threads";
 
   inherit (microvmConfig) hostName vcpu mem balloon initialBalloonMem deflateOnOOM hotplugMem hotpluggedMem user interfaces shares socket forwardPorts devices vsock graphics storeOnDisk kernel initrdPath storeDisk credentialFiles;
   inherit (microvmConfig.qemu) machine extraArgs serialConsole;
@@ -72,10 +68,10 @@ let
       else "host"
     ) ];
 
-  accel =
-    if microvmConfig.cpu == null
-    then "kvm:tcg"
-    else "tcg";
+  accel = if vmHostPackages.stdenv.hostPlatform.isLinux
+    then "kvm:tcg" else
+      if vmHostPackages.stdenv.hostPlatform.isDarwin
+      then "hvf:tcg" else "tcg";
 
   # PCI required by vfio-pci for PCI passthrough
   pciInDevices = lib.any ({ bus, ... }: bus == "pci") devices;
@@ -104,6 +100,9 @@ let
         inherit accel;
         gic-version = "max";
       };
+      aarch64-darwin = {
+        inherit accel;
+      };
     }.${system};
 
   machineConfig = builtins.concatStringsSep "," (
@@ -129,9 +128,10 @@ let
 
   canSandbox =
     # Don't let qemu sandbox itself if it is going to call qemu-bridge-helper
-    ! lib.any ({ type, ... }:
+    (! lib.any ({ type, ... }:
       type == "bridge"
-    ) microvmConfig.interfaces;
+    ) microvmConfig.interfaces) &&
+    (builtins.elem "--enable-seccomp" (qemu.configureFlags or []));
 
   tapMultiQueue = vcpu > 1;
 
@@ -194,7 +194,7 @@ lib.warnIf (mem == 2048) ''
     lib.optionals serialConsole [
       "-serial" "chardev:stdio"
     ] ++
-    lib.optionals (microvmConfig.cpu == null) [
+    lib.optionals (vmHostPackages.stdenv.hostPlatform.isLinux && microvmConfig.cpu == null) [
       "-enable-kvm"
     ] ++
     cpuArgs ++
@@ -207,7 +207,7 @@ lib.warnIf (mem == 2048) ''
       "-append" "${kernelConsole} reboot=t panic=-1 ${builtins.unsafeDiscardStringContext (toString microvmConfig.kernelParams)}"
     ] ++
     lib.optionals storeOnDisk [
-      "-drive" "id=store,format=raw,read-only=on,file=${storeDisk},if=none,aio=io_uring"
+      "-drive" "id=store,format=raw,read-only=on,file=${storeDisk},if=none,aio=${aioEngine}"
       "-device" "virtio-blk-${devType},drive=store${lib.optionalString (devType == "pci") ",disable-legacy=on"}"
     ] ++
     (if graphics.enable
@@ -231,7 +231,7 @@ lib.warnIf (mem == 2048) ''
     ] ++
     builtins.concatMap ({ image, letter, serial, direct, readOnly, ... }:
       [ "-drive"
-        "id=vd${letter},format=raw,file=${image},if=none,aio=io_uring,discard=unmap${
+        "id=vd${letter},format=raw,file=${image},if=none,aio=${aioEngine},discard=unmap${
           lib.optionalString (direct != null) ",cache=none"
         },read-only=${if readOnly then "on" else "off"}"
         "-device"
@@ -241,10 +241,10 @@ lib.warnIf (mem == 2048) ''
       ]
     ) volumes ++
     lib.optionals (shares != []) (
-      [
-        "-object" "memory-backend-memfd,id=mem,size=${toString mem}M,share=on"
+      (lib.optionals vmHostPackages.stdenv.hostPlatform.isLinux [
         "-numa" "node,memdev=mem"
-      ] ++
+        "-object" "memory-backend-memfd,id=mem,size=${toString mem}M,share=on"
+      ]) ++
       builtins.concatMap ({ proto, index, socket, source, tag, securityModel, ... }: {
         "virtiofs" = [
           "-chardev" "socket,id=fs${toString index},path=${socket}"
@@ -370,7 +370,7 @@ lib.warnIf (mem == 2048) ''
            # wait for exit
           cat
         ) | \
-        ${pkgs.socat}/bin/socat STDIO UNIX:${socket},shut-none
+        ${vmHostPackages.socat}/bin/socat STDIO UNIX:${socket},shut-none
     ''
     else throw "Cannot shutdown without socket";
 
@@ -382,9 +382,9 @@ lib.warnIf (mem == 2048) ''
         ${writeQmp { execute = "qmp_capabilities"; }}
         ${writeQmp { execute = "balloon"; arguments.value = 987; }}
       ) | sed -e s/987/$VALUE/ | \
-        ${pkgs.socat}/bin/socat STDIO UNIX:${socket},shut-none | \
+        ${vmHostPackages.socat}/bin/socat STDIO UNIX:${socket},shut-none | \
         tail -n 1 | \
-        ${pkgs.jq}/bin/jq -r .data.actual \
+        ${vmHostPackages.jq}/bin/jq -r .data.actual \
       )
       echo $(( $SIZE / 1024 / 1024 ))
     ''
