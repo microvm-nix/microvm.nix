@@ -335,39 +335,9 @@ lib.warnIf (mem == 2048) ''
     then
       ''
         (
-          ${writeQmp { execute = "qmp_capabilities"; }}
-          ${writeQmp {
-            execute = "input-send-event";
-            arguments.events = [ {
-              type = "key";
-              data = {
-                down = true;
-                key = {
-                  type = "qcode";
-                  data = "ctrl";
-                };
-              };
-            } {
-              type = "key";
-              data = {
-                down = true;
-                key = {
-                  type = "qcode";
-                  data = "alt";
-                };
-              };
-            } {
-              type = "key";
-              data = {
-                down = true;
-                key = {
-                  type = "qcode";
-                  data = "delete";
-                };
-              };
-            } ];
-          }}
-           # wait for exit
+          ${writeQmp { execute = "query-commands"; }}
+          ${writeQmp { execute = "system_powerdown"; }}
+          # wait for exit
           cat
         ) | \
         ${pkgs.socat}/bin/socat STDIO UNIX:${socket},shut-none
@@ -375,19 +345,20 @@ lib.warnIf (mem == 2048) ''
     else throw "Cannot shutdown without socket";
 
   setBalloonScript =
-    if socket != null
-    then ''
+    if balloon
+    then
+      if socket != null then
+      ''
       VALUE=$(( $SIZE * 1024 * 1024 ))
       SIZE=$( (
-        ${writeQmp { execute = "qmp_capabilities"; }}
         ${writeQmp { execute = "balloon"; arguments.value = 987; }}
       ) | sed -e s/987/$VALUE/ | \
         ${pkgs.socat}/bin/socat STDIO UNIX:${socket},shut-none | \
-        tail -n 1 | \
         ${pkgs.jq}/bin/jq -r .data.actual \
       )
       echo $(( $SIZE / 1024 / 1024 ))
-    ''
+      ''
+      else throw "Cannot balloon without socket"
     else null;
 
   requiresMacvtapAsFds = true;
