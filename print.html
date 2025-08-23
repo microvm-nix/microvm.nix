@@ -1292,6 +1292,18 @@ string or (unsigned integer, meaning &gt;=0)</p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
 </ul>
+<h2 id="microvmvmhostpackages"><a class="header" href="#microvmvmhostpackages">microvm.vmHostPackages</a></h2>
+<p>If set, overrides the default host package.</p>
+<p><em>Type:</em>
+null or Nixpkgs package set</p>
+<p><em>Default:</em>
+<code>if config.microvm.cpu == null then pkgs else pkgs.buildPackages</code></p>
+<p><em>Example:</em>
+<code>"nixpkgs.legacyPackages.aarch64-darwin.pkgs"</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
 <h2 id="microvmvolumes"><a class="header" href="#microvmvolumes">microvm.volumes</a></h2>
 <p>Disk images</p>
 <p><em>Type:</em>
