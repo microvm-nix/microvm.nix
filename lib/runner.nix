@@ -34,8 +34,11 @@ let
       ${preStart}
       ${createVolumesScript microvmConfig.volumes}
       ${lib.optionalString (hypervisorConfig.requiresMacvtapAsFds or false) openMacvtapFds}
+      runtime_args=${lib.optionalString (microvmConfig.extraArgsScript != null) ''
+        $(${microvmConfig.extraArgsScript})
+      ''}
 
-      exec ${execArg} ${command}
+      exec ${execArg} ${command} ''${runtime_args:-}
     '';
   } // lib.optionalAttrs canShutdown {
     microvm-shutdown = shutdownCommand;
