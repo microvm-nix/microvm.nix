@@ -28,7 +28,7 @@ in
             events = "PROCESS_STATE";
           };
         } // builtins.listToAttrs (
-          map ({ tag, socket, source, ... }: {
+          map ({ tag, socket, source, readOnly, ... }: {
             name = "program:virtiofsd-${tag}";
             value = {
               stderr_syslog = true;
@@ -55,6 +55,7 @@ in
                   ${lib.optionalString (config.microvm.hypervisor == "crosvm")
                     "--tag=${tag}"
                   } \
+                  ${lib.optionalString readOnly "--readonly"} \
                   ${lib.concatStringsSep " " config.microvm.virtiofsd.extraArgs}
               '';
             };

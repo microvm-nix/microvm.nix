@@ -59,9 +59,11 @@ in {
         ]
       ) volumes
       ++
-      builtins.concatMap ({ proto, source, tag, ... }:
+      builtins.concatMap ({ proto, source, tag, readOnly, ... }:
         if proto == "9p"
-        then [
+        then if readOnly then
+          throw "kvmtool does not support readonly 9p share"
+        else [
           "--9p" (lib.escapeShellArg "${source},${tag}")
         ] else throw "virtiofs shares not implemented for kvmtool"
       ) shares

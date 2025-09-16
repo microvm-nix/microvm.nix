@@ -371,6 +371,11 @@ in
             description = "Protocol for this share";
             default = "9p";
           };
+          readOnly = mkOption {
+            type =bool;
+            description = "Turn off write access";
+            default=false;
+          };
         };
       }));
     };

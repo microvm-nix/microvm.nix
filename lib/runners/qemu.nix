@@ -253,13 +253,13 @@ lib.warnIf (mem == 2048) ''
         "-numa" "node,memdev=mem"
         "-object" "memory-backend-memfd,id=mem,size=${toString mem}M,share=on"
       ]) ++
-      builtins.concatMap ({ proto, index, socket, source, tag, securityModel, ... }: {
+      builtins.concatMap ({ proto, index, socket, source, tag, securityModel, readOnly, ... }: {
         "virtiofs" = [
           "-chardev" "socket,id=fs${toString index},path=${socket}"
           "-device" "vhost-user-fs-${devType},chardev=fs${toString index},tag=${tag}"
         ];
         "9p" = [
-          "-fsdev" "local,id=fs${toString index},path=${source},security_model=${securityModel}"
+          "-fsdev" "local,id=fs${toString index},path=${source},security_model=${securityModel},readonly=${lib.boolToString readOnly}"
           "-device" "virtio-9p-${devType},fsdev=fs${toString index},mount_tag=${tag}"
         ];
       }.${proto}) (enumerate 0 shares)

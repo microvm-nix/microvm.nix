@@ -100,11 +100,13 @@ in {
         ]
       ) volumes
       ++
-      builtins.concatMap ({ proto, tag, source, socket, ... }: {
+      builtins.concatMap ({ proto, tag, source, socket, readOnly, ... }: {
         "virtiofs" = [
           "--vhost-user" "type=fs,socket=${socket}"
         ];
-        "9p" = [
+        "9p" = if readOnly then
+          throw "Readonly 9p share is not supported"
+        else [
           "--shared-dir" "${source}:${tag}:type=p9"
         ];
       }.${proto}) shares
