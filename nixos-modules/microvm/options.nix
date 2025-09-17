@@ -374,7 +374,7 @@ in
           readOnly = mkOption {
             type = bool;
             description = "Turn off write access";
-            default=false;
+            default = false;
           };
         };
       }));
