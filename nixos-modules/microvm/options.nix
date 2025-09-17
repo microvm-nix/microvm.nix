@@ -372,7 +372,7 @@ in
             default = "9p";
           };
           readOnly = mkOption {
-            type =bool;
+            type = bool;
             description = "Turn off write access";
             default=false;
           };
