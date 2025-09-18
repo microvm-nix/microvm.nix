@@ -1,9 +1,16 @@
 { config, lib, pkgs, ... }:
 
 let
-  regInfo = pkgs.closureInfo {
-    rootPaths = [ config.system.build.toplevel ];
-  };
+  regInfo = let
+    regInfo' = pkgs.closureInfo {
+      rootPaths = [ config.system.build.toplevel ];
+    };
+  in
+   # When a store disk is used, we can drop references to the packed contents as the squashfs/erofs contains all paths.
+  if config.microvm.storeOnDisk then
+    builtins.unsafeDiscardStringContext regInfo'
+  else
+    regInfo';
 
   erofs-utils =
     # Are any extended options specified?

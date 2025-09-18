@@ -28,8 +28,14 @@
       "overlay"
     ];
 
-    microvm.kernelParams = config.boot.kernelParams ++ [
-      "init=${config.system.build.toplevel}/init"
+    microvm.kernelParams = let
+      # When a store disk is used, we can drop references to the packed contents as the squashfs/erofs contains all paths.
+      toplevel = if config.microvm.storeOnDisk then
+        builtins.unsafeDiscardStringContext config.system.build.toplevel
+      else
+        config.system.build.toplevel;
+    in config.boot.kernelParams ++ [
+      "init=${toplevel}/init"
     ];
 
     # modules that consume boot time but have rare use-cases

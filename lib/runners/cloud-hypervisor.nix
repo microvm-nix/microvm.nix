@@ -35,7 +35,7 @@ let
 
   kernelConsole = lib.optionalString (!hasUserSerial || userSerial == "tty") kernelConsoleDefault;
 
-  kernelCmdLine = "${kernelConsole} reboot=t panic=-1 ${builtins.unsafeDiscardStringContext (toString microvmConfig.kernelParams)}";
+  kernelCmdLine = "${kernelConsole} reboot=t panic=-1 ${toString microvmConfig.kernelParams}";
 
 
   userVSockOpts = (extractOptValues "--vsock" extraArgs).values;
