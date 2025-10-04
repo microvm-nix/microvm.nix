@@ -449,6 +449,14 @@ in
       description = "Whether to boot with the storeDisk, that is, unless the host's /nix/store is a microvm.share.";
     };
 
+    registerClosure = lib.mkEnableOption ''
+      Register system closure's store paths in Nix db.
+
+      While enabled by default, this option may be incompatible with a persistent writable store overlay.
+    '' // {
+      default = config.microvm.guest.enable;
+    };
+
     writableStoreOverlay = mkOption {
       type = with types; nullOr str;
       default = null;

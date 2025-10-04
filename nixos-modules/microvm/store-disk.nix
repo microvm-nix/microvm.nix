@@ -95,7 +95,7 @@ in
       '';
     })
 
-    (lib.mkIf (config.microvm.guest.enable && config.nix.enable) {
+    (lib.mkIf (config.microvm.registerClosure && config.nix.enable) {
       microvm.kernelParams = [
         "regInfo=${regInfo}/registration"
       ];
