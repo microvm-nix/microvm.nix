@@ -72,9 +72,9 @@ in
         ];
         partOf = [ "microvm@${name}.service" ];
         wantedBy = [ "microvms.target" ];
-        # Only run this if the MicroVM is fully-declarative
-        # or /var/lib/microvms/$name does not exist yet.
-        unitConfig.ConditionPathExists = lib.mkIf isFlake "!${stateDir}/${name}";
+        # Run on every rebuild for fully-declarative MicroVMs and flake-based MicroVMs without updateFlake.
+        # For MicroVMs with updateFlake set, only run on initial installation.
+        unitConfig.ConditionPathExists = lib.mkIf (isFlake && updateFlake != null) "!${stateDir}/${name}";
         serviceConfig.Type = "oneshot";
         script = ''
             mkdir -p ${stateDir}/${name}
