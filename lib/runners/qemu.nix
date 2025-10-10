@@ -218,17 +218,23 @@ lib.warnIf (mem == 2048) ''
       "-drive" "id=store,format=raw,read-only=on,file=${storeDisk},if=none,aio=${aioEngine}"
       "-device" "virtio-blk-${devType},drive=store${lib.optionalString (devType == "pci") ",disable-legacy=on"}"
     ] ++
-    (if graphics.enable
-     then [
-      "-display" "gtk,gl=on"
-      "-device" "virtio-vga-gl"
-      "-device" "qemu-xhci"
-      "-device" "usb-tablet"
-      "-device" "usb-kbd"
-     ]
-     else [
-      "-nographic"
-     ]) ++
+       (if graphics.enable then (
+       let
+         displayArgs = {
+           cocoa = [
+             "-display" "cocoa" "-device" "virtio-gpu"
+           ];
+           gtk = [
+             "-display" "gtk,gl=on" "-device" "virtio-vga-gl"
+           ];
+         }.${graphics.backend};
+       in
+         displayArgs ++ [
+           "-device" "qemu-xhci"
+           "-device" "usb-tablet"
+           "-device" "usb-kbd"
+         ]
+       ) else [ "-nographic" ]) ++
     lib.optionals canSandbox [
       "-sandbox" "on"
     ] ++
