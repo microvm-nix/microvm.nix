@@ -27,6 +27,12 @@ let
       else "/dev/vda"
     else throw "No disk letter when /nix/store is not in disk";
 
+  # Check if the writable store overlay is a virtiofs share
+  isRwStoreVirtiofsShare = builtins.any ({mountPoint, proto, ... }:
+    mountPoint == config.microvm.writableStoreOverlay
+    && proto == "virtiofs"
+  ) config.microvm.shares;
+
 in
 lib.mkIf config.microvm.guest.enable {
   fileSystems = lib.mkMerge [ (
@@ -82,6 +88,8 @@ lib.mkIf config.microvm.guest.enable {
           "lowerdir=${roStore}"
           "upperdir=${writableStoreOverlay}/store"
           "workdir=${writableStoreOverlay}/work"
+        ] ++ lib.optionals isRwStoreVirtiofsShare [
+          "userxattr"
         ];
         depends = [ roStore writableStoreOverlay ];
       };
@@ -132,11 +140,13 @@ lib.mkIf config.microvm.guest.enable {
       where = "/sysroot/nix/store";
       what = "overlay";
       type = "overlay";
-      options = builtins.concatStringsSep "," [
+      options = builtins.concatStringsSep "," ([
         "lowerdir=/sysroot${roStore}"
         "upperdir=/sysroot${writableStoreOverlay}/store"
         "workdir=/sysroot${writableStoreOverlay}/work"
-      ];
+      ] ++ lib.optionals isRwStoreVirtiofsShare [
+        "userxattr"
+      ]);
       wantedBy = [ "initrd-fs.target" ];
       before = [ "initrd-fs.target" ];
       requires = [ "rw-store.service" ];
