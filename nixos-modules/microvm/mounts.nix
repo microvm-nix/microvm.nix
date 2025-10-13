@@ -59,7 +59,7 @@ lib.mkIf config.microvm.guest.enable {
     ) {
       "/nix/store" = {
         device = hostStore.mountPoint;
-        options = [ "bind" ];
+        options = [ "ro" "bind" ];
         neededForBoot = true;
       };
     }
@@ -72,7 +72,7 @@ lib.mkIf config.microvm.guest.enable {
       "/nix/.ro-store" = {
         device = roStoreDisk;
         fsType = storeDiskType;
-        options = [ "x-systemd.requires=systemd-modules-load.service" ];
+        options = [ "ro" "x-systemd.requires=systemd-modules-load.service" ];
         neededForBoot = true;
         noCheck = true;
       };
@@ -81,17 +81,13 @@ lib.mkIf config.microvm.guest.enable {
     # mount store with writable overlay
     lib.optionalAttrs (writableStoreOverlay != null) {
       "/nix/store" = {
-        device = "overlay";
-        fsType = "overlay";
         neededForBoot = true;
-        options = [
-          "lowerdir=${roStore}"
-          "upperdir=${writableStoreOverlay}/store"
-          "workdir=${writableStoreOverlay}/work"
-        ] ++ lib.optionals isRwStoreVirtiofsShare [
-          "userxattr"
-        ];
-        depends = [ roStore writableStoreOverlay ];
+        overlay = {
+          lowerdir = [ roStore ];
+          upperdir = "${writableStoreOverlay}/store";
+          workdir = "${writableStoreOverlay}/work";
+        };
+        options = lib.optional isRwStoreVirtiofsShare "userxattr";
       };
     }
   ) {
@@ -133,44 +129,4 @@ lib.mkIf config.microvm.guest.enable {
       };
     }) {} config.microvm.shares
   ) ];
-
-  # boot.initrd.systemd patchups copied from <nixpkgs/nixos/modules/virtualisation/qemu-vm.nix>
-  boot.initrd.systemd = lib.mkIf (config.boot.initrd.systemd.enable && writableStoreOverlay != null) {
-    mounts = [ {
-      where = "/sysroot/nix/store";
-      what = "overlay";
-      type = "overlay";
-      options = builtins.concatStringsSep "," ([
-        "lowerdir=/sysroot${roStore}"
-        "upperdir=/sysroot${writableStoreOverlay}/store"
-        "workdir=/sysroot${writableStoreOverlay}/work"
-      ] ++ lib.optionals isRwStoreVirtiofsShare [
-        "userxattr"
-      ]);
-      wantedBy = [ "initrd-fs.target" ];
-      before = [ "initrd-fs.target" ];
-      requires = [ "rw-store.service" ];
-      after = [ "rw-store.service" ];
-      unitConfig.RequiresMountsFor = "/sysroot/${roStore}";
-    } ];
-    services.rw-store = {
-      unitConfig = {
-        DefaultDependencies = false;
-        RequiresMountsFor = "/sysroot${writableStoreOverlay}";
-      };
-      serviceConfig = {
-        Type = "oneshot";
-        ExecStart = "/bin/mkdir -p -m 0755 /sysroot${writableStoreOverlay}/store /sysroot${writableStoreOverlay}/work /sysroot/nix/store";
-      };
-    };
-  };
-
-  # Fix for hanging shutdown
-  systemd.mounts = lib.mkIf config.boot.initrd.systemd.enable [ {
-    what = "store";
-    where = "/nix/store";
-    # Generate a `nix-store.mount.d/overrides.conf`
-    overrideStrategy = "asDropin";
-    unitConfig.DefaultDependencies = false;
-  } ];
 }
