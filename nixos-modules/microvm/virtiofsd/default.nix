@@ -71,10 +71,6 @@ in
         exec ${supervisord} --configuration ${supervisordConfigFile}
       '';
 
-    virtiofsd-reload = ''
-      exec ${supervisorctl} reload
-    '';
-
     virtiofsd-shutdown = ''
       exec ${supervisorctl} stop
     '';

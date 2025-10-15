@@ -198,7 +198,6 @@ in
           serviceConfig = {
             WorkingDirectory = "${stateDir}/%i";
             ExecStart = "${stateDir}/%i/current/bin/virtiofsd-run";
-            ExecReload = "${runFromBootedOrCurrent} virtiofsd-reload %i";
             ExecStop = "${runFromBootedOrCurrent} virtiofsd-shutdown %i";
             LimitNOFILE = 1048576;
             NotifyAccess = "all";
@@ -242,7 +241,7 @@ in
           WorkingDirectory = "${stateDir}/%i";
           ExecStart = "${stateDir}/%i/current/bin/microvm-run";
           ExecStop = "${stateDir}/%i/booted/bin/microvm-shutdown";
-          TimeoutSec = config.microvm.host.startupTimeout; 
+          TimeoutSec = config.microvm.host.startupTimeout;
           Restart = "always";
           RestartSec = "5s";
           User = user;
