@@ -1,7 +1,7 @@
 { config, lib, pkgs, ... }:
 
 let
-  hostName = config.networking.hostName or "$HOSTNAME";
+  fqdnOrHostName = config.networking.fqdnOrHostName or "$fqdnOrHostName";
   inherit (config.system.build) toplevel;
   inherit (config.microvm) declaredRunner;
   inherit (config) nix;
@@ -42,8 +42,8 @@ in
         `microvm.nixosModules.host`:
 
         ```
-        nix run .#nixosConfigurations.${hostName}.config.microvm.deploy.installOnHost root@example.com
-        ssh root@example.com systemctl restart microvm@${hostName}
+        nix run .#nixosConfigurations.${fqdnOrHostName}.config.microvm.deploy.installOnHost root@example.com
+        ssh root@example.com systemctl restart microvm@${fqdnOrHostName}
         ```
 
         - Evaluate this MicroVM to a derivation
@@ -52,7 +52,7 @@ in
         - Install/update the MicroVM on the target host
 
         Can be followed by either:
-        - `systemctl restart microvm@${hostName}.service` on the
+        - `systemctl restart microvm@${fqdnOrHostName}.service` on the
           target host, or
         - `config.microvm.deploy.sshSwitch`
       '';
@@ -69,8 +69,8 @@ in
         `microvm.deploy.installOnHost` like this:
 
         ```
-        nix run .#nixosConfigurations.${hostName}.config.microvm.deploy.installOnHost root@example.com
-        nix run .#nixosConfigurations.${hostName}.config.microvm.deploy.sshSwitch root@my-microvm.example.com switch
+        nix run .#nixosConfigurations.${fqdnOrHostName}.config.microvm.deploy.installOnHost root@example.com
+        nix run .#nixosConfigurations.${fqdnOrHostName}.config.microvm.deploy.sshSwitch root@my-microvm.example.com switch
         ```
       '';
       type = with lib.types; nullOr package;
@@ -84,7 +84,7 @@ in
         MicroVM.
 
         ```
-        nix run .#nixosConfigurations.${hostName}.config.microvm.deploy.rebuild root@example.com root@my-microvm.example.com switch
+        nix run .#nixosConfigurations.${fqdnOrHostName}.config.microvm.deploy.rebuild root@example.com root@my-microvm.example.com switch
         ```
       '';
       type = with lib.types; nullOr package;
@@ -126,15 +126,15 @@ in
       ssh "$HOST" -- $SSH_CMD -e <<__SSH__
       set -eou pipefail
 
-      echo "Initializing MicroVM ${hostName} if necessary"
+      echo "Initializing MicroVM ${fqdnOrHostName} if necessary"
       mkdir -p /nix/var/nix/gcroots/microvm
-      mkdir -p /var/lib/microvms/${hostName}
-      cd /var/lib/microvms/${hostName}
+      mkdir -p /var/lib/microvms/${fqdnOrHostName}
+      cd /var/lib/microvms/${fqdnOrHostName}
       chown microvm:kvm .
       chmod 0755 .
-      ln -sfT \$PWD/current /nix/var/nix/gcroots/microvm/${hostName}
-      ln -sfT \$PWD/booted /nix/var/nix/gcroots/microvm/booted-${hostName}
-      ln -sfT \$PWD/old /nix/var/nix/gcroots/microvm/old-${hostName}
+      ln -sfT \$PWD/current /nix/var/nix/gcroots/microvm/${fqdnOrHostName}
+      ln -sfT \$PWD/booted /nix/var/nix/gcroots/microvm/booted-${fqdnOrHostName}
+      ln -sfT \$PWD/old /nix/var/nix/gcroots/microvm/old-${fqdnOrHostName}
 
       echo "Building toplevel ${paths.toplevelOut}"
       nix build -L --accept-flake-config --no-link \
@@ -143,12 +143,12 @@ in
           closureInfoDrv
           toplevelDrv
         ]}
-      echo "Building MicroVM runner for ${hostName}"
+      echo "Building MicroVM runner for ${fqdnOrHostName}"
       nix build -L --accept-flake-config -o new \
         "${paths.runnerDrv}^out"
 
       if [[ $(realpath ./current) != $(realpath ./new) ]]; then
-        echo "Installing MicroVM ${hostName}"
+        echo "Installing MicroVM ${fqdnOrHostName}"
         rm -f old
         if [ -e current ]; then
           mv current old
@@ -164,7 +164,7 @@ in
           echo "Success."
         fi
       else
-        echo "MicroVM ${hostName} is already installed"
+        echo "MicroVM ${fqdnOrHostName} is already installed"
       fi
       __SSH__
     '';
@@ -195,9 +195,9 @@ in
         ssh "$TARGET" $SSH_CMD -e <<__SSH__
         set -eou pipefail
 
-        hostname=\$(cat /etc/hostname)
-        if [[ "\$hostname" != "${hostName}" ]]; then
-          echo "Attempting to deploy NixOS ${hostName} on host \$hostname"
+        fqdnOrHostName=\$(cat /etc/fqdn)
+        if [[ "\$fqdnOrHostName" != "${fqdnOrHostName}" ]]; then
+          echo "Attempting to deploy NixOS ${fqdnOrHostName} on host \$fqdnOrHostName"
           exit 1
         fi
 
@@ -233,7 +233,7 @@ in
       ${lib.getExe installOnHost} "$HOST" $OPTS
       ${if canSwitchViaSsh
         then ''${lib.getExe sshSwitch} "$TARGET" $OPTS''
-        else ''ssh "$HOST" -- systemctl restart "microvm@${hostName}.service"''
+        else ''ssh "$HOST" -- systemctl restart "microvm@${fqdnOrHostName}.service"''
        }
     '';
   };
