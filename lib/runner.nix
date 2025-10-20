@@ -6,7 +6,7 @@
 let
   inherit (pkgs) lib;
 
-  inherit (microvmConfig) hostName vmHostPackages;
+  inherit (microvmConfig) fqdnOrHostName vmHostPackages;
 
   inherit (import ./. { inherit lib; }) makeMacvtap withDriveLetters extractOptValues extractParamValue;
   inherit (import ./volumes.nix { pkgs = microvmConfig.vmHostPackages; }) createVolumesScript;
@@ -26,7 +26,8 @@ let
   tapMultiQueue = hypervisorConfig.tapMultiQueue or false;
   setBalloonScript = hypervisorConfig.setBalloonScript or null;
 
-  execArg = lib.optionalString microvmConfig.prettyProcnames ''-a "microvm@${hostName}"'';
+  execArg = lib.optionalString microvmConfig.prettyProcnames
+    ''-a "microvm@${fqdnOrHostName}"'';
 
   # TAP interface names for machined registration
   tapInterfaces = lib.filter (i: i.type == "tap" && i ? id) microvmConfig.interfaces;
@@ -40,14 +41,14 @@ let
     else
       builtins.readFile (
         vmHostPackages.runCommand "machine-uuid" { } ''
-          ${vmHostPackages.python3}/bin/python3 -c 'import uuid; print(uuid.uuid5(uuid.NAMESPACE_DNS, "${hostName}"), end="")' > $out
+          ${vmHostPackages.python3}/bin/python3 -c 'import uuid; print(uuid.uuid5(uuid.NAMESPACE_DNS, "${fqdnOrHostName}"), end="")' > $out
         ''
       );
 
   # Script to unregister from systemd-machined
   unregisterMachineScript = ''
     set -euo pipefail
-    MACHINE_NAME="${hostName}"
+    MACHINE_NAME="${fqdnOrHostName}"
 
     # Terminate the machine registration (ignore errors if already gone)
     ${vmHostPackages.systemd}/bin/busctl call \
@@ -65,7 +66,7 @@ let
     set -euo pipefail
 
     LEADER_PID="''${1:-$$}"
-    MACHINE_NAME="${hostName}"
+    MACHINE_NAME="${fqdnOrHostName}"
     UUID="${machineUuid}"
 
     # Convert UUID to decimal bytes for busctl array arguments
@@ -207,11 +208,11 @@ let
     };
 
   binScriptPkgs = lib.mapAttrs (
-    scriptName: lines: vmHostPackages.writeShellScript "microvm-${hostName}-${scriptName}" lines
+    scriptName: lines: vmHostPackages.writeShellScript "microvm-${fqdnOrHostName}-${scriptName}" lines
   ) binScripts;
 in
 
-vmHostPackages.buildPackages.runCommand "microvm-${microvmConfig.hypervisor}-${hostName}"
+vmHostPackages.buildPackages.runCommand "microvm-${microvmConfig.hypervisor}-${fqdnOrHostName}"
 {
   # for `nix run`
   meta.mainProgram = "microvm-run";
