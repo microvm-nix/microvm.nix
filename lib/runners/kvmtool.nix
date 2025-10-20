@@ -10,7 +10,7 @@ let
   kvmtoolPkg = microvmConfig.kvmtool.package;
 
   inherit (microvmConfig)
-    hostName preStart user
+    fqdnOrHostName preStart user
     vcpu mem balloon initialBalloonMem hotplugMem hotpluggedMem interfaces volumes shares devices vsock
     kernel initrdPath credentialFiles
     storeDisk storeOnDisk storeDiskDirect;
@@ -34,7 +34,7 @@ in {
     else builtins.concatStringsSep " " (
       [
         "${kvmtoolPkg}/bin/lkvm" "run"
-        "--name" (lib.escapeShellArg hostName)
+        "--name" (lib.escapeShellArg fqdnOrHostName)
         "-m" (toString mem)
         "-c" (toString vcpu)
         "--console" "serial"
@@ -105,6 +105,6 @@ in {
     else
       ARGS="-i $SIZE"
     fi
-    HOME=$PWD ${kvmtoolPkg}/bin/lkvm balloon $ARGS -n ${hostName}
+    HOME=$PWD ${kvmtoolPkg}/bin/lkvm balloon $ARGS -n ${fqdnOrHostName}
   '';
 }
