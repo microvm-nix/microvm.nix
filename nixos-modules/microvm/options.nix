@@ -491,6 +491,7 @@ in
      graphics.backend = mkOption {
        type = types.enum [ "gtk" "cocoa" ];
        default = if pkgs.stdenv.hostPlatform.isDarwin then "cocoa" else "gtk";
+       defaultText = lib.literalExpression ``if pkgs.stdenv.hostPlatform.isDarwin then "cocoa" else "gtk"``;
        description = ''
          QEMU display backend to use when `graphics.enable` is true.
 
