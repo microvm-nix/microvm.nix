@@ -816,14 +816,22 @@ one of “tcp”, “udp”</p>
 <p>Enable GUI support.</p>
 <p>MicroVMs with graphics are intended for the interactive
 use-case. They cannot be started through systemd jobs.</p>
-<p>Support in Hypervisors:</p>
-<ul>
-<li><code>qemu</code> starts a Gtk window with the framebuffer of the virtio-gpu</li>
-</ul>
+<p>The display backend is chosen by <code>microvm.graphics.backend</code>.</p>
 <p><em>Type:</em>
 boolean</p>
 <p><em>Default:</em>
 <code>false</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmgraphicsbackend"><a class="header" href="#microvmgraphicsbackend">microvm.graphics.backend</a></h2>
+<p>QEMU display backend to use when <code>graphics.enable</code> is true.</p>
+<p>Defaults to <code>cocoa</code> on Darwin hosts and <code>gtk</code> otherwise.</p>
+<p><em>Type:</em>
+one of “gtk”, “cocoa”</p>
+<p><em>Default:</em>
+<code>if pkgs.stdenv.hostPlatform.isDarwin then "cocoa" else "gtk"</code></p>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
