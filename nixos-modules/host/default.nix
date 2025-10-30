@@ -27,7 +27,7 @@ in
     system.activationScripts.microvm-host = ''
       mkdir -p ${stateDir}
       chown ${user}:${group} ${stateDir}
-      chmod 775 ${stateDir}
+      chmod u+rwx,g+w ${stateDir}
     '';
 
     environment.systemPackages = [
