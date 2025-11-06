@@ -8,6 +8,7 @@ rec {
     "kvmtool"
     "stratovirt"
     "alioth"
+    "vfkit"
   ];
 
   hypervisorsWithNetwork = hypervisors;

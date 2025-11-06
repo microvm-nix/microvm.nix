@@ -160,7 +160,8 @@
               # currently broken:
               # "crosvm"
             ];
-            hypervisorsWithUserNet = [ "qemu" "kvmtool" ];
+            hypervisorsWithUserNet = [ "qemu" "kvmtool" "vfkit" ];
+            hypervisorsDarwinOnly = [ "vfkit" ];
             makeExample = { system, hypervisor, config ? {} }:
               lib.nixosSystem {
                 system = lib.replaceString "-darwin" "-linux" system;
@@ -176,12 +177,21 @@
                     nixpkgs.overlays = [ self.overlay ];
                     microvm = {
                       inherit hypervisor;
-                      # share the host's /nix/store if the hypervisor can do 9p
-                      shares = lib.optional (builtins.elem hypervisor hypervisorsWith9p) {
-                        tag = "ro-store";
-                        source = "/nix/store";
-                        mountPoint = "/nix/.ro-store";
-                      };
+                      # share the host's /nix/store if the hypervisor supports it
+                      shares =
+                        if builtins.elem hypervisor hypervisorsWith9p then [{
+                          tag = "ro-store";
+                          source = "/nix/store";
+                          mountPoint = "/nix/.ro-store";
+                          proto = "9p";
+                        }]
+                        else if hypervisor == "vfkit" then [{
+                          tag = "ro-store";
+                          source = "/nix/store";
+                          mountPoint = "/nix/.ro-store";
+                          proto = "virtiofs";
+                        }]
+                        else [];
                       # writableStoreOverlay = "/nix/.rw-store";
                       # volumes = [ {
                       #   image = "nix-store-overlay.img";
@@ -212,34 +222,44 @@
               };
           in
             (builtins.foldl' (results: system:
-              builtins.foldl' ({ result, n }: hypervisor: {
-                result = result // {
-                  "${system}-${hypervisor}-example" = makeExample {
-                    inherit system hypervisor;
-                  };
-                } //
-                lib.optionalAttrs (builtins.elem hypervisor self.lib.hypervisorsWithNetwork) {
-                  "${system}-${hypervisor}-example-with-tap" = makeExample {
-                    inherit system hypervisor;
-                    config = _: {
-                      microvm.interfaces = [ {
-                        type = "tap";
-                        id = "vm-${builtins.substring 0 4 hypervisor}";
-                        mac = "02:00:00:01:01:0${toString n}";
-                      } ];
-                      networking = {
-                        interfaces.eth0.useDHCP = true;
-                        firewall.allowedTCPPorts = [ 22 ];
-                      };
-                      services.openssh = {
-                        enable = true;
-                        settings.PermitRootLogin = "yes";
+              builtins.foldl' ({ result, n }: hypervisor:
+                let
+                  # Skip darwin-only hypervisors on Linux systems
+                  isDarwinOnly = builtins.elem hypervisor hypervisorsDarwinOnly;
+                  isDarwinSystem = lib.hasSuffix "-darwin" system;
+                  shouldSkip = isDarwinOnly && !isDarwinSystem;
+                in
+                if shouldSkip then { inherit result n; }
+                else {
+                  result = result // {
+                    "${system}-${hypervisor}-example" = makeExample {
+                      inherit system hypervisor;
+                    };
+                  } //
+                  # Skip tap example for darwin-only hypervisors (vfkit doesn't support tap)
+                  lib.optionalAttrs (builtins.elem hypervisor self.lib.hypervisorsWithNetwork && !isDarwinOnly) {
+                    "${system}-${hypervisor}-example-with-tap" = makeExample {
+                      inherit system hypervisor;
+                      config = _: {
+                        microvm.interfaces = [ {
+                          type = "tap";
+                          id = "vm-${builtins.substring 0 4 hypervisor}";
+                          mac = "02:00:00:01:01:0${toString n}";
+                        } ];
+                        networking = {
+                          interfaces.eth0.useDHCP = true;
+                          firewall.allowedTCPPorts = [ 22 ];
+                        };
+                        services.openssh = {
+                          enable = true;
+                          settings.PermitRootLogin = "yes";
+                        };
                       };
                     };
                   };
-                };
-                n = n + 1;
-              }) results self.lib.hypervisors
+                  n = n + 1;
+                }
+              ) results self.lib.hypervisors
             ) { result = {}; n = 1; } systems).result;
       };
 }

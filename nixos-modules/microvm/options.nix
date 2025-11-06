@@ -620,6 +620,18 @@ in
       description = "Extra config to merge into Firecracker JSON configuration";
     };
 
+    vfkit.extraArgs = mkOption {
+      type = with types; listOf str;
+      default = [];
+      description = "Extra arguments to pass to vfkit.";
+    };
+
+    vfkit.logLevel = mkOption {
+      type = with types; nullOr (enum ["debug" "info" "error"]);
+      default = "info";
+      description = "vfkit log level.";
+    };
+
     prettyProcnames = mkOption {
       type = types.bool;
       default = true;
