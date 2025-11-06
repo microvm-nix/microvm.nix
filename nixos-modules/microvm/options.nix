@@ -590,6 +590,12 @@ in
       description = "Custom CPU template passed to firecracker.";
     };
 
+    firecracker.enablePci = mkOption {
+      type = types.bool;
+      default = lib.versionOlder "1.13.0" pkgs.firecracker.version;
+      description = "Use PCI Virtio transport, improves performance.";
+    };
+
     prettyProcnames = mkOption {
       type = types.bool;
       default = true;

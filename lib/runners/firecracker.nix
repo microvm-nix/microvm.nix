@@ -94,7 +94,7 @@ in {
         then socket
         else throw "Firecracker must be configured with an API socket (option microvm.socket)!"
       )
-    ];
+    ] ++ lib.optional enablePci "--enable-pci";
 
   preStart = ''
     ${preStart}
