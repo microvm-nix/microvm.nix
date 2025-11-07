@@ -20,7 +20,7 @@ let
   }.${system};
 
   # Firecracker config, as JSON in `configFile`
-  config = {
+  baseConfig = {
     boot-source = {
       kernel_image_path = kernelPath;
       initrd_path = initrdPath;
@@ -65,6 +65,7 @@ let
   } // lib.optionalAttrs (cpu != null) {
     cpu-config = pkgs.writeText "cpu-config.json" (builtins.toJSON cpu);
   };
+  config = lib.recursiveUpdate baseConfig microvmConfig.firecracker.extraConfig;
 
   configFile = pkgs.writers.writeJSON "firecracker-${hostName}.json" config;
 
