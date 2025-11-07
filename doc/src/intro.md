@@ -1,9 +1,9 @@
 # Intro
 
 **microvm.nix** is a Flake to run lightweight NixOS virtual machines
-on NixOS. Starting with the reasons why for the remainder of this
+on NixOS and macOS. Starting with the reasons why for the remainder of this
 chapter, this handbook guides you through the provisioning of MicroVMs
-on your NixOS machine.
+on your NixOS or macOS machine.
 
 ## Compartmentalization
 
@@ -47,4 +47,5 @@ overhead has been reduced a lot by replacing emulated devices with
 This Flake offers you to run your MicroVMs not only on QEMU but with
 other Hypervisors that have been explicitly authored for
 *virtio*. Some of them are written in Rust, a programming language
-that is renowned for being safer than C.
+that is renowned for being safer than C. On macOS, vfkit leverages
+Apple's native Virtualization.framework for running Linux VMs.
