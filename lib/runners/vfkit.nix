@@ -15,9 +15,9 @@ let
   inherit (microvmConfig)
     hostName vcpu mem user interfaces volumes shares socket
     storeOnDisk kernel initrdPath storeDisk kernelParams
-    balloon devices credentialFiles vsock graphics;
+    devices credentialFiles vsock graphics;
 
-  inherit (microvmConfig.vfkit) extraArgs logLevel;
+  inherit (microvmConfig.vfkit) extraArgs logLevel rosetta;
 
   volumesWithLetters = withDriveLetters microvmConfig;
 
@@ -69,7 +69,16 @@ let
         throw "vfkit does not support macvtap networking on macOS. Use type = \"user\" for NAT networking."
       else
         throw "Unknown network interface type: ${type}"
-    ) interfaces);
+    ) interfaces)
+    ++
+    lib.optionals rosetta.enable (
+      let
+        rosettaArgs = "rosetta,mountTag=${rosetta.mountTag}"
+          + lib.optionalString rosetta.install ",install"
+          + lib.optionalString rosetta.ignoreIfMissing ",ignoreIfMissing";
+      in
+      [ "--device" rosettaArgs ]
+    );
 
   allArgsWithoutSocket = [
     "${vfkit}/bin/vfkit"
@@ -103,6 +112,8 @@ in
     then throw "vfkit does not support changing user"
     else if balloon
     then throw "vfkit does not support memory ballooning"
+    else if rosetta.enable && !vmHostPackages.stdenv.hostPlatform.isAarch64
+    then throw "Rosetta requires Apple Silicon (aarch64-darwin). Current host: ${system}"
     else if devices != []
     then throw "vfkit does not support device passthrough"
     else if credentialFiles != {}

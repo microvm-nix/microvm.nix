@@ -602,6 +602,44 @@ in
       description = "vfkit log level.";
     };
 
+    vfkit.rosetta = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Enable Rosetta support for running x86_64 binaries in ARM64 Linux VMs.
+          Only works on Apple Silicon (ARM) Macs.
+
+          After enabling, you must mount the rosetta share and configure binfmt
+          in your guest configuration. See the vfkit documentation for details.
+        '';
+      };
+
+      mountTag = mkOption {
+        type = types.str;
+        default = "rosetta";
+        description = "Mount tag for the Rosetta virtiofs share.";
+      };
+
+      install = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Automatically install Rosetta if missing.
+          If false and Rosetta is not installed, vfkit will fail to start.
+        '';
+      };
+
+      ignoreIfMissing = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Continue execution even if Rosetta installation fails or is unavailable.
+          Useful for configurations that should work on both ARM and Intel Macs.
+        '';
+      };
+    };
+
     prettyProcnames = mkOption {
       type = types.bool;
       default = true;

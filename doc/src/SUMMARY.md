@@ -8,6 +8,7 @@
   - [Device pass-through](./devices.md)
   - [CPU emulation](./cpu-emulation.md)
   - [Output options](./output-options.md)
+  - [Using Rosetta with vfkit (macOS)](./vfkit-rosetta.md)
   - [MicroVM options reference ⚙️](./microvm-options.md)
 - [Running a MicroVM as a package](./packages.md)
 - [Preparing a host for declarative MicroVMs](./host.md)
