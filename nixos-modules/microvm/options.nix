@@ -596,6 +596,12 @@ in
       description = "Type of IO engine to use for Firecracker drives (disks).";
     };
 
+    firecracker.extraConfig = mkOption {
+      type = types.attrs;
+      default = {};
+      description = "Extra config to merge into Firecracker JSON configuration";
+    };
+
     prettyProcnames = mkOption {
       type = types.bool;
       default = true;
