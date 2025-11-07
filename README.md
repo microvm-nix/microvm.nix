@@ -100,11 +100,14 @@ nix run microvm#vm
 Check `networkctl status virbr0` for the DHCP leases of the nested
 MicroVMs. They listen for ssh with an empty root password.
 
-### Experimental: run graphical applications in cloud-hypervisor with Wayland forwarding
+### Experimental: run graphical applications with graphics support
 
+On Linux with cloud-hypervisor and Wayland forwarding:
 ```shell
 nix run microvm#graphics neverball
 ```
+
+On macOS with vfkit, enable graphics with `microvm.graphics.enable = true`.
 
 ## Commercial support
 

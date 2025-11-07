@@ -15,7 +15,7 @@ let
   inherit (microvmConfig)
     hostName vcpu mem user interfaces volumes shares socket
     storeOnDisk kernel initrdPath storeDisk kernelParams
-    balloon devices credentialFiles vsock;
+    balloon devices credentialFiles vsock graphics;
 
   inherit (microvmConfig.vfkit) extraArgs logLevel;
 
@@ -24,7 +24,9 @@ let
   # vfkit requires uncompressed kernel
   kernelPath = "${kernel.out}/${pkgs.stdenv.hostPlatform.linux-kernel.target}";
 
-  kernelCmdLine = "console=hvc0 reboot=t panic=-1 ${toString kernelParams}";
+  kernelConsole = if graphics.enable then "tty0" else "hvc0";
+
+  kernelCmdLine = [ "console=${kernelConsole}" "reboot=t" "panic=-1" ] ++ kernelParams;
 
   bootloaderArgs = [
     "--bootloader"
@@ -32,11 +34,17 @@ let
   ];
 
   deviceArgs =
-    [ "--device" "virtio-rng" ]
-    ++
-    [ "--device" "virtio-serial,stdio" ]
-    ++
-    (builtins.concatMap ({ image, ... }: [
+    [
+      "--device" "virtio-rng"
+    ]
+    ++ (if graphics.enable then [
+      "--device" "virtio-gpu"
+      "--device" "virtio-input,keyboard"
+      "--device" "virtio-input,pointing"
+    ] else [
+      "--device" "virtio-serial,stdio"
+    ])
+    ++ (builtins.concatMap ({ image, ... }: [
       "--device" "virtio-blk,path=${image}"
     ]) volumesWithLetters)
     ++ (builtins.concatMap ({ proto, source, tag, ... }:
@@ -63,6 +71,9 @@ let
   ]
   ++ lib.optionals (logLevel != null) [
     "--log-level" logLevel
+  ]
+  ++ lib.optionals graphics.enable [
+    "--gui"
   ]
   ++ bootloaderArgs
   ++ deviceArgs
