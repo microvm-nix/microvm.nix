@@ -17,7 +17,7 @@ let
     storeOnDisk kernel initrdPath storeDisk kernelParams
     balloon devices credentialFiles vsock graphics;
 
-  inherit (microvmConfig.vfkit) extraArgs logLevel;
+  inherit (microvmConfig.vfkit) extraArgs logLevel rosetta;
 
   volumesWithLetters = withDriveLetters microvmConfig;
 
@@ -61,8 +61,18 @@ let
       else if type == "bridge" then
         throw "vfkit bridge networking requires vmnet-helper which is not yet implemented. Use type = \"user\" for NAT networking."
       else
-        throw "Unknown network interface type: ${type}"
-    ) interfaces);
+        throw "vfkit does not support ${type} networking on macOS. Use type = \"user\" for NAT networking."
+    ) interfaces)
+    ++ lib.optionals rosetta.enable (
+      let
+        rosettaArgs = builtins.concatStringsSep "," (
+          [ "rosetta" "mountTag=rosetta" ]
+          ++ lib.optional rosetta.install "install"
+          ++ lib.optional rosetta.ignoreIfMissing "ignoreIfMissing"
+        );
+      in
+      [ "--device" rosettaArgs ]
+    );
 
   allArgsWithoutSocket = [
     "${lib.getExe vfkit}"
@@ -96,6 +106,8 @@ in
     then throw "vfkit does not support changing user"
     else if balloon
     then throw "vfkit does not support memory ballooning"
+    else if rosetta.enable && !vmHostPackages.stdenv.hostPlatform.isAarch64
+    then throw "Rosetta requires Apple Silicon (aarch64-darwin). Current host: ${system}"
     else if devices != []
     then throw "vfkit does not support device passthrough"
     else if credentialFiles != {}
