@@ -106,18 +106,24 @@
             };
           } //
           # wrap self.nixosConfigurations in executable packages
-          builtins.foldl' (result: systemName:
-            let
-              nixos = self.nixosConfigurations.${systemName};
-              name = builtins.replaceStrings [ "${system}-" ] [ "" ] systemName;
-              inherit (nixos.config.microvm) hypervisor;
-            in
-              if nixos.pkgs.stdenv.hostPlatform.system == nixpkgs.lib.replaceString "-darwin" "-linux" system
-              then result // {
-                "${name}" = nixos.config.microvm.runner.${hypervisor};
-              }
-              else result
-          ) {} (builtins.attrNames self.nixosConfigurations);
+          nixpkgs.lib.listToAttrs (
+            nixpkgs.lib.concatMap (configName:
+              let
+                config = self.nixosConfigurations.${configName};
+                packageName = builtins.replaceStrings [ "${system}-" ] [ "" ] configName;
+                # Check if this config's guest system matches our current build system
+                # (accounting for darwin hosts building linux guests)
+                guestSystem = config.pkgs.stdenv.hostPlatform.system;
+                buildSystem = nixpkgs.lib.replaceString "-darwin" "-linux" system;
+              in
+              if guestSystem == buildSystem
+              then [{
+                name = packageName;
+                value = config.config.microvm.runner.${config.config.microvm.hypervisor};
+              }]
+              else []
+            ) (builtins.attrNames self.nixosConfigurations)
+          );
 
         # Takes too much memory in `nix flake show`
         # checks = import ./checks { inherit self nixpkgs system; };
@@ -158,6 +164,17 @@
             ];
             hypervisorsWithUserNet = [ "qemu" "kvmtool" "vfkit" ];
             hypervisorsDarwinOnly = [ "vfkit" ];
+            hypervisorsWithTap = builtins.filter
+              # vfkit supports networking, but does not support tap
+              (hv: hv != "vfkit")
+              self.lib.hypervisorsWithNetwork;
+
+            isDarwinOnly = hypervisor: builtins.elem hypervisor hypervisorsDarwinOnly;
+            isDarwinSystem = system: nixpkgs.lib.hasSuffix "-darwin" system;
+            hypervisorSupportsSystem = hypervisor: system:
+              # Darwin-only hypervisors only work on darwin, others work everywhere
+              !(isDarwinOnly hypervisor && !(isDarwinSystem system));
+
             makeExample = { system, hypervisor, config ? {} }:
               nixpkgs.lib.nixosSystem {
                 system = nixpkgs.lib.replaceString "-darwin" "-linux" system;
@@ -216,46 +233,47 @@
                   config
                 ];
               };
-          in
-            (builtins.foldl' (results: system:
-              builtins.foldl' ({ result, n }: hypervisor:
-                let
-                  # Skip darwin-only hypervisors on Linux systems
-                  isDarwinOnly = builtins.elem hypervisor hypervisorsDarwinOnly;
-                  isDarwinSystem = nixpkgs.lib.hasSuffix "-darwin" system;
-                  shouldSkip = isDarwinOnly && !isDarwinSystem;
-                in
-                if shouldSkip then { inherit result n; }
-                else {
-                  result = result // {
-                    "${system}-${hypervisor}-example" = makeExample {
-                      inherit system hypervisor;
-                    };
-                  } //
-                  # Skip tap example for darwin-only hypervisors (vfkit doesn't support tap)
-                  nixpkgs.lib.optionalAttrs (builtins.elem hypervisor self.lib.hypervisorsWithNetwork && !isDarwinOnly) {
-                    "${system}-${hypervisor}-example-with-tap" = makeExample {
-                      inherit system hypervisor;
-                      config = _: {
-                        microvm.interfaces = [ {
-                          type = "tap";
-                          id = "vm-${builtins.substring 0 4 hypervisor}";
-                          mac = "02:00:00:01:01:0${toString n}";
-                        } ];
-                        networking = {
-                          interfaces.eth0.useDHCP = true;
-                          firewall.allowedTCPPorts = [ 22 ];
-                        };
-                        services.openssh = {
-                          enable = true;
-                          settings.PermitRootLogin = "yes";
-                        };
+
+            basicExamples = nixpkgs.lib.flatten (
+              builtins.map (system:
+                builtins.map (hypervisor: {
+                  name = "${system}-${hypervisor}-example";
+                  value = makeExample { inherit system hypervisor; };
+                  shouldInclude = hypervisorSupportsSystem hypervisor system;
+                }) self.lib.hypervisors
+              ) systems
+            );
+
+            tapExamples = nixpkgs.lib.flatten (
+              builtins.map (system:
+                nixpkgs.lib.imap1 (idx: hypervisor: {
+                  name = "${system}-${hypervisor}-example-with-tap";
+                  value = makeExample {
+                    inherit system hypervisor;
+                    config = _: {
+                      microvm.interfaces = [ {
+                        type = "tap";
+                        id = "vm-${builtins.substring 0 4 hypervisor}";
+                        mac = "02:00:00:01:01:0${toString idx}";
+                      } ];
+                      networking = {
+                        interfaces.eth0.useDHCP = true;
+                        firewall.allowedTCPPorts = [ 22 ];
+                      };
+                      services.openssh = {
+                        enable = true;
+                        settings.PermitRootLogin = "yes";
                       };
                     };
                   };
-                  n = n + 1;
-                }
-              ) results self.lib.hypervisors
-            ) { result = {}; n = 1; } systems).result;
+                  shouldInclude = builtins.elem hypervisor hypervisorsWithTap
+                    && hypervisorSupportsSystem hypervisor system;
+                }) self.lib.hypervisors
+              ) systems
+            );
+
+            included = builtins.filter (ex: ex.shouldInclude) (basicExamples ++ tapExamples);
+          in
+            builtins.listToAttrs (builtins.map ({ name, value, ... }: { inherit name value; }) included);
       };
 }
