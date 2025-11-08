@@ -164,6 +164,8 @@
             ];
             hypervisorsWithUserNet = [ "qemu" "kvmtool" "vfkit" ];
             hypervisorsDarwinOnly = [ "vfkit" ];
+            # Hypervisors that work on darwin (qemu via HVF, vfkit natively)
+            hypervisorsOnDarwin = [ "qemu" "vfkit" ];
             hypervisorsWithTap = builtins.filter
               # vfkit supports networking, but does not support tap
               (hv: hv != "vfkit")
@@ -172,8 +174,9 @@
             isDarwinOnly = hypervisor: builtins.elem hypervisor hypervisorsDarwinOnly;
             isDarwinSystem = system: nixpkgs.lib.hasSuffix "-darwin" system;
             hypervisorSupportsSystem = hypervisor: system:
-              # Darwin-only hypervisors only work on darwin, others work everywhere
-              !(isDarwinOnly hypervisor && !(isDarwinSystem system));
+              if isDarwinSystem system
+              then builtins.elem hypervisor hypervisorsOnDarwin
+              else !(isDarwinOnly hypervisor);
 
             makeExample = { system, hypervisor, config ? {} }:
               nixpkgs.lib.nixosSystem {
