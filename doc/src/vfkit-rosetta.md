@@ -21,48 +21,44 @@ Enable Rosetta in your MicroVM configuration:
       enable = true;
       # Optional: install Rosetta automatically if missing
       install = true;
+      # Optional: customize mount point (defaults to /run/rosetta)
+      mountPoint = "/run/rosetta";
     };
   };
 }
 ```
 
-## Guest Setup
+The NixOS module automatically handles mounting the Rosetta virtiofs share and configuring binfmt to use Rosetta for x86_64 binaries. No additional guest configuration is required.
 
-After enabling Rosetta, you need to mount the share and configure binfmt in your guest:
+## Usage
+
+Once configured, you can run any x86_64 binary in your ARM64 VM. To verify Rosetta is working:
 
 ```nix
-{
-  # Mount the Rosetta share
-  fileSystems."/mnt/rosetta" = {
-    device = "rosetta";
-    fsType = "virtiofs";
-  };
-
-  # Configure binfmt to use Rosetta for x86_64 binaries
-  boot.binfmt.registrations.rosetta = {
-    interpreter = "/mnt/rosetta/rosetta";
-    magicOrExtension = ''\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x3e\x00'';
-    mask = ''\xff\xff\xff\xff\xff\xfe\xfe\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff'';
-  };
-}
+# Add an x86_64 package to your configuration
+environment.systemPackages = with pkgs; [
+  file  # to verify binary architecture
+  (pkgsCross.gnu64.hello)  # x86_64 version of hello
+];
 ```
 
-## Testing
-
-Once configured, you can verify Rosetta is working:
+Then in the VM:
 
 ```bash
-# Inside the VM
+# Verify you're running on ARM64
 uname -m
-# Should show: aarch64
+# Output: aarch64
 
-# Try running an x86_64 binary (if you have one)
-file /path/to/x86_64/binary
-# Should show: ELF 64-bit LSB executable, x86-64
+# Check the binary architecture
+file $(which hello)
+# Output: ELF 64-bit LSB executable, x86-64, ...
 
-/path/to/x86_64/binary
-# Should run successfully via Rosetta
+# Run the x86_64 binary via Rosetta
+hello
+# Output: Hello, world!
 ```
+
+You can use `pkgsCross.gnu64.<package>` to cross-compile any package from nixpkgs to x86_64 and run it via Rosetta.
 
 ## Options Reference
 
@@ -70,6 +66,7 @@ file /path/to/x86_64/binary
 |--------|------|---------|-------------|
 | `microvm.vfkit.rosetta.enable` | bool | `false` | Enable Rosetta support |
 | `microvm.vfkit.rosetta.mountTag` | string | `"rosetta"` | Mount tag for the virtiofs share |
+| `microvm.vfkit.rosetta.mountPoint` | string | `"/run/rosetta"` | Directory where Rosetta will be mounted in the guest |
 | `microvm.vfkit.rosetta.install` | bool | `false` | Auto-install Rosetta if missing |
 | `microvm.vfkit.rosetta.ignoreIfMissing` | bool | `false` | Continue if Rosetta unavailable |
 

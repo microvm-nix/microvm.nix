@@ -110,18 +110,17 @@
             nixpkgs.lib.concatMap (configName:
               let
                 config = self.nixosConfigurations.${configName};
-                packageName = builtins.replaceStrings [ "${system}-" ] [ "" ] configName;
+                packageName = nixpkgs.lib.replaceString "${system}-" "" configName;
                 # Check if this config's guest system matches our current build system
                 # (accounting for darwin hosts building linux guests)
                 guestSystem = config.pkgs.stdenv.hostPlatform.system;
                 buildSystem = nixpkgs.lib.replaceString "-darwin" "-linux" system;
               in
-              if guestSystem == buildSystem
-              then [{
+              nixpkgs.lib.optional (guestSystem == buildSystem)
+              {
                 name = packageName;
                 value = config.config.microvm.runner.${config.config.microvm.hypervisor};
-              }]
-              else []
+              }
             ) (builtins.attrNames self.nixosConfigurations)
           );
 
@@ -157,6 +156,8 @@
 
         nixosConfigurations =
           let
+            inherit (nixpkgs.lib) map;
+
             hypervisorsWith9p = [
               "qemu"
               # currently broken:
@@ -238,8 +239,8 @@
               };
 
             basicExamples = nixpkgs.lib.flatten (
-              builtins.map (system:
-                builtins.map (hypervisor: {
+              map (system:
+                map (hypervisor: {
                   name = "${system}-${hypervisor}-example";
                   value = makeExample { inherit system hypervisor; };
                   shouldInclude = hypervisorSupportsSystem hypervisor system;
@@ -248,7 +249,7 @@
             );
 
             tapExamples = nixpkgs.lib.flatten (
-              builtins.map (system:
+              map (system:
                 nixpkgs.lib.imap1 (idx: hypervisor: {
                   name = "${system}-${hypervisor}-example-with-tap";
                   value = makeExample {

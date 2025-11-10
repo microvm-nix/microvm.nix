@@ -15,7 +15,7 @@ let
   inherit (microvmConfig)
     hostName vcpu mem user interfaces volumes shares socket
     storeOnDisk kernel initrdPath storeDisk kernelParams
-    devices credentialFiles vsock graphics;
+    balloon devices credentialFiles vsock graphics;
 
   inherit (microvmConfig.vfkit) extraArgs logLevel rosetta;
 
@@ -25,63 +25,57 @@ let
   kernelPath = "${kernel.out}/${pkgs.stdenv.hostPlatform.linux-kernel.target}";
 
   kernelConsole = if graphics.enable then "tty0" else "hvc0";
-  kernelCmdLine = "console=${kernelConsole} reboot=t panic=-1 ${toString kernelParams}";
+
+  kernelCmdLine = [ "console=${kernelConsole}" "reboot=t" "panic=-1" ] ++ kernelParams;
 
   bootloaderArgs = [
     "--bootloader"
-    "linux,kernel=${kernelPath},initrd=${initrdPath},cmdline=\"${kernelCmdLine}\""
+    "linux,kernel=${kernelPath},initrd=${initrdPath},cmdline=\"${builtins.concatStringsSep " " kernelCmdLine}\""
   ];
 
   deviceArgs =
-    [ "--device" "virtio-rng" ]
-    ++
-    (if graphics.enable then [
+    [
+      "--device" "virtio-rng"
+    ]
+    ++ (if graphics.enable then [
       "--device" "virtio-gpu"
       "--device" "virtio-input,keyboard"
       "--device" "virtio-input,pointing"
     ] else [
       "--device" "virtio-serial,stdio"
     ])
-    ++
-    (builtins.concatMap ({ image, ... }: [
+    ++ (builtins.concatMap ({ image, ... }: [
       "--device" "virtio-blk,path=${image}"
     ]) volumesWithLetters)
-    ++
-    (builtins.concatMap ({ proto, source, tag, ... }:
+    ++ (builtins.concatMap ({ proto, source, tag, ... }:
       if proto == "virtiofs" then [
         "--device" "virtio-fs,sharedDir=${source},mountTag=${tag}"
       ]
-      else if proto == "9p" then
-        throw "vfkit does not support 9p shares on macOS. Use proto = \"virtiofs\" instead."
       else
-        throw "Unknown share protocol: ${proto}"
+        throw "vfkit does not support ${proto} share. Use proto = \"virtiofs\" instead."
     ) shares)
-    ++
-    (builtins.concatMap ({ type, id, mac, ... }:
+    ++ (builtins.concatMap ({ type, id, mac, ... }:
       if type == "user" then [
         "--device" "virtio-net,nat,mac=${mac}"
       ]
-      else if type == "tap" then
-        throw "vfkit does not support tap networking on macOS. Use type = \"user\" for NAT networking."
       else if type == "bridge" then
         throw "vfkit bridge networking requires vmnet-helper which is not yet implemented. Use type = \"user\" for NAT networking."
-      else if type == "macvtap" then
-        throw "vfkit does not support macvtap networking on macOS. Use type = \"user\" for NAT networking."
       else
-        throw "Unknown network interface type: ${type}"
+        throw "vfkit does not support ${type} networking on macOS. Use type = \"user\" for NAT networking."
     ) interfaces)
-    ++
-    lib.optionals rosetta.enable (
+    ++ lib.optionals rosetta.enable (
       let
-        rosettaArgs = "rosetta,mountTag=${rosetta.mountTag}"
-          + lib.optionalString rosetta.install ",install"
-          + lib.optionalString rosetta.ignoreIfMissing ",ignoreIfMissing";
+        rosettaArgs = builtins.concatStringsSep "," (
+          [ "rosetta" "mountTag=${rosetta.mountTag}" ]
+          ++ lib.optional rosetta.install "install"
+          ++ lib.optional rosetta.ignoreIfMissing "ignoreIfMissing"
+        );
       in
       [ "--device" rosettaArgs ]
     );
 
   allArgsWithoutSocket = [
-    "${vfkit}/bin/vfkit"
+    "${lib.getExe vfkit}"
     "--cpus" (toString vcpu)
     "--memory" (toString mem)
   ]
