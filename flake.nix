@@ -106,18 +106,23 @@
             };
           } //
           # wrap self.nixosConfigurations in executable packages
-          builtins.foldl' (result: systemName:
-            let
-              nixos = self.nixosConfigurations.${systemName};
-              name = builtins.replaceStrings [ "${system}-" ] [ "" ] systemName;
-              inherit (nixos.config.microvm) hypervisor;
-            in
-              if nixos.pkgs.stdenv.hostPlatform.system == nixpkgs.lib.replaceString "-darwin" "-linux" system
-              then result // {
-                "${name}" = nixos.config.microvm.runner.${hypervisor};
+          nixpkgs.lib.listToAttrs (
+            nixpkgs.lib.concatMap (configName:
+              let
+                config = self.nixosConfigurations.${configName};
+                packageName = nixpkgs.lib.replaceString "${system}-" "" configName;
+                # Check if this config's guest system matches our current build system
+                # (accounting for darwin hosts building linux guests)
+                guestSystem = config.pkgs.stdenv.hostPlatform.system;
+                buildSystem = nixpkgs.lib.replaceString "-darwin" "-linux" system;
+              in
+              nixpkgs.lib.optional (guestSystem == buildSystem)
+              {
+                name = packageName;
+                value = config.config.microvm.runner.${config.config.microvm.hypervisor};
               }
-              else result
-          ) {} (builtins.attrNames self.nixosConfigurations);
+            ) (builtins.attrNames self.nixosConfigurations)
+          );
 
         # Takes too much memory in `nix flake show`
         # checks = import ./checks { inherit self nixpkgs system; };
@@ -151,12 +156,29 @@
 
         nixosConfigurations =
           let
+            inherit (nixpkgs.lib) map;
+
             hypervisorsWith9p = [
               "qemu"
               # currently broken:
               # "crosvm"
             ];
-            hypervisorsWithUserNet = [ "qemu" "kvmtool" ];
+            hypervisorsWithUserNet = [ "qemu" "kvmtool" "vfkit" ];
+            hypervisorsDarwinOnly = [ "vfkit" ];
+            # Hypervisors that work on darwin (qemu via HVF, vfkit natively)
+            hypervisorsOnDarwin = [ "qemu" "vfkit" ];
+            hypervisorsWithTap = builtins.filter
+              # vfkit supports networking, but does not support tap
+              (hv: hv != "vfkit")
+              self.lib.hypervisorsWithNetwork;
+
+            isDarwinOnly = hypervisor: builtins.elem hypervisor hypervisorsDarwinOnly;
+            isDarwinSystem = system: nixpkgs.lib.hasSuffix "-darwin" system;
+            hypervisorSupportsSystem = hypervisor: system:
+              if isDarwinSystem system
+              then builtins.elem hypervisor hypervisorsOnDarwin
+              else !(isDarwinOnly hypervisor);
+
             makeExample = { system, hypervisor, config ? {} }:
               nixpkgs.lib.nixosSystem {
                 system = nixpkgs.lib.replaceString "-darwin" "-linux" system;
@@ -172,12 +194,21 @@
                     nixpkgs.overlays = [ self.overlay ];
                     microvm = {
                       inherit hypervisor;
-                      # share the host's /nix/store if the hypervisor can do 9p
-                      shares = lib.optional (builtins.elem hypervisor hypervisorsWith9p) {
-                        tag = "ro-store";
-                        source = "/nix/store";
-                        mountPoint = "/nix/.ro-store";
-                      };
+                      # share the host's /nix/store if the hypervisor supports it
+                      shares =
+                        if builtins.elem hypervisor hypervisorsWith9p then [{
+                          tag = "ro-store";
+                          source = "/nix/store";
+                          mountPoint = "/nix/.ro-store";
+                          proto = "9p";
+                        }]
+                        else if hypervisor == "vfkit" then [{
+                          tag = "ro-store";
+                          source = "/nix/store";
+                          mountPoint = "/nix/.ro-store";
+                          proto = "virtiofs";
+                        }]
+                        else [];
                       # writableStoreOverlay = "/nix/.rw-store";
                       # volumes = [ {
                       #   image = "nix-store-overlay.img";
@@ -206,22 +237,28 @@
                   config
                 ];
               };
-          in
-            (builtins.foldl' (results: system:
-              builtins.foldl' ({ result, n }: hypervisor: {
-                result = result // {
-                  "${system}-${hypervisor}-example" = makeExample {
-                    inherit system hypervisor;
-                  };
-                } //
-                nixpkgs.lib.optionalAttrs (builtins.elem hypervisor self.lib.hypervisorsWithNetwork) {
-                  "${system}-${hypervisor}-example-with-tap" = makeExample {
+
+            basicExamples = nixpkgs.lib.flatten (
+              map (system:
+                map (hypervisor: {
+                  name = "${system}-${hypervisor}-example";
+                  value = makeExample { inherit system hypervisor; };
+                  shouldInclude = hypervisorSupportsSystem hypervisor system;
+                }) self.lib.hypervisors
+              ) systems
+            );
+
+            tapExamples = nixpkgs.lib.flatten (
+              map (system:
+                nixpkgs.lib.imap1 (idx: hypervisor: {
+                  name = "${system}-${hypervisor}-example-with-tap";
+                  value = makeExample {
                     inherit system hypervisor;
                     config = _: {
                       microvm.interfaces = [ {
                         type = "tap";
                         id = "vm-${builtins.substring 0 4 hypervisor}";
-                        mac = "02:00:00:01:01:0${toString n}";
+                        mac = "02:00:00:01:01:0${toString idx}";
                       } ];
                       networking = {
                         interfaces.eth0.useDHCP = true;
@@ -233,9 +270,14 @@
                       };
                     };
                   };
-                };
-                n = n + 1;
-              }) results self.lib.hypervisors
-            ) { result = {}; n = 1; } systems).result;
+                  shouldInclude = builtins.elem hypervisor hypervisorsWithTap
+                    && hypervisorSupportsSystem hypervisor system;
+                }) self.lib.hypervisors
+              ) systems
+            );
+
+            included = builtins.filter (ex: ex.shouldInclude) (basicExamples ++ tapExamples);
+          in
+            builtins.listToAttrs (builtins.map ({ name, value, ... }: { inherit name value; }) included);
       };
 }
