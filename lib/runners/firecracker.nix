@@ -95,7 +95,9 @@ in {
         then socket
         else throw "Firecracker must be configured with an API socket (option microvm.socket)!"
       )
-    ] ++ lib.optional (lib.versionAtLeast pkgs.firecracker.version "1.13.0") "--enable-pci");
+    ]
+    ++ lib.optional (lib.versionAtLeast pkgs.firecracker.version "1.13.0") "--enable-pci")
+    ++ microvmConfig.firecracker.extraArgs;
 
   preStart = ''
     ${preStart}
