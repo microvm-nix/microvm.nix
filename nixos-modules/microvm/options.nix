@@ -590,6 +590,12 @@ in
       description = "Custom CPU template passed to firecracker.";
     };
 
+    firecracker.extraArgs = mkOption {
+      type = with types; listOf str;
+      default = [];
+      description = "Extra arguments to pass to firecracker.";
+    };
+
     firecracker.extraConfig = mkOption {
       type = types.attrs;
       default = {};

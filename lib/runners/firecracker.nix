@@ -87,7 +87,7 @@ in {
     then throw "hotpluggedMem not implemented for Firecracker"
     else if credentialFiles != {}
     then throw "credentialFiles are not implemented for Firecracker"
-    else lib.escapeShellArgs [
+    else lib.escapeShellArgs ([
       "${pkgs.firecracker}/bin/firecracker"
       "--config-file" configFile
       "--api-sock" (
@@ -95,7 +95,7 @@ in {
         then socket
         else throw "Firecracker must be configured with an API socket (option microvm.socket)!"
       )
-    ];
+    ] ++ microvmConfig.firecracker.extraArgs);
 
   preStart = ''
     ${preStart}
