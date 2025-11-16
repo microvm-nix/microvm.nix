@@ -52,7 +52,7 @@
                     ../microvm
                   ] ++ (map (x: x.value) defs);
                 prefix = [ "microvm" "vms" name "config" ];
-                inherit (config) specialArgs pkgs;
+                inherit (config) extraModules specialArgs pkgs;
                 system =
                   if config.pkgs != null then
                     config.pkgs.stdenv.hostPlatform.system
@@ -99,6 +99,23 @@
               A set of special arguments to be passed to NixOS modules.
               This will be merged into the `specialArgs` used to evaluate
               the NixOS configurations.
+            '';
+          };
+
+          extraModules = mkOption {
+            type = types.listOf types.deferredModule;
+            default = [];
+            description = ''
+              This option is only respected when `config` is specified.
+
+              A list of additional NixOS modules to be merged into
+              the MicroVM's system configuration.
+            '';
+            defaultText = literalExpression ''
+              [
+                flakeInputs.some-project.nixosModules.example
+                flakeInputs.another-project.nixosModules.default
+              ]
             '';
           };
 
