@@ -53,10 +53,10 @@
                   ] ++ (map (x: x.value) defs);
                 prefix = [ "microvm" "vms" name "config" ];
                 inherit (config) specialArgs pkgs;
-                system = 
-                  if config.pkgs != null then 
+                system =
+                  if config.pkgs != null then
                     config.pkgs.stdenv.hostPlatform.system
-                  else 
+                  else
                     pkgs.stdenv.hostPlatform.system;
               });
             });
