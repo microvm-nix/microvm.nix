@@ -20,7 +20,7 @@ let
   }.${system};
 
   # Firecracker config, as JSON in `configFile`
-  config = {
+  baseConfig = {
     boot-source = {
       kernel_image_path = kernelPath;
       initrd_path = initrdPath;
@@ -65,6 +65,7 @@ let
   } // lib.optionalAttrs (cpu != null) {
     cpu-config = pkgs.writeText "cpu-config.json" (builtins.toJSON cpu);
   };
+  config = lib.recursiveUpdate baseConfig microvmConfig.firecracker.extraConfig;
 
   configFile = pkgs.writers.writeJSON "firecracker-${hostName}.json" config;
 
@@ -86,7 +87,7 @@ in {
     then throw "hotpluggedMem not implemented for Firecracker"
     else if credentialFiles != {}
     then throw "credentialFiles are not implemented for Firecracker"
-    else lib.escapeShellArgs [
+    else lib.escapeShellArgs ([
       "${pkgs.firecracker}/bin/firecracker"
       "--config-file" configFile
       "--api-sock" (
@@ -94,7 +95,7 @@ in {
         then socket
         else throw "Firecracker must be configured with an API socket (option microvm.socket)!"
       )
-    ];
+    ] ++ microvmConfig.firecracker.extraArgs);
 
   preStart = ''
     ${preStart}
