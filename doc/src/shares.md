@@ -10,7 +10,7 @@ In `microvm.shares` elements the `proto` field allows either of two
 values:
 
 - `9p` (default) is built into many hypervisors, allowing you to
-  quickly share a directory tree
+  quickly share a directory tree. Not supported by vfkit on macOS.
 
 - `virtiofs` requires a separate virtiofsd service which is started as
   a prerequisite when you start MicroVMs through a systemd service
@@ -20,6 +20,9 @@ values:
   separately.
 
   Expect `virtiofs` to yield better performance over `9p`.
+
+  **Note:** vfkit (macOS) has built-in virtiofs support and does not
+  require a separate virtiofsd service.
 
 ```nix
 microvm.shares = [ {

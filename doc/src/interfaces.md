@@ -20,11 +20,14 @@ configuration:
 
 ## `type = "user"`
 
-User-mode networking is only provided by qemu and kvmtool, providing
+User-mode networking is provided by qemu, kvmtool, and vfkit, providing
 outgoing connectivity to your MicroVM without any further setup.
 
 As kvmtool seems to lack a built-in DHCP server, additional static IP
 configuration is necessary inside the MicroVM.
+
+**Note:** vfkit (macOS) only supports user-mode networking. TAP and bridge
+networking are not available.
 
 ## `type = "tap"`
 
