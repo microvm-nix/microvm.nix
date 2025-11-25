@@ -44,7 +44,7 @@
                     extraConfig = ({ lib, ... }: {
                       _file = "module at ${__curPos.file}:${toString __curPos.line}";
                       config = {
-                        networking.hostName = lib.mkDefault name;
+                        networking.fqdnOrHostName = lib.mkDefault name;
                       };
                     });
                   in [
