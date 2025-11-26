@@ -296,7 +296,7 @@ in
       type = with types; listOf (submodule {
         options = {
           type = mkOption {
-            type = enum [ "user" "tap" "macvtap" "bridge" ];
+            type = enum [ "user" "tap" "macvtap" "bridge" "vmnet-shared" ];
             description = ''
               Interface type
             '';
