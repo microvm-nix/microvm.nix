@@ -197,7 +197,21 @@ lib.warnIf (mem == 2048) ''
 
       "-chardev" "stdio,id=stdio,signal=off"
       "-device" "virtio-rng-${devType}"
-    ] ++
+    ])
+    + " " + # Move vfio-pci outside of escapeShellArgs
+    lib.concatStringsSep " " (lib.concatMap ({ bus, path, qemu,... }: {
+      pci = [
+        "-device" "vfio-pci,host=${path},multifunction=on${
+          # Allow to pass additional arguments to pci device
+          lib.optionalString (qemu.deviceExtraArgs != null) ",${qemu.deviceExtraArgs}"
+        }"
+      ];
+      usb = [
+        "-device" "usb-host,${path}"
+      ];
+    }.${bus}) devices)
+    + " " +
+    lib.escapeShellArgs(
     builtins.concatMap (fwCfgOption: ["-fw_cfg" fwCfgOption]) fwCfgOptions ++
     lib.optionals serialConsole [
       "-serial" "chardev:stdio"
@@ -241,7 +255,7 @@ lib.warnIf (mem == 2048) ''
     lib.optionals (user != null) [ "-user" user ] ++
     lib.optionals (socket != null) [ "-qmp" "unix:${socket},server,nowait" ] ++
     lib.optionals balloon [
-	 "-device" ("virtio-balloon,free-page-reporting=on,id=balloon0" + lib.optionalString (deflateOnOOM) ",deflate-on-oom=on")
+	    "-device" ("virtio-balloon,free-page-reporting=on,id=balloon0" + lib.optionalString (deflateOnOOM) ",deflate-on-oom=on")
     ] ++
     builtins.concatMap ({ image, letter, serial, direct, readOnly, ... }:
       [ "-drive"
@@ -328,19 +342,7 @@ lib.warnIf (mem == 2048) ''
     ]
     ++
     extraArgs
-  )
-  + " " + # Move vfio-pci outside of
-  lib.concatStringsSep " " (lib.concatMap ({ bus, path, qemu,... }: {
-    pci = [
-      "-device" "vfio-pci,host=${path},multifunction=on${
-        # Allow to pass additional arguments to pci device
-        lib.optionalString (qemu.deviceExtraArgs != null) ",${qemu.deviceExtraArgs}"
-      }"
-    ];
-    usb = [
-      "-device" "usb-host,${path}"
-    ];
-  }.${bus}) devices);
+  );
 
   canShutdown = socket != null;
 
