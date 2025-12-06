@@ -275,6 +275,23 @@ null or unspecified value</p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/host/options.nix">microvm.nix/nixos-modules/host/options.nix</a></li>
 </ul>
+<h2 id="microvmvmsnameextramodules"><a class="header" href="#microvmvmsnameextramodules">microvm.vms.&lt;name&gt;.extraModules</a></h2>
+<p>This option is only respected when <code>config</code> is specified.</p>
+<p>A list of additional NixOS modules to be merged into
+the MicroVM’s system configuration.</p>
+<p><em>Type:</em>
+list of module</p>
+<p><em>Default:</em></p>
+<pre><code>[
+  flakeInputs.some-project.nixosModules.example
+  flakeInputs.another-project.nixosModules.default
+]
+
+</code></pre>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/host/options.nix">microvm.nix/nixos-modules/host/options.nix</a></li>
+</ul>
 <h2 id="microvmvmsnameflake"><a class="header" href="#microvmvmsnameflake">microvm.vms.&lt;name&gt;.flake</a></h2>
 <p>Source flake for declarative build</p>
 <p><em>Type:</em>
