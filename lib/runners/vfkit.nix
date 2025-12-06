@@ -137,7 +137,7 @@ in
     then ''
       SOCKET_ABS="${lib.escapeShellArg socket}"
       [[ "$SOCKET_ABS" != /* ]] && SOCKET_ABS="$PWD/$SOCKET_ABS"
-      echo '{"state": "Stop"}' | ${vmHostPackages.socat}/bin/socat - "UNIX-CONNECT:$SOCKET_ABS"
+      echo '{"state": "Stop"}' | ${lib.getExe vmHostPackages.socat} - "UNIX-CONNECT:$SOCKET_ABS"
     ''
     else throw "Cannot shutdown without socket";
 
