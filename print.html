@@ -740,6 +740,26 @@ one of “Async”, “Sync”</p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
 </ul>
+<h2 id="microvmfirecrackerextraargs"><a class="header" href="#microvmfirecrackerextraargs">microvm.firecracker.extraArgs</a></h2>
+<p>Extra arguments to pass to firecracker.</p>
+<p><em>Type:</em>
+list of string</p>
+<p><em>Default:</em>
+<code>[ ]</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmfirecrackerextraconfig"><a class="header" href="#microvmfirecrackerextraconfig">microvm.firecracker.extraConfig</a></h2>
+<p>Extra config to merge into Firecracker JSON configuration</p>
+<p><em>Type:</em>
+open submodule of (JSON value)</p>
+<p><em>Default:</em>
+<code>{ }</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
 <h2 id="microvmforwardports"><a class="header" href="#microvmforwardports">microvm.forwardPorts</a></h2>
 <p>When using the SLiRP user networking (default), this option allows to
 forward ports to/from the host/guest.</p>
