@@ -16,8 +16,8 @@ available for customization. These are the most important ones:
 | `microvm.user`                 | (qemu only) User account which Qemu will switch to when started as root                             |
 | `microvm.forwardPorts`         | (qemu user-networking only) TCP/UDP port forwarding                                                 |
 | `microvm.vfkit.extraArgs`      | (vfkit only) Extra arguments to pass to vfkit                                                       |
-| `microvm.vfkit.logLevel`       | (vfkit only) Log level: "debug", "info", or "error" (default: "info")                              |
-| `microvm.vfkit.rosetta.enable` | (vfkit only) Enable Rosetta for running x86_64 binaries on ARM64 (Apple Silicon only)              |
+| `microvm.vfkit.logLevel`       | (vfkit only) Log level: "debug", "info", or "error" (default: "info")                               |
+| `microvm.vfkit.rosetta.enable` | (vfkit only) Enable Rosetta for running x86_64 binaries on ARM64 (Apple Silicon only)               |
 | `microvm.kernelParams`         | Like `boot.kernelParams` but will not end up in `system.build.toplevel`, saving you rebuilds        |
 | `microvm.storeOnDisk`          | Enables the store on the boot squashfs even in the presence of a share with the host's `/nix/store` |
 | `microvm.writableStoreOverlay` | Optional string of the path where all writes to `/nix/store` should go to.                          |

@@ -36,7 +36,7 @@ Once configured, you can run any x86_64 binary in your ARM64 VM. To verify Roset
 # Add an x86_64 package to your configuration
 environment.systemPackages = with pkgs; [
   file  # to verify binary architecture
-  (pkgsCross.gnu64.hello)  # x86_64 version of hello
+  pkgsCross.gnu64.hello  # x86_64 version of hello
 ];
 ```
 
@@ -60,10 +60,10 @@ You can use `pkgsCross.gnu64.<package>` to cross-compile any package from nixpkg
 
 ## Options Reference
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `microvm.vfkit.rosetta.enable` | bool | `false` | Enable Rosetta support |
-| `microvm.vfkit.rosetta.install` | bool | `false` | Auto-install Rosetta if missing |
+| Option                                  | Type | Default | Description                     |
+|-----------------------------------------|------|---------|---------------------------------|
+| `microvm.vfkit.rosetta.enable`          | bool | `false` | Enable Rosetta support          |
+| `microvm.vfkit.rosetta.install`         | bool | `false` | Auto-install Rosetta if missing |
 | `microvm.vfkit.rosetta.ignoreIfMissing` | bool | `false` | Continue if Rosetta unavailable |
 
 ## Limitations
