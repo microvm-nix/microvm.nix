@@ -603,7 +603,9 @@ in
     };
 
     firecracker.extraConfig = mkOption {
-      type = types.attrs;
+      type = types.submodule {
+        freeformType = (pkgs.formats.json {}).type;
+      };
       default = {};
       description = "Extra config to merge into Firecracker JSON configuration";
     };
