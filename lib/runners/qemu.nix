@@ -54,7 +54,7 @@ let
     else "threads";
 
   inherit (microvmConfig) hostName vcpu mem balloon initialBalloonMem deflateOnOOM hotplugMem hotpluggedMem user interfaces shares socket forwardPorts devices vsock graphics storeOnDisk kernel initrdPath storeDisk credentialFiles;
-  inherit (microvmConfig.qemu) machine extraArgs serialConsole;
+  inherit (microvmConfig.qemu) machine extraArgs serialConsole pcieRootPorts;
 
 
   volumes = withDriveLetters microvmConfig;
@@ -197,11 +197,24 @@ lib.warnIf (mem == 2048) ''
 
       "-chardev" "stdio,id=stdio,signal=off"
       "-device" "virtio-rng-${devType}"
-    ])
+    ] ++
+      # Create PCIe root ports before vfio-pci devices that might require them
+      builtins.concatMap ({ id, bus, chassis, slot, addr, ... }:
+        [ "-device" "pcie-root-port,id=${id}${
+            lib.optionalString (bus != null) ",bus=${bus}" +
+            lib.optionalString (chassis != null) ",chassis=${toString chassis}" +
+            lib.optionalString (slot != null) ",slot=${slot}" +
+            lib.optionalString (addr != null) ",addr=${addr}"
+          }"
+        ]
+      ) pcieRootPorts
+    )
     + " " + # Move vfio-pci outside of escapeShellArgs
     lib.concatStringsSep " " (lib.concatMap ({ bus, path, qemu,... }: {
       pci = [
         "-device" "vfio-pci,host=${path},multifunction=on${
+          lib.optionalString (qemu.id != null) ",id=${qemu.id}" +
+          lib.optionalString (qemu.bus != null) ",bus=${qemu.bus}" +
           # Allow to pass additional arguments to pci device
           lib.optionalString (qemu.deviceExtraArgs != null) ",${qemu.deviceExtraArgs}"
         }"

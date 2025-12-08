@@ -421,12 +421,28 @@ in
               Identification of the device on its bus
             '';
           };
-          qemu.deviceExtraArgs = mkOption {
-            type =  with types; nullOr str;
-            default = null;
-            description = ''
-              Device additional arguments (optional)
-            '';
+          qemu = {
+            id = mkOption {
+              type = nullOr str;
+              default = null;
+              description = ''
+                QEMU device identifier (optional)
+              '';
+            };
+            bus = mkOption {
+              type = nullOr str;
+              default = null;
+              description = ''
+                QEMU bus to which this device is attached (optional)
+              '';
+            };
+            deviceExtraArgs = mkOption {
+              type =  nullOr str;
+              default = null;
+              description = ''
+                Device additional arguments (optional)
+              '';
+            };
           };
         };
       });
@@ -557,6 +573,64 @@ in
       description = ''
         Whether to enable the virtual serial console on qemu.
       '';
+    };
+
+    qemu.pcieRootPorts = mkOption {
+      description = ''
+        A list of PCIe root ports that can be used for hot-plugging PCIe devices.
+        This is particularly useful on the Q35 machine type, which does not support
+        hot-plugging on the base PCIe root bus (pcie.0). Creating root ports allows
+        attaching and detaching PCIe devices at runtime and can also be useful for
+        devices that require their own dedicated PCIe slot with a fixed address, etc.
+        For additional details see the QEMU PCI Express Guidelines:
+        <https://gitlab.com/qemu-project/qemu/-/blob/master/docs/pcie.txt>
+      '';
+      default = [];
+      example = literalExpression /* nix */ ''
+        [ {
+          bus = "pcie.0";
+          id = "pci_port_0";
+          chassis = 0;
+        } ]
+      '';
+      type = with types; listOf (submodule {
+        options = {
+          id = mkOption {
+            type = str;
+            description = ''
+              A unique identifier for this PCIe root port.
+            '';
+          };
+          bus = mkOption {
+            type = nullOr str;
+            default = null;
+            description = ''
+              The PCIe bus on which the root port will be created.
+            '';
+          };
+          chassis = mkOption {
+            type = nullOr int;
+            default = null;
+            description = ''
+              The chassis number associated with this PCIe root port.
+            '';
+          };
+          slot = mkOption {
+            type = nullOr str;
+            default = null;
+            description = ''
+              PCIe slot number.
+            '';
+          };
+          addr = mkOption {
+            type = nullOr str;
+            default = null;
+            description = ''
+              PCIe address on the parent bus.
+            '';
+          };
+        };
+      });
     };
 
     cloud-hypervisor.platformOEMStrings = mkOption {
