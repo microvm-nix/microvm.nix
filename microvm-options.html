@@ -573,9 +573,9 @@ boolean</p>
 </ul>
 <h2 id="microvmhypervisor"><a class="header" href="#microvmhypervisor">microvm.hypervisor</a></h2>
 <p>Which hypervisor to use for this MicroVM</p>
-<p>Choose one of: qemu, cloud-hypervisor, firecracker, crosvm, kvmtool, stratovirt, alioth</p>
+<p>Choose one of: qemu, cloud-hypervisor, firecracker, crosvm, kvmtool, stratovirt, alioth, vfkit</p>
 <p><em>Type:</em>
-one of “qemu”, “cloud-hypervisor”, “firecracker”, “crosvm”, “kvmtool”, “stratovirt”, “alioth”</p>
+one of “qemu”, “cloud-hypervisor”, “firecracker”, “crosvm”, “kvmtool”, “stratovirt”, “alioth”, “vfkit”</p>
 <p><em>Default:</em>
 <code>"qemu"</code></p>
 <p><em>Declared by:</em></p>
@@ -960,6 +960,61 @@ positive integer, meaning &gt;0</p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
 </ul>
+<h2 id="microvmvfkitextraargs"><a class="header" href="#microvmvfkitextraargs">microvm.vfkit.extraArgs</a></h2>
+<p>Extra arguments to pass to vfkit.</p>
+<p><em>Type:</em>
+list of string</p>
+<p><em>Default:</em>
+<code>[ ]</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmvfkitloglevel"><a class="header" href="#microvmvfkitloglevel">microvm.vfkit.logLevel</a></h2>
+<p>vfkit log level.</p>
+<p><em>Type:</em>
+null or one of “debug”, “info”, “error”</p>
+<p><em>Default:</em>
+<code>"info"</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmvfkitrosettaenable"><a class="header" href="#microvmvfkitrosettaenable">microvm.vfkit.rosetta.enable</a></h2>
+<p>Enable Rosetta support for running x86_64 binaries in ARM64 Linux VMs.
+Only works on Apple Silicon (ARM) Macs.</p>
+<p>When enabled, the Rosetta virtiofs share will be automatically mounted
+and binfmt will be configured to use Rosetta for x86_64 binaries.</p>
+<p><em>Type:</em>
+boolean</p>
+<p><em>Default:</em>
+<code>false</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmvfkitrosettaignoreifmissing"><a class="header" href="#microvmvfkitrosettaignoreifmissing">microvm.vfkit.rosetta.ignoreIfMissing</a></h2>
+<p>Continue execution even if Rosetta installation fails or is unavailable.
+Useful for configurations that should work on both ARM and Intel Macs.</p>
+<p><em>Type:</em>
+boolean</p>
+<p><em>Default:</em>
+<code>false</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmvfkitrosettainstall"><a class="header" href="#microvmvfkitrosettainstall">microvm.vfkit.rosetta.install</a></h2>
+<p>Automatically install Rosetta if missing.
+If false and Rosetta is not installed, vfkit will fail to start.</p>
+<p><em>Type:</em>
+boolean</p>
+<p><em>Default:</em>
+<code>false</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
 <h2 id="microvmvirtiofsdextraargs"><a class="header" href="#microvmvirtiofsdextraargs">microvm.virtiofsd.extraArgs</a></h2>
 <p>Extra command-line switch to pass to virtiofsd.</p>
 <p><em>Type:</em>
@@ -1163,7 +1218,7 @@ null or string</p>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="output-options.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="vfkit-rosetta.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
@@ -1177,7 +1232,7 @@ null or string</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="output-options.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="vfkit-rosetta.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 

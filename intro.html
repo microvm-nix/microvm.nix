@@ -181,9 +181,9 @@
                     <main>
                         <h1 id="intro"><a class="header" href="#intro">Intro</a></h1>
 <p><strong>microvm.nix</strong> is a Flake to run lightweight NixOS virtual machines
-on NixOS. Starting with the reasons why for the remainder of this
+on NixOS and macOS. Starting with the reasons why for the remainder of this
 chapter, this handbook guides you through the provisioning of MicroVMs
-on your NixOS machine.</p>
+on your NixOS or macOS machine.</p>
 <h2 id="compartmentalization"><a class="header" href="#compartmentalization">Compartmentalization</a></h2>
 <p>NixOS makes running services a breeze. Being able to quickly rollback
 configuration is a life-saver. Not so much however on systems that are
@@ -216,7 +216,8 @@ overhead has been reduced a lot by replacing emulated devices with
 <p>This Flake offers you to run your MicroVMs not only on QEMU but with
 other Hypervisors that have been explicitly authored for
 <em>virtio</em>. Some of them are written in Rust, a programming language
-that is renowned for being safer than C.</p>
+that is renowned for being safer than C. On macOS, vfkit leverages
+Apple's native Virtualization.framework for running Linux VMs.</p>
 
                     </main>
 

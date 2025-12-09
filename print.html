@@ -182,9 +182,9 @@
                     <main>
                         <h1 id="intro"><a class="header" href="#intro">Intro</a></h1>
 <p><strong>microvm.nix</strong> is a Flake to run lightweight NixOS virtual machines
-on NixOS. Starting with the reasons why for the remainder of this
+on NixOS and macOS. Starting with the reasons why for the remainder of this
 chapter, this handbook guides you through the provisioning of MicroVMs
-on your NixOS machine.</p>
+on your NixOS or macOS machine.</p>
 <h2 id="compartmentalization"><a class="header" href="#compartmentalization">Compartmentalization</a></h2>
 <p>NixOS makes running services a breeze. Being able to quickly rollback
 configuration is a life-saver. Not so much however on systems that are
@@ -217,7 +217,8 @@ overhead has been reduced a lot by replacing emulated devices with
 <p>This Flake offers you to run your MicroVMs not only on QEMU but with
 other Hypervisors that have been explicitly authored for
 <em>virtio</em>. Some of them are written in Rust, a programming language
-that is renowned for being safer than C.</p>
+that is renowned for being safer than C. On macOS, vfkit leverages
+Apple's native Virtualization.framework for running Linux VMs.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="declaring-nixos-microvms"><a class="header" href="#declaring-nixos-microvms">Declaring NixOS MicroVMs</a></h1>
 <p><img src="demo.gif" alt="Demo" /></p>
 <p>microvm.nix creates virtual machine disk images and runner script
@@ -264,6 +265,9 @@ available for customization. These are the most important ones:</p>
 <tr><td><code>microvm.socket</code></td><td>Control socket for the Hypervisor so that a MicroVM can be shutdown cleanly</td></tr>
 <tr><td><code>microvm.user</code></td><td>(qemu only) User account which Qemu will switch to when started as root</td></tr>
 <tr><td><code>microvm.forwardPorts</code></td><td>(qemu user-networking only) TCP/UDP port forwarding</td></tr>
+<tr><td><code>microvm.vfkit.extraArgs</code></td><td>(vfkit only) Extra arguments to pass to vfkit</td></tr>
+<tr><td><code>microvm.vfkit.logLevel</code></td><td>(vfkit only) Log level: "debug", "info", or "error" (default: "info")</td></tr>
+<tr><td><code>microvm.vfkit.rosetta.enable</code></td><td>(vfkit only) Enable Rosetta for running x86_64 binaries on ARM64 (Apple Silicon only)</td></tr>
 <tr><td><code>microvm.kernelParams</code></td><td>Like <code>boot.kernelParams</code> but will not end up in <code>system.build.toplevel</code>, saving you rebuilds</td></tr>
 <tr><td><code>microvm.storeOnDisk</code></td><td>Enables the store on the boot squashfs even in the presence of a share with the host's <code>/nix/store</code></td></tr>
 <tr><td><code>microvm.writableStoreOverlay</code></td><td>Optional string of the path where all writes to <code>/nix/store</code> should go to.</td></tr>
@@ -289,10 +293,12 @@ configuration:</p>
 }
 </code></pre>
 <h2 id="type--user"><a class="header" href="#type--user"><code>type = "user"</code></a></h2>
-<p>User-mode networking is only provided by qemu and kvmtool, providing
+<p>User-mode networking is provided by qemu, kvmtool, and vfkit, providing
 outgoing connectivity to your MicroVM without any further setup.</p>
 <p>As kvmtool seems to lack a built-in DHCP server, additional static IP
 configuration is necessary inside the MicroVM.</p>
+<p><strong>Note:</strong> vfkit (macOS) only supports user-mode networking. TAP and bridge
+networking are not available.</p>
 <h2 id="type--tap"><a class="header" href="#type--tap"><code>type = "tap"</code></a></h2>
 <p>Use a virtual tuntap Ethernet interface. Its name is the value of
 <code>id</code>.</p>
@@ -347,7 +353,7 @@ values:</p>
 <ul>
 <li>
 <p><code>9p</code> (default) is built into many hypervisors, allowing you to
-quickly share a directory tree</p>
+quickly share a directory tree. Not supported by vfkit on macOS.</p>
 </li>
 <li>
 <p><code>virtiofs</code> requires a separate virtiofsd service which is started as
@@ -356,6 +362,8 @@ that comes with the <code>microvm.nixosModules.host</code> module.</p>
 <p>If you want to run from the command-line, start <code>bin/virtiofsd-run</code>
 separately.</p>
 <p>Expect <code>virtiofs</code> to yield better performance over <code>9p</code>.</p>
+<p><strong>Note:</strong> vfkit (macOS) has built-in virtiofs support and does not
+require a separate virtiofsd service.</p>
 </li>
 </ul>
 <pre><code class="language-nix">microvm.shares = [ {
@@ -538,6 +546,65 @@ production. Any other NixOS configuration that evaluates the
 <code>microvm.hypervisor</code> option can be wrong when you pick from
 <code>microvm.runners</code> directly. One example would be the defaults set by
 <code>microvm.optimize</code>.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="using-rosetta-with-vfkit-on-apple-silicon"><a class="header" href="#using-rosetta-with-vfkit-on-apple-silicon">Using Rosetta with vfkit on Apple Silicon</a></h1>
+<p>Rosetta support enables running x86_64 (Intel) binaries in your ARM64 Linux VM on Apple Silicon Macs. This is useful for running legacy applications or development tools that haven't been ported to ARM yet.</p>
+<h2 id="requirements"><a class="header" href="#requirements">Requirements</a></h2>
+<ul>
+<li>Apple Silicon (M1/M2/M3/etc.) Mac</li>
+<li>macOS with Rosetta installed</li>
+<li>vfkit hypervisor</li>
+</ul>
+<h2 id="configuration"><a class="header" href="#configuration">Configuration</a></h2>
+<p>Enable Rosetta in your MicroVM configuration:</p>
+<pre><code class="language-nix">{
+  microvm = {
+    hypervisor = "vfkit";
+
+    vfkit.rosetta = {
+      enable = true;
+      # Optional: install Rosetta automatically if missing
+      install = true;
+    };
+  };
+}
+</code></pre>
+<p>The NixOS module automatically handles mounting the Rosetta virtiofs share and configuring binfmt to use Rosetta for x86_64 binaries. No additional guest configuration is required.</p>
+<h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
+<p>Once configured, you can run any x86_64 binary in your ARM64 VM. To verify Rosetta is working:</p>
+<pre><code class="language-nix"># Add an x86_64 package to your configuration
+environment.systemPackages = with pkgs; [
+  file  # to verify binary architecture
+  pkgsCross.gnu64.hello  # x86_64 version of hello
+];
+</code></pre>
+<p>Then in the VM:</p>
+<pre><code class="language-bash"># Verify you're running on ARM64
+uname -m
+# Output: aarch64
+
+# Check the binary architecture
+file $(which hello)
+# Output: ELF 64-bit LSB executable, x86-64, ...
+
+# Run the x86_64 binary via Rosetta
+hello
+# Output: Hello, world!
+</code></pre>
+<p>You can use <code>pkgsCross.gnu64.&lt;package&gt;</code> to cross-compile any package from nixpkgs to x86_64 and run it via Rosetta.</p>
+<h2 id="options-reference"><a class="header" href="#options-reference">Options Reference</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>microvm.vfkit.rosetta.enable</code></td><td>bool</td><td><code>false</code></td><td>Enable Rosetta support</td></tr>
+<tr><td><code>microvm.vfkit.rosetta.install</code></td><td>bool</td><td><code>false</code></td><td>Auto-install Rosetta if missing</td></tr>
+<tr><td><code>microvm.vfkit.rosetta.ignoreIfMissing</code></td><td>bool</td><td><code>false</code></td><td>Continue if Rosetta unavailable</td></tr>
+</tbody></table>
+</div>
+<h2 id="limitations"><a class="header" href="#limitations">Limitations</a></h2>
+<ul>
+<li>Only works on Apple Silicon Macs (M-series chips)</li>
+<li>vfkit will fail to start on Intel Macs if Rosetta is enabled</li>
+<li>Performance is slower than native ARM64 execution</li>
+<li>Not all x86_64 binaries may work perfectly</li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div><h2 id="microvmballoon"><a class="header" href="#microvmballoon">microvm.balloon</a></h2>
 <p>Whether to enable ballooning.</p>
 <p>By “inflating” or increasing the balloon the host can reduce the VMs
@@ -932,9 +999,9 @@ boolean</p>
 </ul>
 <h2 id="microvmhypervisor"><a class="header" href="#microvmhypervisor">microvm.hypervisor</a></h2>
 <p>Which hypervisor to use for this MicroVM</p>
-<p>Choose one of: qemu, cloud-hypervisor, firecracker, crosvm, kvmtool, stratovirt, alioth</p>
+<p>Choose one of: qemu, cloud-hypervisor, firecracker, crosvm, kvmtool, stratovirt, alioth, vfkit</p>
 <p><em>Type:</em>
-one of “qemu”, “cloud-hypervisor”, “firecracker”, “crosvm”, “kvmtool”, “stratovirt”, “alioth”</p>
+one of “qemu”, “cloud-hypervisor”, “firecracker”, “crosvm”, “kvmtool”, “stratovirt”, “alioth”, “vfkit”</p>
 <p><em>Default:</em>
 <code>"qemu"</code></p>
 <p><em>Declared by:</em></p>
@@ -1315,6 +1382,61 @@ null or string</p>
 positive integer, meaning &gt;0</p>
 <p><em>Default:</em>
 <code>1</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmvfkitextraargs"><a class="header" href="#microvmvfkitextraargs">microvm.vfkit.extraArgs</a></h2>
+<p>Extra arguments to pass to vfkit.</p>
+<p><em>Type:</em>
+list of string</p>
+<p><em>Default:</em>
+<code>[ ]</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmvfkitloglevel"><a class="header" href="#microvmvfkitloglevel">microvm.vfkit.logLevel</a></h2>
+<p>vfkit log level.</p>
+<p><em>Type:</em>
+null or one of “debug”, “info”, “error”</p>
+<p><em>Default:</em>
+<code>"info"</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmvfkitrosettaenable"><a class="header" href="#microvmvfkitrosettaenable">microvm.vfkit.rosetta.enable</a></h2>
+<p>Enable Rosetta support for running x86_64 binaries in ARM64 Linux VMs.
+Only works on Apple Silicon (ARM) Macs.</p>
+<p>When enabled, the Rosetta virtiofs share will be automatically mounted
+and binfmt will be configured to use Rosetta for x86_64 binaries.</p>
+<p><em>Type:</em>
+boolean</p>
+<p><em>Default:</em>
+<code>false</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmvfkitrosettaignoreifmissing"><a class="header" href="#microvmvfkitrosettaignoreifmissing">microvm.vfkit.rosetta.ignoreIfMissing</a></h2>
+<p>Continue execution even if Rosetta installation fails or is unavailable.
+Useful for configurations that should work on both ARM and Intel Macs.</p>
+<p><em>Type:</em>
+boolean</p>
+<p><em>Default:</em>
+<code>false</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmvfkitrosettainstall"><a class="header" href="#microvmvfkitrosettainstall">microvm.vfkit.rosetta.install</a></h2>
+<p>Automatically install Rosetta if missing.
+If false and Rosetta is not installed, vfkit will fail to start.</p>
+<p><em>Type:</em>
+boolean</p>
+<p><em>Default:</em>
+<code>false</code></p>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>

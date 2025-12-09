@@ -190,7 +190,7 @@ values:</p>
 <ul>
 <li>
 <p><code>9p</code> (default) is built into many hypervisors, allowing you to
-quickly share a directory tree</p>
+quickly share a directory tree. Not supported by vfkit on macOS.</p>
 </li>
 <li>
 <p><code>virtiofs</code> requires a separate virtiofsd service which is started as
@@ -199,6 +199,8 @@ that comes with the <code>microvm.nixosModules.host</code> module.</p>
 <p>If you want to run from the command-line, start <code>bin/virtiofsd-run</code>
 separately.</p>
 <p>Expect <code>virtiofs</code> to yield better performance over <code>9p</code>.</p>
+<p><strong>Note:</strong> vfkit (macOS) has built-in virtiofs support and does not
+require a separate virtiofsd service.</p>
 </li>
 </ul>
 <pre><code class="language-nix">microvm.shares = [ {
