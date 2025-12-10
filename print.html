@@ -766,8 +766,28 @@ string</p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
 </ul>
+<h2 id="microvmdevicesqemubus"><a class="header" href="#microvmdevicesqemubus">microvm.devices.*.qemu.bus</a></h2>
+<p>QEMU bus to which this device is attached (optional)</p>
+<p><em>Type:</em>
+null or string</p>
+<p><em>Default:</em>
+<code>null</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
 <h2 id="microvmdevicesqemudeviceextraargs"><a class="header" href="#microvmdevicesqemudeviceextraargs">microvm.devices.*.qemu.deviceExtraArgs</a></h2>
 <p>Device additional arguments (optional)</p>
+<p><em>Type:</em>
+null or string</p>
+<p><em>Default:</em>
+<code>null</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmdevicesqemuid"><a class="header" href="#microvmdevicesqemuid">microvm.devices.*.qemu.id</a></h2>
+<p>QEMU device identifier (optional)</p>
 <p><em>Type:</em>
 null or string</p>
 <p><em>Default:</em>
@@ -1180,6 +1200,78 @@ string</p>
 <p>Overwrite the default machine model options.</p>
 <p><em>Type:</em>
 null or (attribute set of string)</p>
+<p><em>Default:</em>
+<code>null</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmqemupcierootports"><a class="header" href="#microvmqemupcierootports">microvm.qemu.pcieRootPorts</a></h2>
+<p>A list of PCIe root ports that can be used for hot-plugging PCIe devices.
+This is particularly useful on the Q35 machine type, which does not support
+hot-plugging on the base PCIe root bus (pcie.0). Creating root ports allows
+attaching and detaching PCIe devices at runtime and can also be useful for
+devices that require their own dedicated PCIe slot with a fixed address, etc.
+For additional details see the QEMU PCI Express Guidelines:
+<a href="https://gitlab.com/qemu-project/qemu/-/blob/master/docs/pcie.txt">https://gitlab.com/qemu-project/qemu/-/blob/master/docs/pcie.txt</a></p>
+<p><em>Type:</em>
+list of (submodule)</p>
+<p><em>Default:</em>
+<code>[ ]</code></p>
+<p><em>Example:</em></p>
+<pre><code>[ {
+  bus = "pcie.0";
+  id = "pci_port_0";
+  chassis = 0;
+} ]
+
+</code></pre>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmqemupcierootportsaddr"><a class="header" href="#microvmqemupcierootportsaddr">microvm.qemu.pcieRootPorts.*.addr</a></h2>
+<p>PCIe address on the parent bus.</p>
+<p><em>Type:</em>
+null or string</p>
+<p><em>Default:</em>
+<code>null</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmqemupcierootportsbus"><a class="header" href="#microvmqemupcierootportsbus">microvm.qemu.pcieRootPorts.*.bus</a></h2>
+<p>The PCIe bus on which the root port will be created.</p>
+<p><em>Type:</em>
+null or string</p>
+<p><em>Default:</em>
+<code>null</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmqemupcierootportschassis"><a class="header" href="#microvmqemupcierootportschassis">microvm.qemu.pcieRootPorts.*.chassis</a></h2>
+<p>The chassis number associated with this PCIe root port.</p>
+<p><em>Type:</em>
+null or signed integer</p>
+<p><em>Default:</em>
+<code>null</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmqemupcierootportsid"><a class="header" href="#microvmqemupcierootportsid">microvm.qemu.pcieRootPorts.*.id</a></h2>
+<p>A unique identifier for this PCIe root port.</p>
+<p><em>Type:</em>
+string</p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmqemupcierootportsslot"><a class="header" href="#microvmqemupcierootportsslot">microvm.qemu.pcieRootPorts.*.slot</a></h2>
+<p>PCIe slot number.</p>
+<p><em>Type:</em>
+null or string</p>
 <p><em>Default:</em>
 <code>null</code></p>
 <p><em>Declared by:</em></p>
