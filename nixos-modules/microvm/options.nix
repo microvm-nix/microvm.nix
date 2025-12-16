@@ -538,7 +538,7 @@ in
     vmHostPackages = mkOption {
       description = "If set, overrides the default host package.";
       example = "nixpkgs.legacyPackages.aarch64-darwin.pkgs";
-      type = types.nullOr types.pkgs;
+      type = types.pkgs;
       default = if cfg.cpu == null then pkgs else pkgs.buildPackages;
       defaultText = lib.literalExpression "if config.microvm.cpu == null then pkgs else pkgs.buildPackages";
     };
