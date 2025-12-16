@@ -40,7 +40,7 @@ in
                 else
                   OPT_RLIMIT=""
                 fi
-                exec ${lib.getExe pkgs.virtiofsd} \
+                exec ${lib.getExe config.microvm.virtiofsd.package} \
                   --socket-path=${lib.escapeShellArg socket} \
                   ${lib.optionalString (config.microvm.virtiofsd.group != null)
                   "--socket-group=${config.microvm.virtiofsd.group}"

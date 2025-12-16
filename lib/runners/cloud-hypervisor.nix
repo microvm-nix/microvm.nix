@@ -104,8 +104,8 @@ let
 
   # cloud-hypervisor >= 30.0 < 36.0 temporarily replaced clap with argh
   hasArghSyntax =
-    builtins.compareVersions pkgs.cloud-hypervisor.version "30.0" >= 0 &&
-    builtins.compareVersions pkgs.cloud-hypervisor.version "36.0" < 0;
+    builtins.compareVersions cloudhypervisorPkg.version "30.0" >= 0 &&
+    builtins.compareVersions cloudhypervisorPkg.version "36.0" < 0;
   arg =
     if hasArghSyntax
     then switch: params:
@@ -138,6 +138,8 @@ let
       throw "Use `microvm.cloud-hypervisor.platformOEMStrings` instead of passing oem_strings via --platform"
     else
       lib.concatStringsSep "," (oemStringOptions ++ userPlatformOpts);
+
+  cloudhypervisorPkg = microvmConfig.cloud-hypervisor.package;
 in {
   inherit tapMultiQueue supportsNotifySocket;
 
@@ -179,10 +181,7 @@ in {
     then throw "cloud-hypervisor does not support credentialFiles"
     else lib.escapeShellArgs (
       [
-        (if graphics.enable
-         then "${pkgs.cloud-hypervisor-graphics}/bin/cloud-hypervisor"
-         else "${pkgs.cloud-hypervisor}/bin/cloud-hypervisor"
-        )
+        "${cloudhypervisorPkg}/bin/cloud-hypervisor"
         "--cpus" "boot=${toString vcpu}"
         "--watchdog"
         "--kernel" kernelPath
@@ -290,7 +289,7 @@ in {
   setBalloonScript =
     if socket != null
     then ''
-      ${pkgs.cloud-hypervisor}/bin/ch-remote --api-socket ${socket} resize --balloon $SIZE"M"
+      ${cloudhypervisorPkg}/bin/ch-remote --api-socket ${socket} resize --balloon $SIZE"M"
     ''
     else null;
 

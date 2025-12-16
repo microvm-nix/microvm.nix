@@ -69,6 +69,8 @@ let
 
   configFile = pkgs.writers.writeJSON "firecracker-${hostName}.json" config;
 
+  firecrackerPkg = microvmConfig.firecracker.package;
+
 in {
   command =
     if user != null
@@ -88,7 +90,7 @@ in {
     else if credentialFiles != {}
     then throw "credentialFiles are not implemented for Firecracker"
     else lib.escapeShellArgs ([
-      "${pkgs.firecracker}/bin/firecracker"
+      "${firecrackerPkg}/bin/firecracker"
       "--config-file" configFile
       "--api-sock" (
         if socket != null
@@ -96,7 +98,7 @@ in {
         else throw "Firecracker must be configured with an API socket (option microvm.socket)!"
       )
     ]
-    ++ lib.optional (lib.versionAtLeast pkgs.firecracker.version "1.13.0") "--enable-pci"
+    ++ lib.optional (lib.versionAtLeast firecrackerPkg.version "1.13.0") "--enable-pci"
     ++ microvmConfig.firecracker.extraArgs);
 
   preStart = ''

@@ -13,6 +13,8 @@ let
     kernel initrdPath storeDisk storeOnDisk;
   inherit (microvmConfig.crosvm) pivotRoot extraArgs;
 
+  crosvmPkg = microvmConfig.crosvm.package;
+
   kernelPath = {
     x86_64-linux = "${kernel.dev}/vmlinux";
     aarch64-linux = "${kernel.out}/${pkgs.stdenv.hostPlatform.linux-kernel.target}";
@@ -34,7 +36,7 @@ in {
     ''}
   '' + lib.optionalString graphics.enable ''
     rm -f ${graphics.socket}
-    ${pkgs.crosvm}/bin/crosvm device gpu \
+    ${crosvmPkg}/bin/crosvm device gpu \
       --socket ${graphics.socket} \
       --wayland-sock $XDG_RUNTIME_DIR/$WAYLAND_DISPLAY\
       --params '${builtins.toJSON gpuParams}' \
@@ -57,7 +59,7 @@ in {
     then throw "crosvm does not support credentialFiles"
     else lib.escapeShellArgs (
       [
-        "${pkgs.crosvm}/bin/crosvm" "run"
+        "${crosvmPkg}/bin/crosvm" "run"
         "-m" (toString mem)
         "-c" (toString vcpu)
         "--serial" "type=stdout,console=true,stdin=true"
@@ -74,7 +76,7 @@ in {
         "--vhost-user-gpu" graphics.socket
       ]
       ++
-      lib.optionals (builtins.compareVersions pkgs.crosvm.version "107.1" < 0) [
+      lib.optionals (builtins.compareVersions crosvmPkg.version "107.1" < 0) [
         # workarounds
         "--seccomp-log-failures"
       ]
@@ -151,7 +153,7 @@ in {
   shutdownCommand =
     if socket != null
     then ''
-        ${pkgs.crosvm}/bin/crosvm powerbtn ${socket}
+        ${crosvmPkg}/bin/crosvm powerbtn ${socket}
       ''
     else throw "Cannot shutdown without socket";
 
@@ -159,8 +161,8 @@ in {
     if socket != null
     then ''
       VALUE=$(( $SIZE * 1024 * 1024 ))
-      ${pkgs.crosvm}/bin/crosvm balloon $VALUE ${socket}
-      SIZE=$( ${pkgs.crosvm}/bin/crosvm balloon_stats ${socket} | \
+      ${crosvmPkg}/bin/crosvm balloon $VALUE ${socket}
+      SIZE=$( ${crosvmPkg}/bin/crosvm balloon_stats ${socket} | \
         ${pkgs.jq}/bin/jq -r .BalloonStats.balloon_actual \
       )
       echo $(( $SIZE / 1024 / 1024 ))

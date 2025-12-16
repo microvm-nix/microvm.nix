@@ -633,6 +633,18 @@ in
       });
     };
 
+    qemu.package = mkOption {
+      description = "The QEMU package to use.";
+      type = types.package;
+      default = if cfg.cpu == null && cfg.vmHostPackages.stdenv.hostPlatform.isLinux
+      then
+        # If no CPU is requested and the host is Linux, use qemu with KVM support (hardware-accelerated)
+        cfg.vmHostPackages.qemu_kvm
+      else
+        # Different CPU architectures like darwin or Non-Linux use the generic qemu package
+        cfg.vmHostPackages.qemu;
+    };
+
     cloud-hypervisor.platformOEMStrings = mkOption {
       type = with types; listOf str;
       default = [];
@@ -656,6 +668,14 @@ in
       description = "Extra arguments to pass to cloud-hypervisor.";
     };
 
+    cloud-hypervisor.package = mkOption {
+      description = "The cloud-hypervisor package to use.";
+      type = types.package;
+      default = if cfg.graphics.enable
+         then cfg.vmHostPackages.cloud-hypervisor-graphics
+         else cfg.vmHostPackages.cloud-hypervisor;
+    };
+
     crosvm.extraArgs = mkOption {
       type = with types; listOf str;
       default = [];
@@ -666,6 +686,12 @@ in
       type = with types; nullOr str;
       default = null;
       description = "A Hypervisor's sandbox directory";
+    };
+
+    crosvm.package = mkOption {
+      description = "The crosvm package to use.";
+      type = types.package;
+      default = cfg.vmHostPackages.crosvm;
     };
 
     firecracker.cpu = mkOption {
@@ -709,6 +735,12 @@ in
       };
       default = {};
       description = "Extra config to merge into Firecracker JSON configuration";
+    };
+
+    firecracker.package = mkOption {
+      description = "The firecracker package to use.";
+      type = types.package;
+      default = cfg.vmHostPackages.firecracker;
     };
 
     vfkit.extraArgs = mkOption {
@@ -802,6 +834,13 @@ in
       description = ''
         Extra command-line switch to pass to virtiofsd.
       '';
+    };
+
+    virtiofsd.package = mkOption {
+      description = "The virtiofsd package to use.";
+      type = types.package;
+      default = cfg.vmHostPackages.virtiofsd;
+      defaultText = literalExpression ''cfg.vmHostPackages.virtiofsd'';
     };
 
     runner = mkOption {
