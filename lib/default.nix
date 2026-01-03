@@ -15,6 +15,22 @@ rec {
 
   defaultFsType = "ext4";
 
+  # Generate machine UUID from machineId or hostname
+  # Used for machined registration and SMBIOS
+  makeMachineUuid = { machineId, hostName }:
+    if machineId != null
+    then machineId
+    else
+      let
+        hash = builtins.hashString "sha256" "microvm.nix:${hostName}";
+      in builtins.concatStringsSep "-" [
+        (builtins.substring 0 8 hash)
+        (builtins.substring 8 4 hash)
+        (builtins.substring 12 4 hash)
+        (builtins.substring 16 4 hash)
+        (builtins.substring 20 12 hash)
+      ];
+
   withDriveLetters = { volumes, storeOnDisk, ... }:
     let
       offset =

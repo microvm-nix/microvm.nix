@@ -2,7 +2,7 @@
 let
   inherit (config.microvm) stateDir;
   microvmCommand = import ../../pkgs/microvm-command.nix {
-    inherit pkgs;
+    inherit pkgs stateDir;
   };
   user = "microvm";
   group = "kvm";
@@ -113,6 +113,19 @@ in
           if guestConfig.microvm.declaredRunner.supportsNotifySocket
           then "notify"
           else "simple";
+        # Register with systemd-machined if the VM opts in
+        wants = lib.optionals runner.registerWithMachined [
+          "systemd-machined.service"
+        ];
+        after = lib.optionals runner.registerWithMachined [
+          "systemd-machined.service"
+        ];
+        serviceConfig.ExecStartPost = lib.optionals runner.registerWithMachined [
+          "+${stateDir}/${name}/current/bin/microvm-register $MAINPID"
+        ];
+        serviceConfig.ExecStopPost = lib.optionals runner.registerWithMachined [
+          "+${stateDir}/${name}/current/bin/microvm-unregister"
+        ];
       };
       "microvm-tap-interfaces@${name}" = {
         serviceConfig.X-RestartIfChanged = [ "" microvmConfig.restartIfChanged ];

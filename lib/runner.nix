@@ -8,14 +8,14 @@ let
 
   inherit (microvmConfig) hostName vmHostPackages;
 
-  inherit (import ./. { inherit lib; }) makeMacvtap withDriveLetters extractOptValues extractParamValue;
+  inherit (import ./. { inherit lib; }) makeMacvtap withDriveLetters extractOptValues extractParamValue makeMachineUuid;
   inherit (import ./volumes.nix { pkgs = microvmConfig.vmHostPackages; }) createVolumesScript;
   inherit (makeMacvtap {
     inherit microvmConfig hypervisorConfig;
   }) openMacvtapFds macvtapFds;
 
   hypervisorConfig = import (./runners + "/${microvmConfig.hypervisor}.nix") {
-    inherit pkgs microvmConfig macvtapFds withDriveLetters extractOptValues extractParamValue;
+    inherit pkgs microvmConfig macvtapFds withDriveLetters extractOptValues extractParamValue makeMachineUuid;
   };
 
   inherit (hypervisorConfig) command canShutdown shutdownCommand;
@@ -27,6 +27,75 @@ let
   execArg = lib.optionalString microvmConfig.prettyProcnames
     ''-a "microvm@${hostName}"'';
 
+
+  # TAP interface names for machined registration
+  tapInterfaces = lib.filter (i: i.type == "tap" && i ? id) microvmConfig.interfaces;
+  tapInterfaceNames = map (i: i.id) tapInterfaces;
+
+  machineUuid = makeMachineUuid {
+    inherit hostName;
+    inherit (microvmConfig) machineId;
+  };
+
+  # Script to unregister from systemd-machined
+  unregisterMachineScript = ''
+    set -euo pipefail
+    MACHINE_NAME="${hostName}"
+
+    # Terminate the machine registration (ignore errors if already gone)
+    ${vmHostPackages.systemd}/bin/busctl call \
+      org.freedesktop.machine1 \
+      /org/freedesktop/machine1 \
+      org.freedesktop.machine1.Manager \
+      TerminateMachine "s" \
+      "$MACHINE_NAME" 2>/dev/null
+  '';
+
+  # Script to register with systemd-machined
+  # Note: NSS hostname resolution (ssh $vmname) doesn't work for VMs, only containers.
+  # machined's GetAddresses method requires container namespaces to enumerate IPs.
+  # Future: systemd 259+ adds RegisterMachineEx which supports SSHAddress property
+  # for VMs, enabling `machinectl ssh` and potentially NSS resolution.
+  registerMachineScript = ''
+    set -euo pipefail
+
+    LEADER_PID="''${1:-$$}"
+    MACHINE_NAME="${hostName}"
+    UUID="${machineUuid}"
+    PATH=${lib.makeBinPath (with vmHostPackages; [ coreutils gnused gawk systemd ])}
+
+    # Convert UUID to space-separated decimal bytes for busctl
+    UUID_BYTES=$(echo "$UUID" | tr -d '-' | sed 's/../0x& /g' | awk '{for(i=1;i<=NF;i++) printf "%d ", strtonum(''$i)}')
+
+    '' + (if tapInterfaceNames == [] then ''
+    # No TAP interfaces, use simple RegisterMachine
+    busctl call org.freedesktop.machine1 /org/freedesktop/machine1 \
+      org.freedesktop.machine1.Manager RegisterMachine "sayssus" \
+      "$MACHINE_NAME" 16 $UUID_BYTES "microvm.nix" "vm" $LEADER_PID "/"
+    '' else ''
+    # Build network interface index array for RegisterMachineWithNetwork
+    IFINDICES=""
+    '' + lib.concatMapStrings (name: ''
+    if [ -e /sys/class/net/${name}/ifindex ]; then
+      IFINDICES="$IFINDICES $(cat /sys/class/net/${name}/ifindex)"
+    fi
+    '') tapInterfaceNames + ''
+
+    # Count interfaces
+    NUM_IFS=$(echo $IFINDICES | wc -w)
+
+    if [ "$NUM_IFS" -gt 0 ]; then
+      # Use RegisterMachineWithNetwork with TAP interfaces
+      busctl call org.freedesktop.machine1 /org/freedesktop/machine1 \
+        org.freedesktop.machine1.Manager RegisterMachineWithNetwork "sayssusai" \
+        "$MACHINE_NAME" 16 $UUID_BYTES "microvm.nix" "vm" $LEADER_PID "/" $NUM_IFS $IFINDICES
+    else
+      # Fallback to simple RegisterMachine
+      busctl call org.freedesktop.machine1 /org/freedesktop/machine1 \
+        org.freedesktop.machine1.Manager RegisterMachine "sayssus" \
+        "$MACHINE_NAME" 16 $UUID_BYTES "microvm.nix" "vm" $LEADER_PID "/"
+    fi
+    '');
 
   binScripts = microvmConfig.binScripts // {
     microvm-run = ''
@@ -54,6 +123,9 @@ let
       SIZE=$1
       ${setBalloonScript}
     '';
+  } // lib.optionalAttrs microvmConfig.registerWithMachined {
+    microvm-register = registerMachineScript;
+    microvm-unregister = unregisterMachineScript;
   };
 
   binScriptPkgs = lib.mapAttrs (scriptName: lines:
@@ -66,8 +138,8 @@ vmHostPackages.buildPackages.runCommand "microvm-${microvmConfig.hypervisor}-${h
   # for `nix run`
   meta.mainProgram = "microvm-run";
   passthru = {
-    inherit canShutdown supportsNotifySocket tapMultiQueue;
-    inherit (microvmConfig) hypervisor;
+    inherit canShutdown supportsNotifySocket tapMultiQueue machineUuid;
+    inherit (microvmConfig) hypervisor registerWithMachined;
   };
 } ''
   mkdir -p $out/bin
@@ -117,4 +189,10 @@ vmHostPackages.buildPackages.runCommand "microvm-${microvmConfig.hypervisor}-${h
   ${lib.concatMapStrings ({ bus, path, ... }: ''
     echo "${path}" >> $out/share/microvm/${bus}-devices
   '') microvmConfig.devices}
+
+  # VSOCK info for ssh access
+  ${lib.optionalString (microvmConfig.vsock.cid != null) ''
+    echo "${toString microvmConfig.vsock.cid}" > $out/share/microvm/vsock-cid
+  ''}
+  echo "${microvmConfig.hypervisor}" > $out/share/microvm/hypervisor
 ''

@@ -462,6 +462,40 @@ in
       '';
     };
 
+    registerWithMachined = mkOption {
+      type = types.bool;
+      default = false;
+      description = ''
+        Register this MicroVM with systemd-machined on the host, enabling management via machinectl.
+
+        When enabled, a registration script is generated in the runner package. The host module will call this
+        script after the hypervisor starts. The VM is registered with class "vm" using the UUID from `machineId`
+        (or a deterministic UUID derived from hostname).
+
+        Supported machinectl commands:
+        - `list`, `status`, `show` - VM visibility
+        - `terminate`, `kill` - stop VM (will auto-restart if Restart=always)
+
+        Note: `machinectl reboot` stops the VM but won't auto-restart it because systemd treats it as an
+        intentional stop. Use `systemctl restart microvm@<name>` for restarts.
+      '';
+    };
+
+    machineId = mkOption {
+      type = with types; nullOr str;
+      default = null;
+      example = "a67472e5-570e-5c8a-b18c-ae3c77701050";
+      description = ''
+        UUID for this MicroVM, used for:
+        - Registration with systemd-machined
+        - SMBIOS system UUID (QEMU only)
+        - Guest /etc/machine-id initialization
+
+        If null, a deterministic UUIDv5 is generated from the hostname.
+        Format: 8-4-4-4-12 hex digits (standard UUID format).
+      '';
+    };
+
     kernelParams = mkOption {
       type = with types; listOf str;
       description = "Includes boot.kernelParams but doesn't end up in toplevel, thereby allowing references to toplevel";

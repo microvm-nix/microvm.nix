@@ -1,6 +1,23 @@
 { self, nixpkgs, system }:
 
 let
+  inherit (nixpkgs) lib;
+
+  # Platform filtering for hypervisors
+  hypervisorsDarwinOnly = [ "vfkit" ];
+  hypervisorsOnDarwin = [ "qemu" "vfkit" ];
+  isDarwinOnly = hypervisor: builtins.elem hypervisor hypervisorsDarwinOnly;
+  isDarwinSystem = s: lib.hasSuffix "-darwin" s;
+  hypervisorSupportsSystem = hypervisor: s:
+    if isDarwinSystem s
+    then builtins.elem hypervisor hypervisorsOnDarwin
+    else !(isDarwinOnly hypervisor);
+
+  # Filter hypervisors to only those that support the current system
+  supportedHypervisors = builtins.filter
+    (hv: hypervisorSupportsSystem hv system)
+    self.lib.hypervisors;
+
   variants = [
     # hypervisor
     [ {
@@ -221,5 +238,6 @@ builtins.foldl' (result: hypervisor:
   in
     result //
     import ./vm.nix args //
-    import ./iperf.nix args
-) {} self.lib.hypervisors
+    import ./iperf.nix args //
+    import ./machined.nix args
+) {} supportedHypervisors
