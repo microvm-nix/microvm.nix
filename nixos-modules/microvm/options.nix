@@ -483,7 +483,18 @@ in
 
     machineId = mkOption {
       type = with types; nullOr str;
-      default = null;
+      default =
+        let
+          hash = builtins.hashString "sha256" "microvm.nix:${hostName}";
+          hs = offset: len:
+            builtins.substring offset len hash;
+        in builtins.concatStringsSep "-" [
+          (hs 0 8)
+          (hs 8 4)
+          (hs 12 4)
+          (hs 16 4)
+          (hs 20 12)
+        ];
       example = "a67472e5-570e-5c8a-b18c-ae3c77701050";
       description = ''
         UUID for this MicroVM, used for:

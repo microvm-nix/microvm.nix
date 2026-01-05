@@ -6,16 +6,16 @@
 let
   inherit (pkgs) lib;
 
-  inherit (microvmConfig) hostName vmHostPackages;
+  inherit (microvmConfig) hostName machineId vmHostPackages;
 
-  inherit (import ./. { inherit lib; }) makeMacvtap withDriveLetters extractOptValues extractParamValue makeMachineUuid;
+  inherit (import ./. { inherit lib; }) makeMacvtap withDriveLetters extractOptValues extractParamValue;
   inherit (import ./volumes.nix { pkgs = microvmConfig.vmHostPackages; }) createVolumesScript;
   inherit (makeMacvtap {
     inherit microvmConfig hypervisorConfig;
   }) openMacvtapFds macvtapFds;
 
   hypervisorConfig = import (./runners + "/${microvmConfig.hypervisor}.nix") {
-    inherit pkgs microvmConfig macvtapFds withDriveLetters extractOptValues extractParamValue makeMachineUuid;
+    inherit pkgs microvmConfig macvtapFds withDriveLetters extractOptValues extractParamValue;
   };
 
   inherit (hypervisorConfig) command canShutdown shutdownCommand;
@@ -31,11 +31,6 @@ let
   # TAP interface names for machined registration
   tapInterfaces = lib.filter (i: i.type == "tap" && i ? id) microvmConfig.interfaces;
   tapInterfaceNames = map (i: i.id) tapInterfaces;
-
-  machineUuid = makeMachineUuid {
-    inherit hostName;
-    inherit (microvmConfig) machineId;
-  };
 
   # Script to unregister from systemd-machined
   unregisterMachineScript = ''
@@ -61,7 +56,7 @@ let
 
     LEADER_PID="''${1:-$$}"
     MACHINE_NAME="${hostName}"
-    UUID="${machineUuid}"
+    UUID="${machineId}"
     PATH=${lib.makeBinPath (with vmHostPackages; [ coreutils gnused gawk systemd ])}
 
     # Convert UUID to space-separated decimal bytes for busctl
@@ -138,8 +133,8 @@ vmHostPackages.buildPackages.runCommand "microvm-${microvmConfig.hypervisor}-${h
   # for `nix run`
   meta.mainProgram = "microvm-run";
   passthru = {
-    inherit canShutdown supportsNotifySocket tapMultiQueue machineUuid;
-    inherit (microvmConfig) hypervisor registerWithMachined;
+    inherit canShutdown supportsNotifySocket tapMultiQueue;
+    inherit (microvmConfig) hypervisor registerWithMachined machineId;
   };
 } ''
   mkdir -p $out/bin

@@ -2,7 +2,6 @@
 , microvmConfig
 , macvtapFds
 , withDriveLetters
-, makeMachineUuid
 , ...
 }:
 
@@ -54,14 +53,8 @@ let
     then "io_uring"
     else "threads";
 
-  inherit (microvmConfig) hostName vcpu mem balloon initialBalloonMem deflateOnOOM hotplugMem hotpluggedMem user interfaces shares socket forwardPorts devices vsock graphics storeOnDisk kernel initrdPath storeDisk credentialFiles;
+  inherit (microvmConfig) hostName machineId vcpu mem balloon initialBalloonMem deflateOnOOM hotplugMem hotpluggedMem user interfaces shares socket forwardPorts devices vsock graphics storeOnDisk kernel initrdPath storeDisk credentialFiles;
   inherit (microvmConfig.qemu) machine extraArgs serialConsole pcieRootPorts;
-
-  machineUuid = makeMachineUuid {
-    inherit hostName;
-    inherit (microvmConfig) machineId;
-  };
-
 
   volumes = withDriveLetters microvmConfig;
 
@@ -192,7 +185,7 @@ lib.warnIf (mem == 2048) ''
     [
       "${qemu}/bin/qemu-system-${arch}"
       "-name" hostName
-      "-smbios" "type=1,uuid=${machineUuid}"
+      "-smbios" "type=1,uuid=${machineId}"
       "-M" machineConfig
       "-m" (toString mem)
       "-smp" (toString vcpu)
