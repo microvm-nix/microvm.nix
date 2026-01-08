@@ -98,6 +98,7 @@ let
         inherit accel;
         mem-merge = "on";
         acpi = "on";
+        rtc = "on";
       } // lib.optionalAttrs (machine == "microvm") {
         pit = "off";
         pic = "off";
