@@ -5,7 +5,6 @@ extend-exclude = [
 ]
 
 [default.extend-words]
-
+substituters = "substituters"
 
 [default.extend-identifiers]
-
