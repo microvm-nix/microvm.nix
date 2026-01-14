@@ -71,7 +71,7 @@ in {
       ]
       ++
       lib.optionals graphics.enable [
-        "--vhost-user-gpu" graphics.socket
+        "--vhost-user" "gpu,socket=${graphics.socket}"
       ]
       ++
       lib.optionals (builtins.compareVersions pkgs.crosvm.version "107.1" < 0) [
