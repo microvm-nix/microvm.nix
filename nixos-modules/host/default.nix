@@ -69,6 +69,7 @@ in
         before = [
           "microvm@${name}.service"
           "microvm-tap-interfaces@${name}.service"
+          "microvm-macvtap-interfaces@${name}.service"
           "microvm-pci-devices@${name}.service"
           "microvm-virtiofsd@${name}.service"
         ];
