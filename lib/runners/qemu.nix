@@ -25,7 +25,6 @@ let
       if graphics.enable
       then oa.nixosTestRunner or false
       else true;
-    enableDocs = false;
   })).overrideAttrs (oa: {
     postFixup = ''
       ${oa.postFixup or ""}
