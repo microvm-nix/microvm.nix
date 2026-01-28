@@ -19,18 +19,12 @@ let
     ]);
   });
 
-  minimizeQemuClosureSize = pkg: (pkg.override (oa: {
+  minimizeQemuClosureSize = pkg: pkg.override (oa: {
     # standin for disabling everything guilike by hand
     nixosTestRunner =
       if graphics.enable
       then oa.nixosTestRunner or false
       else true;
-  })).overrideAttrs (oa: {
-    postFixup = ''
-      ${oa.postFixup or ""}
-      # This particular firmware causes 192mb of closure size
-      ${lib.optionalString (system != "aarch64-linux") "rm -rf $out/share/qemu/edk2-arm-*"}
-    '';
   });
 
   overrideQemu = x: lib.pipe x (
