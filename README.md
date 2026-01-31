@@ -42,6 +42,8 @@ imperatively with the provided `microvm` command.
 - Zero, one, or more virtual tap ethernet network interfaces can be
   attached to a MicroVM. `qemu`, `kvmtool`, and `vfkit` also support *user*
   networking which requires no additional setup on the host.
+- For high-throughput TAP networking with `qemu`, enable `tap.vhost = true`
+  to use vhost-net kernel acceleration (~10 Gbps vs ~1.5 Gbps without).
 
 ## Hypervisors
 

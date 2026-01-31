@@ -48,6 +48,28 @@ with more than one CPU core.
 When running MicroVMs through the `host` module, the tap network
 interfaces are created through a systemd service dependency.
 
+### vhost-net acceleration
+
+For high-throughput workloads, enable vhost-net to offload packet
+processing to the kernel instead of QEMU userspace:
+
+```nix
+{
+  microvm.interfaces = [ {
+    type = "tap";
+    id = "vm-a1";
+    mac = "02:00:00:00:00:01";
+    tap.vhost = true;  # Enable vhost-net (~10 Gbps vs ~1.5 Gbps)
+  } ];
+}
+```
+
+This requires the `vhost_net` kernel module on the host. The performance
+improvement is significant for workloads with many concurrent connections
+or high bandwidth requirements.
+
+**Note:** Currently only supported with the `qemu` hypervisor.
+
 Extend the generated script in the guest configuration like this:
 
 ```nix

@@ -303,7 +303,7 @@ lib.warnIf (mem == 2048) ''
       forwardPorts != [] &&
       ! builtins.any ({ type, ... }: type == "user") interfaces
     ) "${hostName}: forwardPortsOptions only running with user network" (
-      builtins.concatMap ({ type, id, mac, bridge, ... }: [
+      builtins.concatMap ({ type, id, mac, bridge, tap ? {}, ... }: [
         "-netdev" (
           lib.concatStringsSep "," (
             [
@@ -319,6 +319,9 @@ lib.warnIf (mem == 2048) ''
             ++ lib.optionals (type == "tap") [
               "ifname=${id}"
               "script=no" "downscript=no"
+            ]
+            ++ lib.optionals (type == "tap" && tap.vhost or false) [
+              "vhost=on"
             ]
             ++ lib.optionals (type == "macvtap") [ (
               let
