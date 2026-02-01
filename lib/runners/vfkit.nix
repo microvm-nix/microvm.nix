@@ -1,6 +1,5 @@
 { pkgs
 , microvmConfig
-, macvtapFds
 , withDriveLetters
 , ...
 }:
@@ -13,8 +12,8 @@ let
   vfkit = vmHostPackages.vfkit;
 
   inherit (microvmConfig)
-    hostName vcpu mem user interfaces volumes shares socket
-    storeOnDisk kernel initrdPath storeDisk kernelParams
+    vcpu mem user interfaces shares socket
+    storeOnDisk kernel initrdPath kernelParams
     balloon devices credentialFiles vsock graphics;
 
   inherit (microvmConfig.vfkit) extraArgs logLevel rosetta;
