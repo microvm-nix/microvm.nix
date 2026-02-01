@@ -9,7 +9,7 @@ let
   inherit (vmHostPackages.stdenv.hostPlatform) system;
   inherit (microvmConfig) vmHostPackages;
 
-  vfkit = vmHostPackages.vfkit;
+  vfkitPkg = microvmConfig.vfkit.package;
 
   inherit (microvmConfig)
     vcpu mem user interfaces shares socket
@@ -74,7 +74,7 @@ let
     );
 
   allArgsWithoutSocket = [
-    "${lib.getExe vfkit}"
+    "${lib.getExe vfkitPkg}"
     "--cpus" (toString vcpu)
     "--memory" (toString mem)
   ]

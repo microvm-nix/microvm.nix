@@ -645,6 +645,12 @@ in
         cfg.vmHostPackages.qemu;
     };
 
+    alioth.package = mkOption {
+      description = "The alioth package to use.";
+      type = types.package;
+      default = cfg.vmHostPackages.alioth;
+    };
+
     cloud-hypervisor.platformOEMStrings = mkOption {
       type = with types; listOf str;
       default = [];
@@ -743,6 +749,18 @@ in
       default = cfg.vmHostPackages.firecracker;
     };
 
+    kvmtool.package = mkOption {
+      description = "The kvmtool package to use.";
+      type = types.package;
+      default = cfg.vmHostPackages.kvmtool;
+    };
+
+    stratovirt.package = mkOption {
+      description = "The stratovirt package to use.";
+      type = types.package;
+      default = cfg.vmHostPackages.stratovirt;
+    };
+
     vfkit.extraArgs = mkOption {
       type = with types; listOf str;
       default = [];
@@ -753,6 +771,12 @@ in
       type = with types; nullOr (enum ["debug" "info" "error"]);
       default = "info";
       description = "vfkit log level.";
+    };
+
+    vfkit.package = mkOption {
+      description = "The vfkit package to use.";
+      type = types.package;
+      default = cfg.vmHostPackages.vfkit;
     };
 
     vfkit.rosetta = {

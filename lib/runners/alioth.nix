@@ -5,6 +5,9 @@
 
 let
   inherit (pkgs) lib;
+
+  aliothPkg = microvmConfig.alioth.package;
+
   inherit (microvmConfig)
     user
     vcpu mem balloon initialBalloonMem hotplugMem hotpluggedMem interfaces volumes shares devices vsock
@@ -26,7 +29,7 @@ in {
     then throw "alioth does not support credentialFiles"
     else builtins.concatStringsSep " " (
       [
-        "${pkgs.alioth}/bin/alioth" "run"
+        "${aliothPkg}/bin/alioth" "run"
         "--memory" "size=${toString mem}M,backend=memfd"
         "--num-cpu" (toString vcpu)
         "-k" (lib.escapeShellArg "${kernel}/${pkgs.stdenv.hostPlatform.linux-kernel.target}")

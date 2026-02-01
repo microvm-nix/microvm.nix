@@ -9,6 +9,8 @@ let
   inherit (pkgs) lib;
   inherit (pkgs.stdenv.hostPlatform) system;
 
+  stratovirtPkg = microvmConfig.stratovirt.package;
+
   inherit (microvmConfig)
     hostName
     vcpu mem balloon initialBalloonMem hotplugMem hotpluggedMem interfaces shares socket forwardPorts devices
@@ -85,7 +87,7 @@ in {
     else lib.escapeShellArgs (
     [
       "${pkgs.expect}/bin/unbuffer"
-      "${pkgs.stratovirt}/bin/stratovirt"
+      "${stratovirtPkg}/bin/stratovirt"
       "-name" hostName
       "-machine" machine
       "-m" (toString mem)

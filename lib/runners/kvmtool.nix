@@ -5,6 +5,9 @@
 
 let
   inherit (pkgs) lib;
+
+  kvmtoolPkg = microvmConfig.kvmtool.package;
+
   inherit (microvmConfig)
     hostName preStart user
     vcpu mem balloon initialBalloonMem hotplugMem hotpluggedMem interfaces volumes shares devices vsock
@@ -29,7 +32,7 @@ in {
     then throw "kvmtool does not support credentialFiles"
     else builtins.concatStringsSep " " (
       [
-        "${pkgs.kvmtool}/bin/lkvm" "run"
+        "${kvmtoolPkg}/bin/lkvm" "run"
         "--name" (lib.escapeShellArg hostName)
         "-m" (toString mem)
         "-c" (toString vcpu)
@@ -99,6 +102,6 @@ in {
     else
       ARGS="-i $SIZE"
     fi
-    HOME=$PWD ${pkgs.kvmtool}/bin/lkvm balloon $ARGS -n ${hostName}
+    HOME=$PWD ${kvmtoolPkg}/bin/lkvm balloon $ARGS -n ${hostName}
   '';
 }
