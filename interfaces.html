@@ -215,6 +215,22 @@ interfaces before starting a MicroVM:</p>
 with more than one CPU core.</p>
 <p>When running MicroVMs through the <code>host</code> module, the tap network
 interfaces are created through a systemd service dependency.</p>
+<h3 id="vhost-net-acceleration"><a class="header" href="#vhost-net-acceleration">vhost-net acceleration</a></h3>
+<p>For high-throughput workloads, enable vhost-net to offload packet
+processing to the kernel instead of QEMU userspace:</p>
+<pre><code class="language-nix">{
+  microvm.interfaces = [ {
+    type = "tap";
+    id = "vm-a1";
+    mac = "02:00:00:00:00:01";
+    tap.vhost = true;  # Enable vhost-net (~10 Gbps vs ~1.5 Gbps)
+  } ];
+}
+</code></pre>
+<p>This requires the <code>vhost_net</code> kernel module on the host. The performance
+improvement is significant for workloads with many concurrent connections
+or high bandwidth requirements.</p>
+<p><strong>Note:</strong> Currently only supported with the <code>qemu</code> hypervisor.</p>
 <p>Extend the generated script in the guest configuration like this:</p>
 <pre><code class="language-nix">microvm.binScripts.tap-up = lib.mkAfter ''
   ${lib.getExe' pkgs.iproute2 "ip"} link set dev 'vm-ixp-as11201p' master 'ixp-peering'

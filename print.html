@@ -311,6 +311,22 @@ interfaces before starting a MicroVM:</p>
 with more than one CPU core.</p>
 <p>When running MicroVMs through the <code>host</code> module, the tap network
 interfaces are created through a systemd service dependency.</p>
+<h3 id="vhost-net-acceleration"><a class="header" href="#vhost-net-acceleration">vhost-net acceleration</a></h3>
+<p>For high-throughput workloads, enable vhost-net to offload packet
+processing to the kernel instead of QEMU userspace:</p>
+<pre><code class="language-nix">{
+  microvm.interfaces = [ {
+    type = "tap";
+    id = "vm-a1";
+    mac = "02:00:00:00:00:01";
+    tap.vhost = true;  # Enable vhost-net (~10 Gbps vs ~1.5 Gbps)
+  } ];
+}
+</code></pre>
+<p>This requires the <code>vhost_net</code> kernel module on the host. The performance
+improvement is significant for workloads with many concurrent connections
+or high bandwidth requirements.</p>
+<p><strong>Note:</strong> Currently only supported with the <code>qemu</code> hypervisor.</p>
 <p>Extend the generated script in the guest configuration like this:</p>
 <pre><code class="language-nix">microvm.binScripts.tap-up = lib.mkAfter ''
   ${lib.getExe' pkgs.iproute2 "ip"} link set dev 'vm-ixp-as11201p' master 'ixp-peering'
@@ -1096,6 +1112,20 @@ string</p>
 <p>The MACVLAN mode to use</p>
 <p><em>Type:</em>
 one of “private”, “vepa”, “bridge”, “passthru”, “source”</p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvminterfacestapvhost"><a class="header" href="#microvminterfacestapvhost">microvm.interfaces.*.tap.vhost</a></h2>
+<p>Enable vhost-net for TAP interfaces.</p>
+<p>When enabled, packet processing is offloaded to the kernel’s
+vhost-net module instead of QEMU userspace, significantly
+improving network throughput (~10 Gbps vs ~1.5 Gbps).</p>
+<p>Requires the vhost_net kernel module on the host.</p>
+<p><em>Type:</em>
+boolean</p>
+<p><em>Default:</em>
+<code>false</code></p>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>

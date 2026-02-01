@@ -674,6 +674,20 @@ one of “private”, “vepa”, “bridge”, “passthru”, “source”</p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
 </ul>
+<h2 id="microvminterfacestapvhost"><a class="header" href="#microvminterfacestapvhost">microvm.interfaces.*.tap.vhost</a></h2>
+<p>Enable vhost-net for TAP interfaces.</p>
+<p>When enabled, packet processing is offloaded to the kernel’s
+vhost-net module instead of QEMU userspace, significantly
+improving network throughput (~10 Gbps vs ~1.5 Gbps).</p>
+<p>Requires the vhost_net kernel module on the host.</p>
+<p><em>Type:</em>
+boolean</p>
+<p><em>Default:</em>
+<code>false</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
 <h2 id="microvminterfacestype"><a class="header" href="#microvminterfacestype">microvm.interfaces.*.type</a></h2>
 <p>Interface type</p>
 <p><em>Type:</em>
