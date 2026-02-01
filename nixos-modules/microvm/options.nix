@@ -840,7 +840,7 @@ in
       description = "The virtiofsd package to use.";
       type = types.package;
       default = cfg.vmHostPackages.virtiofsd;
-      defaultText = literalExpression ''cfg.vmHostPackages.virtiofsd'';
+      defaultText = literalExpression ''config.microvm.vmHostPackages.virtiofsd'';
     };
 
     runner = mkOption {
