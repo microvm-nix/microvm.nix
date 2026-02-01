@@ -1,6 +1,6 @@
 { config, lib, ... }:
 let
-  inherit (config.networking) hostName;
+  inherit (config.networking) fqdnOrHostName;
 
 in
 lib.mkIf config.microvm.guest.enable {
@@ -9,7 +9,7 @@ lib.mkIf config.microvm.guest.enable {
     map (volumes: {
       assertion = builtins.length volumes == 1;
       message = ''
-        MicroVM ${hostName}: volume image "${(builtins.head volumes).image}" is used ${toString (builtins.length volumes)} > 1 times.
+        MicroVM ${fqdnOrHostName}: volume image "${(builtins.head volumes).image}" is used ${toString (builtins.length volumes)} > 1 times.
       '';
     }) (
       builtins.attrValues (
@@ -21,7 +21,7 @@ lib.mkIf config.microvm.guest.enable {
     map (interfaces: {
       assertion = builtins.length interfaces == 1;
       message = ''
-        MicroVM ${hostName}: interface id "${(builtins.head interfaces).id}" is used ${toString (builtins.length interfaces)} > 1 times.
+        MicroVM ${fqdnOrHostName}: interface id "${(builtins.head interfaces).id}" is used ${toString (builtins.length interfaces)} > 1 times.
       '';
     }) (
       builtins.attrValues (
@@ -35,14 +35,14 @@ lib.mkIf config.microvm.guest.enable {
       then {
         assertion = bridge != null;
         message = ''
-          MicroVM ${hostName}: interface ${id} is of type "bridge"
+          MicroVM ${fqdnOrHostName}: interface ${id} is of type "bridge"
           but doesn't have a bridge to attach to defined.
         '';
       }
       else {
         assertion = bridge == null;
         message = ''
-          MicroVM ${hostName}: interface ${id} is not of type "bridge"
+          MicroVM ${fqdnOrHostName}: interface ${id} is not of type "bridge"
           and therefore shouldn't have a "bridge" option defined.
         '';
       }
@@ -52,7 +52,7 @@ lib.mkIf config.microvm.guest.enable {
     map ({ id, ... }: {
       assertion = builtins.stringLength id <= 15;
       message = ''
-        MicroVM ${hostName}: interface name ${id} is longer than the
+        MicroVM ${fqdnOrHostName}: interface name ${id} is longer than the
         the maximum length of 15 characters on Linux.
       '';
     }) config.microvm.interfaces
@@ -61,7 +61,7 @@ lib.mkIf config.microvm.guest.enable {
     map (shares: {
       assertion = builtins.length shares == 1;
       message = ''
-        MicroVM ${hostName}: share tag "${(builtins.head shares).tag}" is used ${toString (builtins.length shares)} > 1 times.
+        MicroVM ${fqdnOrHostName}: share tag "${(builtins.head shares).tag}" is used ${toString (builtins.length shares)} > 1 times.
       '';
     }) (
       builtins.attrValues (
@@ -73,7 +73,7 @@ lib.mkIf config.microvm.guest.enable {
     map (shares: {
       assertion = builtins.length shares == 1;
       message = ''
-        MicroVM ${hostName}: share socket "${(builtins.head shares).socket}" is used ${toString (builtins.length shares)} > 1 times.
+        MicroVM ${fqdnOrHostName}: share socket "${(builtins.head shares).socket}" is used ${toString (builtins.length shares)} > 1 times.
       '';
     }) (
       builtins.attrValues (
@@ -88,7 +88,7 @@ lib.mkIf config.microvm.guest.enable {
     map ({ tag, socket, ... }: {
       assertion = socket != null;
       message = ''
-        MicroVM ${hostName}: virtiofs share with tag "${tag}" is missing a `socket` path.
+        MicroVM ${fqdnOrHostName}: virtiofs share with tag "${tag}" is missing a `socket` path.
       '';
     }) (
       builtins.filter ({ proto, ... }: proto == "virtiofs")
@@ -103,7 +103,7 @@ lib.mkIf config.microvm.guest.enable {
           builtins.any ({ type, ... }: type == "user") config.microvm.interfaces
         );
       message = ''
-        MicroVM ${hostName}: `config.microvm.forwardPorts` works only with qemu and one network interface with `type = "user"`
+        MicroVM ${fqdnOrHostName}: `config.microvm.forwardPorts` works only with qemu and one network interface with `type = "user"`
       '';
     } ]
     ++
@@ -111,7 +111,7 @@ lib.mkIf config.microvm.guest.enable {
     lib.optionals (config.microvm.hypervisor == "cloud-hypervisor") [ {
       assertion = ! (lib.any (str: lib.hasInfix "oem_strings" str) config.microvm.cloud-hypervisor.platformOEMStrings);
       message = ''
-        MicroVM ${hostName}: `config.microvm.cloud-hypervisor.platformOEMStrings` items must not contain `oem_strings`
+        MicroVM ${fqdnOrHostName}: `config.microvm.cloud-hypervisor.platformOEMStrings` items must not contain `oem_strings`
       '';
     } ];
 
@@ -119,6 +119,6 @@ lib.mkIf config.microvm.guest.enable {
   warnings =
     # 32 MB is just an optimistic guess, not based on experience
     lib.optional (config.microvm.mem < 32) ''
-      MicroVM ${hostName}: ${toString config.microvm.mem} MB of RAM is uncomfortably narrow.
+      MicroVM ${fqdnOrHostName}: ${toString config.microvm.mem} MB of RAM is uncomfortably narrow.
     '';
 }

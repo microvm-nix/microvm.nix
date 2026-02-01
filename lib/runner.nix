@@ -6,7 +6,7 @@
 let
   inherit (pkgs) lib;
 
-  inherit (microvmConfig) hostName vmHostPackages;
+  inherit (microvmConfig) fqdnOrHostName vmHostPackages;
 
   inherit (import ./. { inherit lib; }) makeMacvtap withDriveLetters extractOptValues extractParamValue;
   inherit (import ./volumes.nix { pkgs = microvmConfig.vmHostPackages; }) createVolumesScript;
@@ -25,7 +25,7 @@ let
   setBalloonScript = hypervisorConfig.setBalloonScript or null;
 
   execArg = lib.optionalString microvmConfig.prettyProcnames
-    ''-a "microvm@${hostName}"'';
+    ''-a "microvm@${fqdnOrHostName}"'';
 
 
   binScripts = microvmConfig.binScripts // {
@@ -57,11 +57,11 @@ let
   };
 
   binScriptPkgs = lib.mapAttrs (scriptName: lines:
-    vmHostPackages.writeShellScript "microvm-${hostName}-${scriptName}" lines
+    vmHostPackages.writeShellScript "microvm-${fqdnOrHostName}-${scriptName}" lines
   ) binScripts;
 in
 
-vmHostPackages.buildPackages.runCommand "microvm-${microvmConfig.hypervisor}-${hostName}"
+vmHostPackages.buildPackages.runCommand "microvm-${microvmConfig.hypervisor}-${fqdnOrHostName}"
 {
   # for `nix run`
   meta.mainProgram = "microvm-run";

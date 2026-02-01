@@ -7,7 +7,7 @@ let
   inherit (pkgs) lib;
   inherit (pkgs.stdenv.hostPlatform) system;
   inherit (microvmConfig)
-    hostName user socket preStart
+    fqdnOrHostName user socket preStart
     vcpu mem balloon initialBalloonMem hotplugMem hotpluggedMem
     interfaces volumes shares devices
     kernel initrdPath
@@ -75,7 +75,7 @@ let
   };
   config = lib.recursiveUpdate baseConfig microvmConfig.firecracker.extraConfig;
 
-  configFile = pkgs.writers.writeJSON "firecracker-${hostName}.json" config;
+  configFile = pkgs.writers.writeJSON "firecracker-${fqdnOrHostName}.json" config;
 
 in {
   command =
