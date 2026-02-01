@@ -501,30 +501,30 @@ in
       '';
     };
 
-     graphics = {
-       enable = mkOption {
-         type = types.bool;
-         default = false;
-         description = ''
-           Enable GUI support.
+    graphics = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Enable GUI support.
 
-           MicroVMs with graphics are intended for the interactive
-           use-case. They cannot be started through systemd jobs.
+          MicroVMs with graphics are intended for the interactive
+          use-case. They cannot be started through systemd jobs.
 
-           The display backend is chosen by `microvm.graphics.backend`.
-         '';
-       };
+          The display backend is chosen by `microvm.graphics.backend`.
+        '';
+      };
 
-       backend = mkOption {
-         type = types.enum [ "gtk" "cocoa" ];
-         default = if pkgs.stdenv.hostPlatform.isDarwin then "cocoa" else "gtk";
-         defaultText = lib.literalExpression ''if pkgs.stdenv.hostPlatform.isDarwin then "cocoa" else "gtk"'';
-         description = ''
-           QEMU display backend to use when `graphics.enable` is true.
+      backend = mkOption {
+        type = types.enum [ "gtk" "cocoa" ];
+        default = if pkgs.stdenv.hostPlatform.isDarwin then "cocoa" else "gtk";
+        defaultText = lib.literalExpression ''if pkgs.stdenv.hostPlatform.isDarwin then "cocoa" else "gtk"'';
+        description = ''
+          QEMU display backend to use when `graphics.enable` is true.
 
-           Defaults to `cocoa` on Darwin hosts and `gtk` otherwise.
-         '';
-       };
+          Defaults to `cocoa` on Darwin hosts and `gtk` otherwise.
+        '';
+      };
 
       socket = mkOption {
         type = types.str;
@@ -672,8 +672,8 @@ in
       description = "The cloud-hypervisor package to use.";
       type = types.package;
       default = if cfg.graphics.enable
-         then cfg.vmHostPackages.cloud-hypervisor-graphics
-         else cfg.vmHostPackages.cloud-hypervisor;
+        then cfg.vmHostPackages.cloud-hypervisor-graphics
+        else cfg.vmHostPackages.cloud-hypervisor;
     };
 
     crosvm.extraArgs = mkOption {
