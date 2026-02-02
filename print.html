@@ -621,7 +621,17 @@ hello
 <li>Performance is slower than native ARM64 execution</li>
 <li>Not all x86_64 binaries may work perfectly</li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><h2 id="microvmballoon"><a class="header" href="#microvmballoon">microvm.balloon</a></h2>
+<div style="break-before: page; page-break-before: always;"></div><h2 id="microvmaliothpackage"><a class="header" href="#microvmaliothpackage">microvm.alioth.package</a></h2>
+<p>The alioth package to use.</p>
+<p><em>Type:</em>
+package</p>
+<p><em>Default:</em>
+<code>&lt;derivation alioth-0.9.0&gt;</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmballoon"><a class="header" href="#microvmballoon">microvm.balloon</a></h2>
 <p>Whether to enable ballooning.</p>
 <p>By “inflating” or increasing the balloon the host can reduce the VMs
 memory amount and reclaim it for itself.
@@ -642,6 +652,16 @@ boolean</p>
 attribute set of strings concatenated with “\n”</p>
 <p><em>Default:</em>
 <code>{ }</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmcloud-hypervisorpackage"><a class="header" href="#microvmcloud-hypervisorpackage">microvm.cloud-hypervisor.package</a></h2>
+<p>The cloud-hypervisor package to use.</p>
+<p><em>Type:</em>
+package</p>
+<p><em>Default:</em>
+<code>&lt;derivation cloud-hypervisor-48.0&gt;</code></p>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
@@ -697,6 +717,16 @@ attribute set of absolute path</p>
 }
 
 </code></pre>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmcrosvmpackage"><a class="header" href="#microvmcrosvmpackage">microvm.crosvm.package</a></h2>
+<p>The crosvm package to use.</p>
+<p><em>Type:</em>
+package</p>
+<p><em>Default:</em>
+<code>&lt;derivation crosvm-0-unstable-2025-09-19&gt;</code></p>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
@@ -819,6 +849,16 @@ null or string</p>
 null or string</p>
 <p><em>Default:</em>
 <code>null</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmfirecrackerpackage"><a class="header" href="#microvmfirecrackerpackage">microvm.firecracker.package</a></h2>
+<p>The firecracker package to use.</p>
+<p><em>Type:</em>
+package</p>
+<p><em>Default:</em>
+<code>&lt;derivation firecracker-1.13.1&gt;</code></p>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
@@ -1156,6 +1196,16 @@ list of string</p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
 </ul>
+<h2 id="microvmkvmtoolpackage"><a class="header" href="#microvmkvmtoolpackage">microvm.kvmtool.package</a></h2>
+<p>The kvmtool package to use.</p>
+<p><em>Type:</em>
+package</p>
+<p><em>Default:</em>
+<code>&lt;derivation kvmtool-0-unstable-2024-04-09&gt;</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
 <h2 id="microvmmem"><a class="header" href="#microvmmem">microvm.mem</a></h2>
 <p>Amount of RAM in megabytes</p>
 <p><em>Type:</em>
@@ -1201,6 +1251,16 @@ strings concatenated with “\n”</p>
 boolean</p>
 <p><em>Default:</em>
 <code>true</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmqemupackage"><a class="header" href="#microvmqemupackage">microvm.qemu.package</a></h2>
+<p>The QEMU package to use.</p>
+<p><em>Type:</em>
+package</p>
+<p><em>Default:</em>
+<code>&lt;derivation qemu-host-cpu-only-10.1.0&gt;</code></p>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
@@ -1477,6 +1537,16 @@ boolean</p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
 </ul>
+<h2 id="microvmstratovirtpackage"><a class="header" href="#microvmstratovirtpackage">microvm.stratovirt.package</a></h2>
+<p>The stratovirt package to use.</p>
+<p><em>Type:</em>
+package</p>
+<p><em>Default:</em>
+<code>&lt;derivation stratovirt-2.4.0&gt;</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
 <h2 id="microvmsystemsymlink"><a class="header" href="#microvmsystemsymlink">microvm.systemSymlink</a></h2>
 <p>Whether to inclcude a symlink of <code>config.system.build.toplevel</code> to <code>share/microvm/system</code>.
 This is required for commands like <code>microvm -l</code> to function but removes reference to the uncompressed store content when using a disk image for the nix store.</p>
@@ -1504,6 +1574,16 @@ null or string</p>
 positive integer, meaning &gt;0</p>
 <p><em>Default:</em>
 <code>1</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmvfkitpackage"><a class="header" href="#microvmvfkitpackage">microvm.vfkit.package</a></h2>
+<p>The vfkit package to use.</p>
+<p><em>Type:</em>
+package</p>
+<p><em>Default:</em>
+<code>&lt;derivation vfkit-0.6.1&gt;</code></p>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
@@ -1563,6 +1643,16 @@ boolean</p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
 </ul>
+<h2 id="microvmvirtiofsdpackage"><a class="header" href="#microvmvirtiofsdpackage">microvm.virtiofsd.package</a></h2>
+<p>The virtiofsd package to use.</p>
+<p><em>Type:</em>
+package</p>
+<p><em>Default:</em>
+<code>config.microvm.vmHostPackages.virtiofsd</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
 <h2 id="microvmvirtiofsdextraargs"><a class="header" href="#microvmvirtiofsdextraargs">microvm.virtiofsd.extraArgs</a></h2>
 <p>Extra command-line switch to pass to virtiofsd.</p>
 <p><em>Type:</em>
@@ -1612,7 +1702,7 @@ string or (unsigned integer, meaning &gt;=0)</p>
 <h2 id="microvmvmhostpackages"><a class="header" href="#microvmvmhostpackages">microvm.vmHostPackages</a></h2>
 <p>If set, overrides the default host package.</p>
 <p><em>Type:</em>
-null or Nixpkgs package set</p>
+Nixpkgs package set</p>
 <p><em>Default:</em>
 <code>if config.microvm.cpu == null then pkgs else pkgs.buildPackages</code></p>
 <p><em>Example:</em>
