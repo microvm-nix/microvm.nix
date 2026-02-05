@@ -58,5 +58,14 @@
         generators = { systemd-gpt-auto-generator = "/dev/null"; };
       };
 
+    # Set /etc/machine-id from machineId if provided
+    # This ensures the guest machine-id matches the UUID passed to machined and SMBIOS
+    environment.etc."machine-id" = lib.mkIf (config.microvm.machineId != null) {
+      text = builtins.replaceStrings ["-"] [""] config.microvm.machineId + "\n";
+    };
+    # Generate hostId from machine-id like systemd would do
+    networking.hostId = lib.mkDefault (
+      builtins.substring 0 8 config.microvm.machineId
+    );
   };
 }
