@@ -626,7 +626,7 @@ hello
 <p><em>Type:</em>
 package</p>
 <p><em>Default:</em>
-<code>&lt;derivation alioth-0.9.0&gt;</code></p>
+<code>config.microvm.vmHostPackages.alioth</code></p>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
@@ -660,8 +660,13 @@ attribute set of strings concatenated with “\n”</p>
 <p>The cloud-hypervisor package to use.</p>
 <p><em>Type:</em>
 package</p>
-<p><em>Default:</em>
-<code>&lt;derivation cloud-hypervisor-48.0&gt;</code></p>
+<p><em>Default:</em></p>
+<pre><code>if config.microvm.graphics.enable then
+  config.microvm.vmHostPackages.cloud-hypervisor-graphics
+else
+  config.microvm.vmHostPackages.cloud-hypervisor
+
+</code></pre>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
@@ -726,7 +731,7 @@ attribute set of absolute path</p>
 <p><em>Type:</em>
 package</p>
 <p><em>Default:</em>
-<code>&lt;derivation crosvm-0-unstable-2025-09-19&gt;</code></p>
+<code>config.microvm.vmHostPackages.crosvm</code></p>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
@@ -858,7 +863,7 @@ null or string</p>
 <p><em>Type:</em>
 package</p>
 <p><em>Default:</em>
-<code>&lt;derivation firecracker-1.13.1&gt;</code></p>
+<code>config.microvm.vmHostPackages.firecracker</code></p>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
@@ -1201,7 +1206,7 @@ list of string</p>
 <p><em>Type:</em>
 package</p>
 <p><em>Default:</em>
-<code>&lt;derivation kvmtool-0-unstable-2024-04-09&gt;</code></p>
+<code>config.microvm.vmHostPackages.kvmtool</code></p>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
@@ -1259,8 +1264,15 @@ boolean</p>
 <p>The QEMU package to use.</p>
 <p><em>Type:</em>
 package</p>
-<p><em>Default:</em>
-<code>&lt;derivation qemu-host-cpu-only-10.1.0&gt;</code></p>
+<p><em>Default:</em></p>
+<pre><code>if config.microvm.cpu == null &amp;&amp; config.microvm.vmHostPackages.stdenv.hostPlatform.isLinux then
+  # If no CPU is requested and the host is Linux, use qemu with KVM support (hardware-accelerated)
+  config.microvm.vmHostPackages.qemu_kvm
+else
+  # Different CPU architectures like darwin or Non-Linux use the generic qemu package
+  config.microvm.vmHostPackages.qemu
+
+</code></pre>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
@@ -1542,7 +1554,7 @@ boolean</p>
 <p><em>Type:</em>
 package</p>
 <p><em>Default:</em>
-<code>&lt;derivation stratovirt-2.4.0&gt;</code></p>
+<code>config.microvm.vmHostPackages.stratovirt</code></p>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
@@ -1583,7 +1595,7 @@ positive integer, meaning &gt;0</p>
 <p><em>Type:</em>
 package</p>
 <p><em>Default:</em>
-<code>&lt;derivation vfkit-0.6.1&gt;</code></p>
+<code>config.microvm.vmHostPackages.vfkit</code></p>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
