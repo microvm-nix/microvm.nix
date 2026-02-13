@@ -33,7 +33,6 @@ in
             value = {
               stderr_syslog = true;
               stdout_syslog = true;
-              autorestart = true;
               command = pkgs.writeShellScript "virtiofsd-${tag}" ''
                 if [ $(id -u) = 0 ]; then
                   OPT_RLIMIT="--rlimit-nofile 1048576"
@@ -70,9 +69,5 @@ in
       in ''
         exec ${supervisord} --configuration ${supervisordConfigFile}
       '';
-
-    virtiofsd-shutdown = ''
-      exec ${supervisorctl} stop
-    '';
   };
 }
