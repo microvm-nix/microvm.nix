@@ -1,13 +1,22 @@
-{ pkgs, lib, config, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 
 {
   config = lib.mkIf config.microvm.guest.enable {
     assertions = [
-      {assertion = (config.microvm.writableStoreOverlay != null) -> (!config.nix.optimise.automatic && !config.nix.settings.auto-optimise-store);
-       message = ''
-         `nix.optimise.automatic` and `nix.settings.auto-optimise-store` do not work with `microvm.writableStoreOverlay`.
-       '';}];
-
+      {
+        assertion =
+          (config.microvm.writableStoreOverlay != null)
+          -> (!config.nix.optimise.automatic && !config.nix.settings.auto-optimise-store);
+        message = ''
+          `nix.optimise.automatic` and `nix.settings.auto-optimise-store` do not work with `microvm.writableStoreOverlay`.
+        '';
+      }
+    ];
 
     boot.loader.grub.enable = false;
     # boot.initrd.systemd.enable = lib.mkDefault true;
@@ -18,36 +27,56 @@
       "9pnet_virtio"
       "9p"
       "virtiofs"
-    ] ++ lib.optionals (
-      pkgs.stdenv.targetPlatform.system == "x86_64-linux" &&
-      config.microvm.hypervisor == "firecracker"
-    ) [
-      # Keyboard controller that can receive CtrlAltDel
-      "i8042"
-    ] ++ lib.optionals (config.microvm.writableStoreOverlay != null) [
+    ]
+    ++
+      lib.optionals
+        (pkgs.stdenv.targetPlatform.system == "x86_64-linux" && config.microvm.hypervisor == "firecracker")
+        [
+          # Keyboard controller that can receive CtrlAltDel
+          "i8042"
+        ]
+    ++ lib.optionals (config.microvm.writableStoreOverlay != null) [
       "overlay"
     ];
 
-    microvm.kernelParams = let
-      # When a store disk is used, we can drop references to the packed contents as the squashfs/erofs contains all paths.
-      toplevel = if config.microvm.storeOnDisk then
-        builtins.unsafeDiscardStringContext config.system.build.toplevel
-      else
-        config.system.build.toplevel;
-    in config.boot.kernelParams ++ [
-      "init=${toplevel}/init"
-    ];
+    microvm.kernelParams =
+      let
+        # When a store disk is used, we can drop references to the packed contents as the squashfs/erofs contains all paths.
+        toplevel =
+          if config.microvm.storeOnDisk then
+            builtins.unsafeDiscardStringContext config.system.build.toplevel
+          else
+            config.system.build.toplevel;
+      in
+      config.boot.kernelParams
+      ++ [
+        "init=${toplevel}/init"
+      ];
 
     # modules that consume boot time but have rare use-cases
     boot.blacklistedKernelModules = [
-      "rfkill" "intel_pstate"
-    ] ++ lib.optional (!config.microvm.graphics.enable) "drm";
+      "rfkill"
+      "intel_pstate"
+    ]
+    ++ lib.optional (!config.microvm.graphics.enable) "drm";
+
+    # Enable BTF (BPF Type Format) for eBPF tools like bpftrace
+    boot.kernelPatches = lib.optionals config.microvm.kernelBtf [
+      {
+        name = "btf";
+        patch = null;
+        structuredExtraConfig = with lib.kernel; {
+          DEBUG_INFO_BTF = yes;
+        };
+      }
+    ];
 
     systemd =
       let
         # nix-daemon works only with a writable /nix/store
         enableNixDaemon = config.microvm.writableStoreOverlay != null;
-      in {
+      in
+      {
         services.nix-daemon.enable = lib.mkDefault enableNixDaemon;
         sockets.nix-daemon.enable = lib.mkDefault enableNixDaemon;
 
@@ -55,7 +84,9 @@
         services.mount-pstore.enable = false;
 
         # just fails in the usual usage of microvm.nix
-        generators = { systemd-gpt-auto-generator = "/dev/null"; };
+        generators = {
+          systemd-gpt-auto-generator = "/dev/null";
+        };
       };
 
   };

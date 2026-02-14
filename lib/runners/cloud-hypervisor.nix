@@ -1,52 +1,79 @@
-{ pkgs
-, microvmConfig
-, macvtapFds
-, extractOptValues
-, extractParamValue
-, ...
+{
+  pkgs,
+  microvmConfig,
+  macvtapFds,
+  extractOptValues,
+  extractParamValue,
+  ...
 }:
 
 let
   inherit (pkgs) lib;
-  inherit (microvmConfig) vcpu mem balloon initialBalloonMem deflateOnOOM hotplugMem hotpluggedMem user interfaces volumes shares socket devices hugepageMem graphics storeDisk storeOnDisk kernel initrdPath credentialFiles vsock;
+  inherit (microvmConfig)
+    vcpu
+    mem
+    balloon
+    initialBalloonMem
+    deflateOnOOM
+    hotplugMem
+    hotpluggedMem
+    user
+    interfaces
+    volumes
+    shares
+    socket
+    devices
+    hugepageMem
+    graphics
+    storeDisk
+    storeOnDisk
+    kernel
+    initrdPath
+    credentialFiles
+    vsock
+    ;
   inherit (microvmConfig.cloud-hypervisor) platformOEMStrings extraArgs;
 
   # extract all the extra args that we merge with up front
-  processedExtraArgs = builtins.foldl'
-    (args: opt: (extractOptValues opt args).args)
-    extraArgs
-    ["--vsock" "--platform"];
+  processedExtraArgs = builtins.foldl' (args: opt: (extractOptValues opt args).args) extraArgs [
+    "--vsock"
+    "--platform"
+  ];
 
-  hasUserConsole = (extractOptValues "--console" extraArgs).values != [];
-  hasUserSerial = (extractOptValues "--serial" extraArgs).values != [];
+  hasUserConsole = (extractOptValues "--console" extraArgs).values != [ ];
+  hasUserSerial = (extractOptValues "--serial" extraArgs).values != [ ];
   userSerial = lib.optionalString hasUserSerial (extractOptValues "--serial" extraArgs).values;
 
-  kernelPath = {
-    x86_64-linux = "${kernel.dev}/vmlinux";
-    aarch64-linux = "${kernel.out}/${pkgs.stdenv.hostPlatform.linux-kernel.target}";
-  }.${pkgs.stdenv.hostPlatform.system};
+  kernelPath =
+    {
+      x86_64-linux = "${kernel.dev}/vmlinux";
+      aarch64-linux = "${kernel.out}/${pkgs.stdenv.hostPlatform.linux-kernel.target}";
+    }
+    .${pkgs.stdenv.hostPlatform.system};
 
   kernelConsoleDefault =
-    if pkgs.stdenv.hostPlatform.system == "x86_64-linux"
-    then "earlyprintk=ttyS0 console=ttyS0"
-    else if pkgs.stdenv.hostPlatform.system == "aarch64-linux"
-    then "console=ttyAMA0"
-    else "";
+    if pkgs.stdenv.hostPlatform.system == "x86_64-linux" then
+      "earlyprintk=ttyS0 console=ttyS0"
+    else if pkgs.stdenv.hostPlatform.system == "aarch64-linux" then
+      "console=ttyAMA0"
+    else
+      "";
 
   kernelConsole = lib.optionalString (!hasUserSerial || userSerial == "tty") kernelConsoleDefault;
 
   kernelCmdLine = "${kernelConsole} reboot=t panic=-1 ${toString microvmConfig.kernelParams}";
 
-
   userVSockOpts = (extractOptValues "--vsock" extraArgs).values;
-  userVSockStr = if userVSockOpts == [] then null else builtins.head userVSockOpts;
+  userVSockStr = if userVSockOpts == [ ] then null else builtins.head userVSockOpts;
   userVSockPath = extractParamValue "socket" userVSockStr;
   userVSockCID = extractParamValue "cid" userVSockStr;
-  vsockCID = if vsock.cid != null && userVSockCID != null
-             then throw "Cannot set `microvm.vsock.cid` and --vsock 'cid=${userVSockCID}...' via `microvm.cloud-hypervisor.extraArgs` at the same time"
-             else if vsock.cid != null
-                  then vsock.cid
-                  else userVSockCID;
+  vsockCID =
+    if vsock.cid != null && userVSockCID != null then
+      throw "Cannot set `microvm.vsock.cid` and --vsock 'cid=${userVSockCID}...' via `microvm.cloud-hypervisor.extraArgs` at the same time"
+    else if vsock.cid != null then
+      vsock.cid
+    else
+      userVSockCID;
   supportsNotifySocket = vsockCID != null;
   vsockPath = if userVSockPath != null then userVSockPath else "notify.vsock";
   vsockOpts =
@@ -60,40 +87,40 @@ let
   useVirtiofs = builtins.any ({ proto, ... }: proto == "virtiofs") shares;
 
   # Transform attrs to parameters in form of `key1=value1,key2=value2,[...]`
-  opsMapped = ops: lib.concatStringsSep "," (
-    lib.mapAttrsToList (k: v:
-      "${k}=${v}"
-    ) ops
-  );
+  opsMapped = ops: lib.concatStringsSep "," (lib.mapAttrsToList (k: v: "${k}=${v}") ops);
 
   # Attrs representing CHV mem options
-  memOps = opsMapped ({
-    size = "${toString mem}M";
-    mergeable = "on";
-    # Shared memory is required for usage with virtiofsd but it
-    # prevents Kernel Same-page Merging.
-    shared = if useVirtiofs || graphics.enable then "on" else "off";
-  }
-  # add ballooning options and override 'size' key
-  // lib.optionalAttrs useHotPlugMemory {
-    size = "${toString hotplugMem}M";
-    hotplug_method = "virtio-mem";
-    hotplug_size = "${toString hotplugMem}M";
-    hotplugged_size = "${toString hotpluggedMem}M";
-  }
-  # enable hugepages (shared option is ignored by CHV)
-  // lib.optionalAttrs hugepageMem {
-    hugepages = "on";
-  });
+  memOps = opsMapped (
+    {
+      size = "${toString mem}M";
+      mergeable = "on";
+      # Shared memory is required for usage with virtiofsd but it
+      # prevents Kernel Same-page Merging.
+      shared = if useVirtiofs || graphics.enable then "on" else "off";
+    }
+    # add ballooning options and override 'size' key
+    // lib.optionalAttrs useHotPlugMemory {
+      size = "${toString hotplugMem}M";
+      hotplug_method = "virtio-mem";
+      hotplug_size = "${toString hotplugMem}M";
+      hotplugged_size = "${toString hotpluggedMem}M";
+    }
+    # enable hugepages (shared option is ignored by CHV)
+    // lib.optionalAttrs hugepageMem {
+      hugepages = "on";
+    }
+  );
 
-  balloonOps = opsMapped ({
-    size = "${toString initialBalloonMem}M";
-    free_page_reporting = "on";
-  }
-  # enable deflating memory balloon on out-of-memory
-  // lib.optionalAttrs deflateOnOOM {
-    deflate_on_oom = "on";
-  });
+  balloonOps = opsMapped (
+    {
+      size = "${toString initialBalloonMem}M";
+      free_page_reporting = "on";
+    }
+    # enable deflating memory balloon on out-of-memory
+    // lib.optionalAttrs deflateOnOOM {
+      deflate_on_oom = "on";
+    }
+  );
 
   tapMultiQueue = vcpu > 1;
 
@@ -104,34 +131,42 @@ let
 
   # cloud-hypervisor >= 30.0 < 36.0 temporarily replaced clap with argh
   hasArghSyntax =
-    builtins.compareVersions cloudhypervisorPkg.version "30.0" >= 0 &&
-    builtins.compareVersions cloudhypervisorPkg.version "36.0" < 0;
+    builtins.compareVersions cloudhypervisorPkg.version "30.0" >= 0
+    && builtins.compareVersions cloudhypervisorPkg.version "36.0" < 0;
   arg =
-    if hasArghSyntax
-    then switch: params:
+    if hasArghSyntax then
+      switch: params:
       # `--switch param0 --switch param1 ...`
-      builtins.concatMap (param: [ switch param ]) params
-    else switch: params:
+      builtins.concatMap (param: [
+        switch
+        param
+      ]) params
+    else
+      switch: params:
       # `` or `--switch param0 param1 ...`
-      lib.optionals (params != []) (
-        [ switch ] ++ params
-      );
+      lib.optionals (params != [ ]) ([ switch ] ++ params);
 
   gpuParams = {
     context-types = "virgl:virgl2:cross-domain";
-    displays = [ {
-      hidden = true;
-    } ];
+    displays = [
+      {
+        hidden = true;
+      }
+    ];
     egl = true;
     vulkan = true;
   };
 
-  oemStringValues = platformOEMStrings ++ lib.optional supportsNotifySocket "io.systemd.credential:vmm.notify_socket=vsock-stream:2:8888";
-  oemStringOptions = lib.optional (oemStringValues != []) "oem_strings=[${lib.concatStringsSep "," oemStringValues}]";
+  oemStringValues =
+    platformOEMStrings
+    ++ lib.optional supportsNotifySocket "io.systemd.credential:vmm.notify_socket=vsock-stream:2:8888";
+  oemStringOptions = lib.optional (
+    oemStringValues != [ ]
+  ) "oem_strings=[${lib.concatStringsSep "," oemStringValues}]";
   platformExtracted = extractOptValues "--platform" extraArgs;
   extraArgsWithoutPlatform = platformExtracted.args;
   userPlatformOpts = platformExtracted.values;
-  userPlatformStr = lib.optionalString (userPlatformOpts != []) (builtins.head userPlatformOpts);
+  userPlatformStr = lib.optionalString (userPlatformOpts != [ ]) (builtins.head userPlatformOpts);
   userHasOemStrings = (extractParamValue "oem_strings" userPlatformStr) != null;
   platformOps =
     if userHasOemStrings then
@@ -140,7 +175,8 @@ let
       lib.concatStringsSep "," (oemStringOptions ++ userPlatformOpts);
 
   cloudhypervisorPkg = microvmConfig.cloud-hypervisor.package;
-in {
+in
+{
   inherit tapMultiQueue supportsNotifySocket;
 
   preStart = ''
@@ -151,7 +187,8 @@ in {
       rm -f '${socket}'
     ''}
 
-  '' + lib.optionalString supportsNotifySocket ''
+  ''
+  + lib.optionalString supportsNotifySocket ''
     # Ensure notify sockets are removed if cloud-hypervisor didn't exit cleanly the last time
     rm -f ${vsockPath} ${vsockPath}_8888
 
@@ -161,7 +198,8 @@ in {
       # shutdown of the stream, like systemd v256+ does.
       ${pkgs.socat}/bin/socat -T2 UNIX-LISTEN:${vsockPath}_8888,fork UNIX-SENDTO:$NOTIFY_SOCKET &
     fi
-  '' + lib.optionalString graphics.enable ''
+  ''
+  + lib.optionalString graphics.enable ''
     rm -f ${graphics.socket}
     ${pkgs.crosvm}/bin/crosvm device gpu \
       --socket ${graphics.socket} \
@@ -173,107 +211,157 @@ in {
     done
   '';
 
-
   command =
-    if user != null
-    then throw "cloud-hypervisor will not change user"
-    else if credentialFiles != {}
-    then throw "cloud-hypervisor does not support credentialFiles"
-    else lib.escapeShellArgs (
-      [
-        "${cloudhypervisorPkg}/bin/cloud-hypervisor"
-        "--cpus" "boot=${toString vcpu}"
-        "--watchdog"
-        "--kernel" kernelPath
-        "--initramfs" initrdPath
-        "--cmdline" kernelCmdLine
-        "--seccomp" "true"
-        "--memory" memOps
-        "--platform" platformOps
-      ]
-      ++
-      lib.optionals (!hasUserConsole) ["--console" "null"]
-      ++
-      lib.optionals (!hasUserSerial) ["--serial" "tty"]
-      ++
-      lib.optionals (vsockOpts != "") ["--vsock" vsockOpts]
-      ++
-      lib.optionals graphics.enable [
-        "--gpu" "socket=${graphics.socket}"
-      ]
-      ++
-      lib.optionals balloon [ "--balloon" balloonOps ]
-      ++
-      arg "--disk" (
-        lib.optional storeOnDisk (opsMapped ({
-          path = toString storeDisk;
-          readonly = "on";
-        } // mqOps))
-        ++
-        map ({ image, serial, direct, readOnly, ... }:
-          opsMapped (
-            {
-              path = toString image;
-              direct =
-                if direct
-                then "on"
-                else "off";
-              readonly =
-                if readOnly
-                then "on"
-                else "off";
-            } //
-            lib.optionalAttrs (serial != null) {
-              inherit serial;
-            } //
-            mqOps
+    if user != null then
+      throw "cloud-hypervisor will not change user"
+    else if credentialFiles != { } then
+      throw "cloud-hypervisor does not support credentialFiles"
+    else
+      lib.escapeShellArgs (
+        [
+          "${cloudhypervisorPkg}/bin/cloud-hypervisor"
+          "--cpus"
+          "boot=${toString vcpu}"
+          "--watchdog"
+          "--kernel"
+          kernelPath
+          "--initramfs"
+          initrdPath
+          "--cmdline"
+          kernelCmdLine
+          "--seccomp"
+          "true"
+          "--memory"
+          memOps
+          "--platform"
+          platformOps
+        ]
+        ++ lib.optionals (!hasUserConsole) [
+          "--console"
+          "null"
+        ]
+        ++ lib.optionals (!hasUserSerial) [
+          "--serial"
+          "tty"
+        ]
+        ++ lib.optionals (vsockOpts != "") [
+          "--vsock"
+          vsockOpts
+        ]
+        ++ lib.optionals graphics.enable [
+          "--gpu"
+          "socket=${graphics.socket}"
+        ]
+        ++ lib.optionals balloon [
+          "--balloon"
+          balloonOps
+        ]
+        ++ arg "--disk" (
+          lib.optional storeOnDisk (
+            opsMapped (
+              {
+                path = toString storeDisk;
+                readonly = "on";
+              }
+              // mqOps
+            )
           )
-        ) volumes
+          ++ map (
+            {
+              image,
+              serial,
+              direct,
+              readOnly,
+              ...
+            }:
+            opsMapped (
+              {
+                path = toString image;
+                direct = if direct then "on" else "off";
+                readonly = if readOnly then "on" else "off";
+              }
+              // lib.optionalAttrs (serial != null) {
+                inherit serial;
+              }
+              // mqOps
+            )
+          ) volumes
+        )
+        ++ arg "--fs" (
+          map (
+            {
+              proto,
+              socket,
+              tag,
+              ...
+            }:
+            if proto == "virtiofs" then
+              opsMapped {
+                inherit tag socket;
+              }
+            else
+              throw "cloud-hypervisor supports only shares that are virtiofs"
+          ) shares
+        )
+        ++ lib.optionals (socket != null) [
+          "--api-socket"
+          socket
+        ]
+        ++ arg "--net" (
+          map (
+            {
+              type,
+              id,
+              mac,
+              ...
+            }:
+            if type == "tap" then
+              opsMapped (
+                {
+                  tap = id;
+                  inherit mac;
+                }
+                // lib.optionalAttrs tapMultiQueue {
+                  num_queues = toString (2 * vcpu);
+                }
+              )
+            else if type == "macvtap" then
+              opsMapped (
+                {
+                  fd = "[${lib.concatMapStringsSep "," toString macvtapFds.${id}}]";
+                  inherit mac;
+                }
+                // lib.optionalAttrs tapMultiQueue {
+                  num_queues = toString (2 * vcpu);
+                }
+              )
+            else
+              throw "Unsupported interface type ${type} for Cloud-Hypervisor"
+          ) interfaces
+        )
       )
-      ++
-      arg "--fs" (map ({ proto, socket, tag, ... }:
-        if proto == "virtiofs"
-        then opsMapped {
-          inherit tag socket;
-        }
-        else throw "cloud-hypervisor supports only shares that are virtiofs"
-      ) shares)
-      ++
-      lib.optionals (socket != null) [ "--api-socket" socket ]
-      ++
-      arg "--net" (map ({ type, id, mac, ... }:
-        if type == "tap"
-        then opsMapped ({
-          tap = id;
-          inherit mac;
-        } // lib.optionalAttrs tapMultiQueue {
-          num_queues = toString (2 * vcpu);
-        })
-        else if type == "macvtap"
-        then opsMapped ({
-          fd = "[${lib.concatMapStringsSep "," toString macvtapFds.${id}}]";
-          inherit mac;
-        } // lib.optionalAttrs tapMultiQueue {
-          num_queues = toString (2 * vcpu);
-        })
-        else throw "Unsupported interface type ${type} for Cloud-Hypervisor"
-      ) interfaces)
-    )
-    + " " + # Move vfio-pci outside of
-    lib.concatStringsSep " " (
-      arg "--device" (
-        map ({ bus, path, ... }: {
-          pci = "path=/sys/bus/pci/devices/${path}";
-          usb = throw "USB passthrough is not supported on cloud-hypervisor";
-        }.${bus}) devices
+      + " "
+      # Move vfio-pci outside of
+      + lib.concatStringsSep " " (
+        arg "--device" (
+          map (
+            { bus, path, ... }:
+            {
+              pci = "path=/sys/bus/pci/devices/${path}";
+              usb = throw "USB passthrough is not supported on cloud-hypervisor";
+            }
+            .${bus}
+          ) devices
+        )
       )
-    ) + " " + lib.escapeShellArgs processedExtraArgs;
+      + " "
+      + lib.escapeShellArgs processedExtraArgs;
 
   canShutdown = socket != null;
 
   shutdownCommand =
-    if socket != null
-    then ''
+    if socket != null then
+      ''
         api() {
           ${pkgs.curl}/bin/curl -s \
             --unix-socket ${socket} \
@@ -284,14 +372,16 @@ in {
 
         ${pkgs.util-linux}/bin/waitpid $MAINPID
       ''
-    else throw "Cannot shutdown without socket";
+    else
+      throw "Cannot shutdown without socket";
 
   setBalloonScript =
-    if socket != null
-    then ''
-      ${cloudhypervisorPkg}/bin/ch-remote --api-socket ${socket} resize --balloon $SIZE"M"
-    ''
-    else null;
+    if socket != null then
+      ''
+        ${cloudhypervisorPkg}/bin/ch-remote --api-socket ${socket} resize --balloon $SIZE"M"
+      ''
+    else
+      null;
 
   requiresMacvtapAsFds = true;
 }

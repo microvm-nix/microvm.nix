@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   hostName = config.networking.hostName or "$HOSTNAME";
@@ -23,13 +28,13 @@ let
   };
 
   canSwitchViaSsh =
-    config.system.switch.enable &&
-    # MicroVM must be reachable through SSH
-    config.services.openssh.enable &&
-    # Is the /nix/store mounted from the host?
-    builtins.any ({ source, ... }:
-      source == "/nix/store"
-    ) config.microvm.shares;
+    config.system.switch.enable
+    &&
+      # MicroVM must be reachable through SSH
+      config.services.openssh.enable
+    &&
+      # Is the /nix/store mounted from the host?
+      builtins.any ({ source, ... }: source == "/nix/store") config.microvm.shares;
 
 in
 {
@@ -138,11 +143,14 @@ in
 
       echo "Building toplevel ${paths.toplevelOut}"
       nix build -L --accept-flake-config --no-link \
-        ${with paths; lib.concatMapStringsSep " " (drv: "'${drv}^out'") [
-          nixDrv
-          closureInfoDrv
-          toplevelDrv
-        ]}
+        ${
+          with paths;
+          lib.concatMapStringsSep " " (drv: "'${drv}^out'") [
+            nixDrv
+            closureInfoDrv
+            toplevelDrv
+          ]
+        }
       echo "Building MicroVM runner for ${hostName}"
       nix build -L --accept-flake-config -o new \
         "${paths.runnerDrv}^out"
@@ -211,30 +219,34 @@ in
       ''
     );
 
-    rebuild = with config.microvm.deploy; pkgs.writeShellScriptBin "microvm-rebuild" ''
-      set -eou pipefail
+    rebuild =
+      with config.microvm.deploy;
+      pkgs.writeShellScriptBin "microvm-rebuild" ''
+        set -eou pipefail
 
-      HOST="$1"
-      shift
-      TARGET="$1"
-      shift
-      OPTS="$@"
-      if [ $# -gt 0 ]; then
-        if [ "$1" == "--use-remote-sudo" ]; then
-          OPTS="$1"
-          shift
+        HOST="$1"
+        shift
+        TARGET="$1"
+        shift
+        OPTS="$@"
+        if [ $# -gt 0 ]; then
+          if [ "$1" == "--use-remote-sudo" ]; then
+            OPTS="$1"
+            shift
+          fi
         fi
-      fi
-      if [[ -z "$HOST" || -z "$TARGET" || $# -gt 0 ]]; then
-        echo "Usage: $0 root@<host> root@<target> [--use-remote-sudo] switch"
-        exit 1
-      fi
+        if [[ -z "$HOST" || -z "$TARGET" || $# -gt 0 ]]; then
+          echo "Usage: $0 root@<host> root@<target> [--use-remote-sudo] switch"
+          exit 1
+        fi
 
-      ${lib.getExe installOnHost} "$HOST" $OPTS
-      ${if canSwitchViaSsh
-        then ''${lib.getExe sshSwitch} "$TARGET" $OPTS''
-        else ''ssh "$HOST" -- systemctl restart "microvm@${hostName}.service"''
-       }
-    '';
+        ${lib.getExe installOnHost} "$HOST" $OPTS
+        ${
+          if canSwitchViaSsh then
+            ''${lib.getExe sshSwitch} "$TARGET" $OPTS''
+          else
+            ''ssh "$HOST" -- systemctl restart "microvm@${hostName}.service"''
+        }
+      '';
   };
 }

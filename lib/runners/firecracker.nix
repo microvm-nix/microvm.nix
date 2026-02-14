@@ -1,23 +1,41 @@
-{ pkgs
-, microvmConfig
-, ...
+{
+  pkgs,
+  microvmConfig,
+  ...
 }:
 
 let
   inherit (pkgs) lib;
   inherit (pkgs.stdenv.hostPlatform) system;
   inherit (microvmConfig)
-    hostName user socket preStart
-    vcpu mem balloon initialBalloonMem hotplugMem hotpluggedMem
-    interfaces volumes shares devices
-    kernel initrdPath
-    storeDisk credentialFiles vsock;
+    hostName
+    user
+    socket
+    preStart
+    vcpu
+    mem
+    balloon
+    initialBalloonMem
+    hotplugMem
+    hotpluggedMem
+    interfaces
+    volumes
+    shares
+    devices
+    kernel
+    initrdPath
+    storeDisk
+    credentialFiles
+    vsock
+    ;
   inherit (microvmConfig.firecracker) cpu;
 
-  kernelPath = {
-    x86_64-linux = "${kernel.dev}/vmlinux";
-    aarch64-linux = "${kernel.out}/${pkgs.stdenv.hostPlatform.linux-kernel.target}";
-  }.${system};
+  kernelPath =
+    {
+      x86_64-linux = "${kernel.dev}/vmlinux";
+      aarch64-linux = "${kernel.out}/${pkgs.stdenv.hostPlatform.linux-kernel.target}";
+    }
+    .${system};
 
   # Firecracker config, as JSON in `configFile`
   baseConfig = {
@@ -33,33 +51,55 @@ let
       # Enabling simultaneous multithreading is not supported on aarch64
       smt = system != "aarch64-linux";
     };
-    drives = [ {
-      drive_id = "store";
-      path_on_host = storeDisk;
-      is_root_device = false;
-      is_read_only = true;
-      io_engine = microvmConfig.firecracker.driveIoEngine;
-    } ] ++ map ({ image, serial, direct, readOnly, ... }:
-      lib.warnIf (serial != null) ''
-        Volume serial is not supported for firecracker
-      ''
-      lib.warnIf direct ''
-        Volume direct IO is not supported for firecracker
-      '' {
-        drive_id = image;
-        path_on_host = image;
+    drives = [
+      {
+        drive_id = "store";
+        path_on_host = storeDisk;
         is_root_device = false;
-        is_read_only = readOnly;
+        is_read_only = true;
         io_engine = microvmConfig.firecracker.driveIoEngine;
-      }) volumes;
-    network-interfaces = map ({ type, id, mac, ... }:
-      if type == "tap"
-      then {
-        iface_id = id;
-        host_dev_name = id;
-        guest_mac = mac;
       }
-      else throw "Network interface type ${type} not implemented for Firecracker"
+    ]
+    ++ map (
+      {
+        image,
+        serial,
+        direct,
+        readOnly,
+        ...
+      }:
+      lib.warnIf (serial != null)
+        ''
+          Volume serial is not supported for firecracker
+        ''
+        lib.warnIf
+        direct
+        ''
+          Volume direct IO is not supported for firecracker
+        ''
+        {
+          drive_id = image;
+          path_on_host = image;
+          is_root_device = false;
+          is_read_only = readOnly;
+          io_engine = microvmConfig.firecracker.driveIoEngine;
+        }
+    ) volumes;
+    network-interfaces = map (
+      {
+        type,
+        id,
+        mac,
+        ...
+      }:
+      if type == "tap" then
+        {
+          iface_id = id;
+          host_dev_name = id;
+          guest_mac = mac;
+        }
+      else
+        throw "Network interface type ${type} not implemented for Firecracker"
     ) interfaces;
     vsock =
       if vsock.cid != null then
@@ -79,35 +119,42 @@ let
 
   firecrackerPkg = microvmConfig.firecracker.package;
 
-in {
+in
+{
   command =
-    if user != null
-    then throw "firecracker will not change user"
-    else if shares != []
-    then throw "9p/virtiofs shares not implemented for Firecracker"
-    else if devices != []
-    then throw "devices passthrough not implemented for Firecracker"
-    else if balloon
-    then throw "balloon not implemented for Firecracker"
-    else if initialBalloonMem != 0
-    then throw "initialBalloonMem not implemented for Firecracker"
-    else if hotplugMem != 0
-    then throw "hotplugMem not implemented for Firecracker"
-    else if hotpluggedMem != 0
-    then throw "hotpluggedMem not implemented for Firecracker"
-    else if credentialFiles != {}
-    then throw "credentialFiles are not implemented for Firecracker"
-    else lib.escapeShellArgs ([
-      "${firecrackerPkg}/bin/firecracker"
-      "--config-file" configFile
-      "--api-sock" (
-        if socket != null
-        then socket
-        else throw "Firecracker must be configured with an API socket (option microvm.socket)!"
-      )
-    ]
-    ++ lib.optional (lib.versionAtLeast firecrackerPkg.version "1.13.0") "--enable-pci"
-    ++ microvmConfig.firecracker.extraArgs);
+    if user != null then
+      throw "firecracker will not change user"
+    else if shares != [ ] then
+      throw "9p/virtiofs shares not implemented for Firecracker"
+    else if devices != [ ] then
+      throw "devices passthrough not implemented for Firecracker"
+    else if balloon then
+      throw "balloon not implemented for Firecracker"
+    else if initialBalloonMem != 0 then
+      throw "initialBalloonMem not implemented for Firecracker"
+    else if hotplugMem != 0 then
+      throw "hotplugMem not implemented for Firecracker"
+    else if hotpluggedMem != 0 then
+      throw "hotpluggedMem not implemented for Firecracker"
+    else if credentialFiles != { } then
+      throw "credentialFiles are not implemented for Firecracker"
+    else
+      lib.escapeShellArgs (
+        [
+          "${firecrackerPkg}/bin/firecracker"
+          "--config-file"
+          configFile
+          "--api-sock"
+          (
+            if socket != null then
+              socket
+            else
+              throw "Firecracker must be configured with an API socket (option microvm.socket)!"
+          )
+        ]
+        ++ lib.optional (lib.versionAtLeast firecrackerPkg.version "1.13.0") "--enable-pci"
+        ++ microvmConfig.firecracker.extraArgs
+      );
 
   preStart = ''
     ${preStart}
@@ -123,15 +170,16 @@ in {
   canShutdown = socket != null;
 
   shutdownCommand =
-    if socket != null
-    then ''
-      ${pkgs.curl}/bin/curl -s \
-        --unix-socket ${socket} \
-        -X PUT http://localhost/actions \
-        -d '{ "action_type": "SendCtrlAltDel" }'
+    if socket != null then
+      ''
+        ${pkgs.curl}/bin/curl -s \
+          --unix-socket ${socket} \
+          -X PUT http://localhost/actions \
+          -d '{ "action_type": "SendCtrlAltDel" }'
 
-      # wait for exit
-      ${pkgs.socat}/bin/socat STDOUT UNIX:${socket},shut-none
-    ''
-    else throw "Cannot shutdown without socket";
+        # wait for exit
+        ${pkgs.socat}/bin/socat STDOUT UNIX:${socket},shut-none
+      ''
+    else
+      throw "Cannot shutdown without socket";
 }

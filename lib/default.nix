@@ -1,5 +1,9 @@
 { lib }:
 rec {
+  # All supported hypervisors.
+  # Platform notes:
+  #   - vfkit: macOS only (requires Apple Virtualization.framework)
+  #   - All others: Linux only (require KVM)
   hypervisors = [
     "qemu"
     "cloud-hypervisor"
@@ -8,31 +12,30 @@ rec {
     "kvmtool"
     "stratovirt"
     "alioth"
-    "vfkit"
+    "vfkit" # macOS only
   ];
 
   hypervisorsWithNetwork = hypervisors;
 
   defaultFsType = "ext4";
 
-  withDriveLetters = { volumes, storeOnDisk, ... }:
+  withDriveLetters =
+    { volumes, storeOnDisk, ... }:
     let
-      offset =
-        if storeOnDisk
-        then 1
-        else 0;
+      offset = if storeOnDisk then 1 else 0;
     in
-    map ({ fst, snd }:
-      fst // {
+    map (
+      { fst, snd }:
+      fst
+      // {
         letter = snd;
       }
-    ) (lib.zipLists volumes (
-      lib.drop offset lib.strings.lowerChars
-    ));
+    ) (lib.zipLists volumes (lib.drop offset lib.strings.lowerChars));
 
   buildRunner = import ./runner.nix;
 
-  makeMacvtap = { microvmConfig, hypervisorConfig }:
+  makeMacvtap =
+    { microvmConfig, hypervisorConfig }:
     import ./macvtap.nix {
       inherit microvmConfig hypervisorConfig lib;
     };
@@ -76,21 +79,26 @@ rec {
       extractOptValues ["-p" "-platform"] ["-vnc" ":0" "-usb"]
       => { values = []; args = ["-vnc" ":0" "-usb"]; }
   */
-  extractOptValues = optFlag: extraArgs:
+  extractOptValues =
+    optFlag: extraArgs:
     let
-      flags = if builtins.isList optFlag then optFlag else [optFlag];
+      flags = if builtins.isList optFlag then optFlag else [ optFlag ];
 
-      processArgs = args: values: acc:
-        if args == [] then
-          { values = values; args = acc; }
+      processArgs =
+        args: values: acc:
+        if args == [ ] then
+          {
+            values = values;
+            args = acc;
+          }
         else if (builtins.elem (builtins.head args) flags) && (builtins.length args) > 1 then
           # Found one of the option flags, skip it and its value
-          processArgs (builtins.tail (builtins.tail args)) (values ++ [(builtins.elemAt args 1)]) acc
+          processArgs (builtins.tail (builtins.tail args)) (values ++ [ (builtins.elemAt args 1) ]) acc
         else
           # Not the option we're looking for, keep this element
-          processArgs (builtins.tail args) values (acc ++ [(builtins.head args)]);
+          processArgs (builtins.tail args) values (acc ++ [ (builtins.head args) ]);
     in
-      processArgs extraArgs [] [];
+    processArgs extraArgs [ ] [ ];
 
   /*
     extractParamValue - Extract a parameter value from comma-separated key=value options
@@ -109,8 +117,13 @@ rec {
     Example:
       extractParamValue "socket" "cid=5,socket=notify.vsock" => "notify.vsock"
   */
-  extractParamValue = param: opts:
-    if opts == "" || opts == null then null
-    else let m = builtins.match ".*${param}=([^,]+).*" opts;
-         in if m == null then null else builtins.head m;
+  extractParamValue =
+    param: opts:
+    if opts == "" || opts == null then
+      null
+    else
+      let
+        m = builtins.match ".*${param}=([^,]+).*" opts;
+      in
+      if m == null then null else builtins.head m;
 }

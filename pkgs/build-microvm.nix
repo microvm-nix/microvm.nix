@@ -1,13 +1,23 @@
 # Builds a MicroVM from a flake but takes the hypervisor from the
 # local pkgs not from the target flake.
-{ self
-, lib, stdenv
-, writeShellScriptBin
-, coreutils, git, nix
+{
+  self,
+  lib,
+  stdenv,
+  writeShellScriptBin,
+  coreutils,
+  git,
+  nix,
 }:
 
 writeShellScriptBin "build-microvm" ''
-  PATH=${lib.makeBinPath [ coreutils git nix ]}
+  PATH=${
+    lib.makeBinPath [
+      coreutils
+      git
+      nix
+    ]
+  }
 
   if [ $# -lt 1 ]; then
     echo Usage: $0 flakeref#nixos

@@ -17,9 +17,13 @@ in
 writeShellScriptBin "microvm" ''
   set -e
 
-  PATH=${lib.makeBinPath [
-    git jq nix
-  ]}:$PATH
+  PATH=${
+    lib.makeBinPath [
+      git
+      jq
+      nix
+    ]
+  }:$PATH
   STATE_DIR=/var/lib/microvms
   ACTION=help
   FLAKE=git+file:///etc/nixos

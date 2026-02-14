@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   self-lib = import ../../lib {
     inherit lib;
@@ -94,6 +99,22 @@ in
       type = types.package;
     };
 
+    kernelBtf = mkOption {
+      type = types.bool;
+      default = false;
+      description = ''
+        Enable BPF Type Format (BTF) in the MicroVM kernel.
+
+        BTF provides type information for eBPF programs, enabling
+        tools like bpftrace, bcc, and other eBPF-based observability
+        tools to work efficiently without runtime compilation.
+
+        When enabled, the kernel is built with CONFIG_DEBUG_INFO_BTF=y.
+
+        Requires kernel >= 5.11.
+      '';
+    };
+
     initrdPath = mkOption {
       description = "Path to the initrd file in the initrd package";
       default = "${config.system.build.initialRamdisk}/${config.system.boot.loader.initrdFile}";
@@ -173,26 +194,30 @@ in
       '';
     };
 
-
     forwardPorts = mkOption {
-      type = types.listOf
-        (types.submodule {
+      type = types.listOf (
+        types.submodule {
           options.from = mkOption {
-            type = types.enum [ "host" "guest" ];
+            type = types.enum [
+              "host"
+              "guest"
+            ];
             default = "host";
-            description =
-              ''
-                Controls the direction in which the ports are mapped:
+            description = ''
+              Controls the direction in which the ports are mapped:
 
-                - <literal>"host"</literal> means traffic from the host ports
-                is forwarded to the given guest port.
+              - <literal>"host"</literal> means traffic from the host ports
+              is forwarded to the given guest port.
 
-                - <literal>"guest"</literal> means traffic from the guest ports
-                is forwarded to the given host port.
-              '';
+              - <literal>"guest"</literal> means traffic from the guest ports
+              is forwarded to the given host port.
+            '';
           };
           options.proto = mkOption {
-            type = types.enum [ "tcp" "udp" ];
+            type = types.enum [
+              "tcp"
+              "udp"
+            ];
             default = "tcp";
             description = "The protocol to forward.";
           };
@@ -214,251 +239,287 @@ in
             type = types.port;
             description = "The guest port to be mapped.";
           };
-        });
-      default = [];
-      example = lib.literalExpression /* nix */ ''
-        [ # forward local port 2222 -> 22, to ssh into the VM
-          { from = "host"; host.port = 2222; guest.port = 22; }
+        }
+      );
+      default = [ ];
+      example =
+        lib.literalExpression # nix
+          ''
+            [ # forward local port 2222 -> 22, to ssh into the VM
+              { from = "host"; host.port = 2222; guest.port = 22; }
 
-          # forward local port 80 -> 10.0.2.10:80 in the VLAN
-          { from = "guest";
-            guest.address = "10.0.2.10"; guest.port = 80;
-            host.address = "127.0.0.1"; host.port = 80;
-          }
-        ]
+              # forward local port 80 -> 10.0.2.10:80 in the VLAN
+              { from = "guest";
+                guest.address = "10.0.2.10"; guest.port = 80;
+                host.address = "127.0.0.1"; host.port = 80;
+              }
+            ]
+          '';
+      description = ''
+        When using the SLiRP user networking (default), this option allows to
+        forward ports to/from the host/guest.
+
+        ::: {.warning}
+        If the NixOS firewall on the virtual machine is enabled, you
+        also have to open the guest ports to enable the traffic
+        between host and guest.
+        :::
+
+        ::: {.note}
+        Currently QEMU supports only IPv4 forwarding.
+        :::
       '';
-      description =
-        ''
-          When using the SLiRP user networking (default), this option allows to
-          forward ports to/from the host/guest.
-
-          ::: {.warning}
-          If the NixOS firewall on the virtual machine is enabled, you
-          also have to open the guest ports to enable the traffic
-          between host and guest.
-          :::
-
-          ::: {.note}
-          Currently QEMU supports only IPv4 forwarding.
-          :::
-        '';
     };
 
     volumes = mkOption {
       description = "Disk images";
-      default = [];
-      type = with types; listOf (submodule {
-        options = {
-          image = mkOption {
-            type = str;
-            description = "Path to disk image on the host";
+      default = [ ];
+      type =
+        with types;
+        listOf (submodule {
+          options = {
+            image = mkOption {
+              type = str;
+              description = "Path to disk image on the host";
+            };
+            serial = mkOption {
+              type = nullOr str;
+              default = null;
+              description = "User-configured serial number for the disk";
+            };
+            direct = mkOption {
+              type = bool;
+              default = false;
+              description = "Whether to set O_DIRECT on the disk.";
+            };
+            readOnly = mkOption {
+              type = bool;
+              default = false;
+              description = "Turn off write access";
+            };
+            label = mkOption {
+              type = nullOr str;
+              default = null;
+              description = "Label of the volume, if any. Only applicable if `autoCreate` is true; otherwise labeling of the volume must be done manually";
+            };
+            mountPoint = mkOption {
+              type = nullOr path;
+              description = "If and where to mount the volume inside the container";
+            };
+            size = mkOption {
+              type = int;
+              description = "Volume size (in MiB) if created automatically";
+            };
+            autoCreate = mkOption {
+              type = bool;
+              default = true;
+              description = "Created image on host automatically before start?";
+            };
+            mkfsExtraArgs = mkOption {
+              type = listOf str;
+              default = [ ];
+              description = "Set extra Filesystem creation parameters";
+            };
+            fsType = mkOption {
+              type = str;
+              default = "ext4";
+              description = "Filesystem for automatic creation and mounting";
+            };
           };
-          serial = mkOption {
-            type = nullOr str;
-            default = null;
-            description = "User-configured serial number for the disk";
-          };
-          direct = mkOption {
-            type = bool;
-            default = false;
-            description = "Whether to set O_DIRECT on the disk.";
-          };
-          readOnly = mkOption {
-            type = bool;
-            default = false;
-            description = "Turn off write access";
-          };
-          label = mkOption {
-            type = nullOr str;
-            default = null;
-            description = "Label of the volume, if any. Only applicable if `autoCreate` is true; otherwise labeling of the volume must be done manually";
-          };
-          mountPoint = mkOption {
-            type = nullOr path;
-            description = "If and where to mount the volume inside the container";
-          };
-          size = mkOption {
-            type = int;
-            description = "Volume size (in MiB) if created automatically";
-          };
-          autoCreate = mkOption {
-            type = bool;
-            default = true;
-            description = "Created image on host automatically before start?";
-          };
-          mkfsExtraArgs = mkOption {
-            type = listOf str;
-            default = [];
-            description = "Set extra Filesystem creation parameters";
-          };
-          fsType = mkOption {
-            type = str;
-            default = "ext4";
-            description = "Filesystem for automatic creation and mounting";
-          };
-        };
-      });
+        });
     };
 
     interfaces = mkOption {
       description = "Network interfaces";
-      default = [];
-      type = with types; listOf (submodule {
-        options = {
-          type = mkOption {
-            type = enum [ "user" "tap" "macvtap" "bridge" ];
-            description = ''
-              Interface type
-            '';
-          };
-          id = mkOption {
-            type = str;
-            description = ''
-              Interface name on the host
-            '';
-          };
-          macvtap.link = mkOption {
-            type = str;
-            description = ''
-              Attach network interface to host interface for type = "macvlan"
-            '';
-          };
-          macvtap.mode = mkOption {
-            type = enum ["private" "vepa" "bridge" "passthru" "source"];
-            description = ''
-              The MACVLAN mode to use
-            '';
-          };
-          bridge = mkOption {
-            type = nullOr str;
-            default = null;
-            description = ''
-              Attach network interface to host bridge interface for type = "bridge"
-            '';
-          };
-          mac = mkOption {
-            type = str;
-            description = ''
-              MAC address of the guest's network interface
-            '';
-          };
-          tap.vhost = mkOption {
-            type = types.bool;
-            default = false;
-            description = ''
-              Enable vhost-net for TAP interfaces.
+      default = [ ];
+      type =
+        with types;
+        listOf (submodule {
+          options = {
+            type = mkOption {
+              type = enum [
+                "user"
+                "tap"
+                "macvtap"
+                "bridge"
+              ];
+              description = ''
+                Interface type
+              '';
+            };
+            id = mkOption {
+              type = str;
+              description = ''
+                Interface name on the host
+              '';
+            };
+            macvtap.link = mkOption {
+              type = str;
+              description = ''
+                Attach network interface to host interface for type = "macvlan"
+              '';
+            };
+            macvtap.mode = mkOption {
+              type = enum [
+                "private"
+                "vepa"
+                "bridge"
+                "passthru"
+                "source"
+              ];
+              description = ''
+                The MACVLAN mode to use
+              '';
+            };
+            bridge = mkOption {
+              type = nullOr str;
+              default = null;
+              description = ''
+                Attach network interface to host bridge interface for type = "bridge"
+              '';
+            };
+            mac = mkOption {
+              type = str;
+              description = ''
+                MAC address of the guest's network interface
+              '';
+            };
+            tap.vhost = mkOption {
+              type = types.bool;
+              default = false;
+              description = ''
+                Enable vhost-net for TAP interfaces.
 
-              When enabled, packet processing is offloaded to the kernel's
-              vhost-net module instead of QEMU userspace, significantly
-              improving network throughput (~10 Gbps vs ~1.5 Gbps).
+                When enabled, packet processing is offloaded to the kernel's
+                vhost-net module instead of QEMU userspace, significantly
+                improving network throughput (~10 Gbps vs ~1.5 Gbps).
 
-              Requires the vhost_net kernel module on the host.
-            '';
+                Requires the vhost_net kernel module on the host.
+              '';
+            };
           };
-        };
-      });
+        });
     };
 
     shares = mkOption {
       description = "Shared directory trees";
-      default = [];
-      type = with types; listOf (submodule ({ config, ... }: {
-        options = {
-          tag = mkOption {
-            type = str;
-            description = "Unique virtiofs daemon tag";
-          };
-          socket = mkOption {
-            type = nullOr str;
-            default =
-              if config.proto == "virtiofs"
-              then "${hostName}-virtiofs-${config.tag}.sock"
-              else null;
-            description = "Socket for communication with virtiofs daemon";
-          };
-          source = mkOption {
-            type = nonEmptyStr;
-            description = "Path to shared directory tree";
-          };
-          securityModel = mkOption {
-            type = enum [ "passthrough" "none" "mapped" "mapped-file" ];
-            default = "none";
-            description = "What security model to use for the shared directory";
-          };
-          mountPoint = mkOption {
-            type = path;
-            description = "Where to mount the share inside the container";
-          };
-          proto = mkOption {
-            type = enum [ "9p" "virtiofs" ];
-            description = "Protocol for this share";
-            default = "9p";
-          };
-          readOnly = mkOption {
-            type = bool;
-            description = "Turn off write access";
-            default = false;
-          };
-        };
-      }));
+      default = [ ];
+      type =
+        with types;
+        listOf (
+          submodule (
+            { config, ... }:
+            {
+              options = {
+                tag = mkOption {
+                  type = str;
+                  description = "Unique virtiofs daemon tag";
+                };
+                socket = mkOption {
+                  type = nullOr str;
+                  default = if config.proto == "virtiofs" then "${hostName}-virtiofs-${config.tag}.sock" else null;
+                  description = "Socket for communication with virtiofs daemon";
+                };
+                source = mkOption {
+                  type = nonEmptyStr;
+                  description = "Path to shared directory tree";
+                };
+                securityModel = mkOption {
+                  type = enum [
+                    "passthrough"
+                    "none"
+                    "mapped"
+                    "mapped-file"
+                  ];
+                  default = "none";
+                  description = "What security model to use for the shared directory";
+                };
+                mountPoint = mkOption {
+                  type = path;
+                  description = "Where to mount the share inside the container";
+                };
+                proto = mkOption {
+                  type = enum [
+                    "9p"
+                    "virtiofs"
+                  ];
+                  description = "Protocol for this share";
+                  default = "9p";
+                };
+                readOnly = mkOption {
+                  type = bool;
+                  description = "Turn off write access";
+                  default = false;
+                };
+              };
+            }
+          )
+        );
     };
 
     devices = mkOption {
       description = "PCI/USB devices that are passed from the host to the MicroVM";
-      default = [];
-      example = literalExpression /* nix */ ''
-        [ {
-          bus = "pci";
-          path = "0000:01:00.0";
-        } {
-          bus = "pci";
-          path = "0000:01:01.0";
-          deviceExtraArgs = "id=hostId,x-igd-opregion=on";
-        } {
-          # QEMU only
-          bus = "usb";
-          path = "vendorid=0xabcd,productid=0x0123";
-        } ]
-      '';
-      type = with types; listOf (submodule {
-        options = {
-          bus = mkOption {
-            type = enum [ "pci" "usb" ];
-            description = ''
-              Device is either on the `pci` or the `usb` bus
-            '';
-          };
-          path = mkOption {
-            type = str;
-            description = ''
-              Identification of the device on its bus
-            '';
-          };
-          qemu = {
-            id = mkOption {
-              type = nullOr str;
-              default = null;
-              description = ''
-                QEMU device identifier (optional)
-              '';
-            };
+      default = [ ];
+      example =
+        # nix
+        literalExpression ''
+          [ {
+            bus = "pci";
+            path = "0000:01:00.0";
+          } {
+            bus = "pci";
+            path = "0000:01:01.0";
+            deviceExtraArgs = "id=hostId,x-igd-opregion=on";
+          } {
+            # QEMU only
+            bus = "usb";
+            path = "vendorid=0xabcd,productid=0x0123";
+          } ]
+        '';
+      type =
+        with types;
+        listOf (submodule {
+          options = {
             bus = mkOption {
-              type = nullOr str;
-              default = null;
+              type = enum [
+                "pci"
+                "usb"
+              ];
               description = ''
-                QEMU bus to which this device is attached (optional)
+                Device is either on the `pci` or the `usb` bus
               '';
             };
-            deviceExtraArgs = mkOption {
-              type =  nullOr str;
-              default = null;
+            path = mkOption {
+              type = str;
               description = ''
-                Device additional arguments (optional)
+                Identification of the device on its bus
               '';
+            };
+            qemu = {
+              id = mkOption {
+                type = nullOr str;
+                default = null;
+                description = ''
+                  QEMU device identifier (optional)
+                '';
+              };
+              bus = mkOption {
+                type = nullOr str;
+                default = null;
+                description = ''
+                  QEMU bus to which this device is attached (optional)
+                '';
+              };
+              deviceExtraArgs = mkOption {
+                type = nullOr str;
+                default = null;
+                description = ''
+                  Device additional arguments (optional)
+                '';
+              };
             };
           };
-        };
-      });
+        });
     };
 
     vsock.cid = mkOption {
@@ -482,19 +543,19 @@ in
 
     storeOnDisk = mkOption {
       type = types.bool;
-      default = ! lib.any ({ source, ... }:
-        source == "/nix/store"
-      ) config.microvm.shares;
+      default = !lib.any ({ source, ... }: source == "/nix/store") config.microvm.shares;
       description = "Whether to boot with the storeDisk, that is, unless the host's /nix/store is a microvm.share.";
     };
 
-    registerClosure = lib.mkEnableOption ''
-      Register system closure's store paths in Nix db.
+    registerClosure =
+      lib.mkEnableOption ''
+        Register system closure's store paths in Nix db.
 
-      While enabled by default, this option may be incompatible with a persistent writable store overlay.
-    '' // {
-      default = config.microvm.guest.enable;
-    };
+        While enabled by default, this option may be incompatible with a persistent writable store overlay.
+      ''
+      // {
+        default = config.microvm.guest.enable;
+      };
 
     writableStoreOverlay = mkOption {
       type = with types; nullOr str;
@@ -529,7 +590,10 @@ in
       };
 
       backend = mkOption {
-        type = types.enum [ "gtk" "cocoa" ];
+        type = types.enum [
+          "gtk"
+          "cocoa"
+        ];
         default = if pkgs.stdenv.hostPlatform.isDarwin then "cocoa" else "gtk";
         defaultText = lib.literalExpression ''if pkgs.stdenv.hostPlatform.isDarwin then "cocoa" else "gtk"'';
         description = ''
@@ -576,7 +640,7 @@ in
 
     qemu.extraArgs = mkOption {
       type = with types; listOf str;
-      default = [];
+      default = [ ];
       description = "Extra arguments to pass to qemu.";
     };
 
@@ -598,63 +662,68 @@ in
         For additional details see the QEMU PCI Express Guidelines:
         <https://gitlab.com/qemu-project/qemu/-/blob/master/docs/pcie.txt>
       '';
-      default = [];
-      example = literalExpression /* nix */ ''
-        [ {
-          bus = "pcie.0";
-          id = "pci_port_0";
-          chassis = 0;
-        } ]
-      '';
-      type = with types; listOf (submodule {
-        options = {
-          id = mkOption {
-            type = str;
-            description = ''
-              A unique identifier for this PCIe root port.
-            '';
+      default = [ ];
+      example =
+        # nix
+        literalExpression ''
+          [ {
+            bus = "pcie.0";
+            id = "pci_port_0";
+            chassis = 0;
+          } ]
+        '';
+      type =
+        with types;
+        listOf (submodule {
+          options = {
+            id = mkOption {
+              type = str;
+              description = ''
+                A unique identifier for this PCIe root port.
+              '';
+            };
+            bus = mkOption {
+              type = nullOr str;
+              default = null;
+              description = ''
+                The PCIe bus on which the root port will be created.
+              '';
+            };
+            chassis = mkOption {
+              type = nullOr int;
+              default = null;
+              description = ''
+                The chassis number associated with this PCIe root port.
+              '';
+            };
+            slot = mkOption {
+              type = nullOr str;
+              default = null;
+              description = ''
+                PCIe slot number.
+              '';
+            };
+            addr = mkOption {
+              type = nullOr str;
+              default = null;
+              description = ''
+                PCIe address on the parent bus.
+              '';
+            };
           };
-          bus = mkOption {
-            type = nullOr str;
-            default = null;
-            description = ''
-              The PCIe bus on which the root port will be created.
-            '';
-          };
-          chassis = mkOption {
-            type = nullOr int;
-            default = null;
-            description = ''
-              The chassis number associated with this PCIe root port.
-            '';
-          };
-          slot = mkOption {
-            type = nullOr str;
-            default = null;
-            description = ''
-              PCIe slot number.
-            '';
-          };
-          addr = mkOption {
-            type = nullOr str;
-            default = null;
-            description = ''
-              PCIe address on the parent bus.
-            '';
-          };
-        };
-      });
+        });
     };
 
     qemu.package = mkOption {
       description = "The QEMU package to use.";
       type = types.package;
-      default = if cfg.cpu == null && cfg.vmHostPackages.stdenv.hostPlatform.isLinux then
-        # If no CPU is requested and the host is Linux, use qemu with KVM support (hardware-accelerated)
-        cfg.vmHostPackages.qemu_kvm
-      else
-        # Different CPU architectures like darwin or Non-Linux use the generic qemu package
-        cfg.vmHostPackages.qemu;
+      default =
+        if cfg.cpu == null && cfg.vmHostPackages.stdenv.hostPlatform.isLinux then
+          # If no CPU is requested and the host is Linux, use qemu with KVM support (hardware-accelerated)
+          cfg.vmHostPackages.qemu_kvm
+        else
+          # Different CPU architectures like darwin or Non-Linux use the generic qemu package
+          cfg.vmHostPackages.qemu;
       defaultText = lib.literalExpression ''
         if config.microvm.cpu == null && config.microvm.vmHostPackages.stdenv.hostPlatform.isLinux then
           # If no CPU is requested and the host is Linux, use qemu with KVM support (hardware-accelerated)
@@ -674,7 +743,7 @@ in
 
     cloud-hypervisor.platformOEMStrings = mkOption {
       type = with types; listOf str;
-      default = [];
+      default = [ ];
       description = ''
         Extra arguments to pass to cloud-hypervisor's --platform oem_strings=[] argument.
 
@@ -686,22 +755,25 @@ in
         `config.microvm.cloud-hypervisor.extraArgs` and passed as a single
         --platform option to cloud-hypervisor
       '';
-      example = lib.literalExpression /* nix */ ''[ "io.systemd.credential:APIKEY=supersecret" ]'';
+      example =
+        lib.literalExpression # nix
+          ''[ "io.systemd.credential:APIKEY=supersecret" ]'';
     };
 
     cloud-hypervisor.extraArgs = mkOption {
       type = with types; listOf str;
-      default = [];
+      default = [ ];
       description = "Extra arguments to pass to cloud-hypervisor.";
     };
 
     cloud-hypervisor.package = mkOption {
       description = "The cloud-hypervisor package to use.";
       type = types.package;
-      default = if cfg.graphics.enable then
-        cfg.vmHostPackages.cloud-hypervisor-graphics
-      else
-        cfg.vmHostPackages.cloud-hypervisor;
+      default =
+        if cfg.graphics.enable then
+          cfg.vmHostPackages.cloud-hypervisor-graphics
+        else
+          cfg.vmHostPackages.cloud-hypervisor;
       defaultText = lib.literalExpression ''
         if config.microvm.graphics.enable then
           config.microvm.vmHostPackages.cloud-hypervisor-graphics
@@ -712,7 +784,7 @@ in
 
     crosvm.extraArgs = mkOption {
       type = with types; listOf str;
-      default = [];
+      default = [ ];
       description = "Extra arguments to pass to crosvm.";
     };
 
@@ -736,14 +808,17 @@ in
     };
 
     firecracker.driveIoEngine = mkOption {
-      type = types.enum [ "Async" "Sync" ];
+      type = types.enum [
+        "Async"
+        "Sync"
+      ];
       default = "Async";
       description = "Type of IO engine to use for Firecracker drives (disks).";
     };
 
     firecracker.extraArgs = mkOption {
       type = with types; listOf str;
-      default = [];
+      default = [ ];
       description = "Extra arguments to pass to firecracker.";
     };
 
@@ -768,7 +843,7 @@ in
           in
           valueType;
       };
-      default = {};
+      default = { };
       description = "Extra config to merge into Firecracker JSON configuration";
     };
 
@@ -795,12 +870,18 @@ in
 
     vfkit.extraArgs = mkOption {
       type = with types; listOf str;
-      default = [];
+      default = [ ];
       description = "Extra arguments to pass to vfkit.";
     };
 
     vfkit.logLevel = mkOption {
-      type = with types; nullOr (enum ["debug" "info" "error"]);
+      type =
+        with types;
+        nullOr (enum [
+          "debug"
+          "info"
+          "error"
+        ]);
       default = "info";
       description = "vfkit log level.";
     };
@@ -853,9 +934,13 @@ in
     };
 
     virtiofsd.inodeFileHandles = mkOption {
-      type = with types; nullOr (enum [
-        "never" "prefer" "mandatory"
-      ]);
+      type =
+        with types;
+        nullOr (enum [
+          "never"
+          "prefer"
+          "mandatory"
+        ]);
       default = null;
       description = ''
         When to use file handles to reference inodes instead of O_PATH file descriptors
@@ -868,7 +953,12 @@ in
     };
 
     virtiofsd.threadPoolSize = mkOption {
-      type = with types; oneOf [ str ints.unsigned ];
+      type =
+        with types;
+        oneOf [
+          str
+          ints.unsigned
+        ];
       default = "`nproc`";
       description = ''
         The amounts of threads virtiofsd should spawn. This option also takes the special
@@ -887,7 +977,7 @@ in
 
     virtiofsd.extraArgs = mkOption {
       type = with types; listOf str;
-      default = [];
+      default = [ ];
       description = ''
         Extra command-line switch to pass to virtiofsd.
       '';
@@ -916,12 +1006,15 @@ in
       description = ''
         Script snippets that end up in the runner package's bin/ directory
       '';
-      default = {};
+      default = { };
       type = with types; attrsOf lines;
     };
 
     storeDiskType = mkOption {
-      type = types.enum [ "squashfs" "erofs" ];
+      type = types.enum [
+        "squashfs"
+        "erofs"
+      ];
       description = ''
         Boot disk file system type: squashfs is smaller, erofs is supposed to be faster.
 
@@ -936,16 +1029,15 @@ in
 
         Omit `"-Efragments"` and `"-Ededupe"` to enable multi-threading.
       '';
-      default =
-        [ "-zlz4hc" ]
-        ++
-        lib.optional (kernelAtLeast "5.16") "-Eztailpacking"
-        ++
-        lib.optionals (kernelAtLeast "6.1") [
-          # not implemented with multi-threading
-          "-Efragments"
-          "-Ededupe"
-        ];
+      default = [
+        "-zlz4hc"
+      ]
+      ++ lib.optional (kernelAtLeast "5.16") "-Eztailpacking"
+      ++ lib.optionals (kernelAtLeast "6.1") [
+        # not implemented with multi-threading
+        "-Efragments"
+        "-Ededupe"
+      ];
       defaultText = lib.literalExpression ''
         [ "-zlz4hc" ]
           ++ lib.optional (kernelAtLeast "5.16") "-Eztailpacking"
@@ -953,13 +1045,18 @@ in
           "-Efragments"
           "-Ededupe"
         ]
-        '';
+      '';
     };
 
     storeDiskSquashfsFlags = mkOption {
       type = with types; listOf str;
       description = "Flags to pass to gensquashfs";
-      default = [ "-c" "zstd" "-j" "$NIX_BUILD_CORES" ];
+      default = [
+        "-c"
+        "zstd"
+        "-j"
+        "$NIX_BUILD_CORES"
+      ];
     };
 
     systemSymlink = mkOption {
@@ -973,31 +1070,37 @@ in
 
     credentialFiles = mkOption {
       type = with types; attrsOf path;
-      default = {};
+      default = { };
       description = ''
         Key-value pairs of credential files that will be loaded into the vm using systemd's io.systemd.credential feature.
       '';
-      example = literalExpression /* nix */ ''
-        {
-          SOPS_AGE_KEY = "/run/secrets/guest_microvm_age_key";
-        }
-      '';
+      example =
+        # nix
+        literalExpression ''
+          {
+            SOPS_AGE_KEY = "/run/secrets/guest_microvm_age_key";
+          }
+        '';
     };
   };
 
   imports = [
-    (lib.mkRemovedOptionModule ["microvm" "balloonMem"] "The balloonMem option has been removed and replaced by the boolean option balloon")
+    (lib.mkRemovedOptionModule [
+      "microvm"
+      "balloonMem"
+    ] "The balloonMem option has been removed and replaced by the boolean option balloon")
   ];
 
-  config = lib.mkMerge [ {
-    microvm.qemu.machine =
-      lib.mkIf (pkgs.stdenv.hostPlatform.system == "x86_64-linux") (
+  config = lib.mkMerge [
+    {
+      microvm.qemu.machine = lib.mkIf (pkgs.stdenv.hostPlatform.system == "x86_64-linux") (
         lib.mkDefault "microvm"
       );
-  } {
-    microvm.qemu.machine =
-      lib.mkIf (pkgs.stdenv.hostPlatform.system == "aarch64-linux") (
+    }
+    {
+      microvm.qemu.machine = lib.mkIf (pkgs.stdenv.hostPlatform.system == "aarch64-linux") (
         lib.mkDefault "virt"
       );
-  } ];
+    }
+  ];
 }

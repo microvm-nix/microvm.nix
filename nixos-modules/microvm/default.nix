@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   microvm-lib = import ../../lib {
@@ -25,7 +30,8 @@ in
   ];
 
   config = {
-    microvm.runner = lib.genAttrs microvm-lib.hypervisors (hypervisor:
+    microvm.runner = lib.genAttrs microvm-lib.hypervisors (
+      hypervisor:
       microvm-lib.buildRunner {
         inherit pkgs;
         microvmConfig = config.microvm // {

@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   regInfo = pkgs.closureInfo {
@@ -7,7 +12,14 @@ let
 
   erofs-utils =
     # Are any extended options specified?
-    if lib.any (with lib; flip elem ["-Ededupe" "-Efragments"]) config.microvm.storeDiskErofsFlags
+    if
+      lib.any (
+        with lib;
+        flip elem [
+          "-Ededupe"
+          "-Efragments"
+        ]
+      ) config.microvm.storeDiskErofsFlags
     then
       # If extended options are present,
       # stick to the single-threaded erofs-utils
@@ -29,24 +41,25 @@ let
     {
       squashfs = "gensquashfs ${squashfsFlags} -D store --all-root -q $out";
       erofs = "mkfs.erofs ${erofsFlags} -T 0 --all-root -L nix-store --mount-point=/nix/store $out store";
-    }.${config.microvm.storeDiskType};
+    }
+    .${config.microvm.storeDiskType};
 
   writeClosure = pkgs.writeClosure or pkgs.writeReferencesToFile;
 
   storeDiskContents = writeClosure (
-    [ config.system.build.toplevel ]
-    ++
-    lib.optional config.nix.enable regInfo
+    [ config.system.build.toplevel ] ++ lib.optional config.nix.enable regInfo
   );
 
 in
 {
-  options.microvm.storeDisk = with lib; mkOption {
-    type = types.path;
-    description = ''
-      Generated
-    '';
-  };
+  options.microvm.storeDisk =
+    with lib;
+    mkOption {
+      type = types.path;
+      description = ''
+        Generated
+      '';
+    };
 
   config = lib.mkMerge [
     (lib.mkIf (config.microvm.guest.enable && config.microvm.storeOnDisk) {
@@ -56,43 +69,45 @@ in
       # filesystems, so checking on that directly would result in an
       # infinite recursion.
       microvm.storeDiskType = lib.mkDefault (
-        if config.security.virtualisation.flushL1DataCache == "always"
-        then "squashfs"
-        else "erofs"
+        if config.security.virtualisation.flushL1DataCache == "always" then "squashfs" else "erofs"
       );
       boot.initrd.availableKernelModules = [
         config.microvm.storeDiskType
       ];
 
-      microvm.storeDisk = pkgs.runCommandLocal "microvm-store-disk.${config.microvm.storeDiskType}" {
-        nativeBuildInputs = [
-          pkgs.buildPackages.time
-          pkgs.buildPackages.bubblewrap
+      microvm.storeDisk =
+        pkgs.runCommandLocal "microvm-store-disk.${config.microvm.storeDiskType}"
           {
-            squashfs = pkgs.buildPackages.squashfs-tools-ng;
-            erofs = erofs-utils;
-          }.${config.microvm.storeDiskType}
-        ];
-        passthru = {
-          inherit regInfo;
-        };
-        __structuredAttrs = true;
-        unsafeDiscardReferences.out = true;
-      } ''
-        mkdir store
-        BWRAP_ARGS="--dev-bind / / --chdir $(pwd)"
-        for d in $(sort -u ${storeDiskContents}); do
-          BWRAP_ARGS="$BWRAP_ARGS --ro-bind $d $(pwd)/store/$(basename $d)"
-        done
+            nativeBuildInputs = [
+              pkgs.buildPackages.time
+              pkgs.buildPackages.bubblewrap
+              {
+                squashfs = pkgs.buildPackages.squashfs-tools-ng;
+                erofs = erofs-utils;
+              }
+              .${config.microvm.storeDiskType}
+            ];
+            passthru = {
+              inherit regInfo;
+            };
+            __structuredAttrs = true;
+            unsafeDiscardReferences.out = true;
+          }
+          ''
+            mkdir store
+            BWRAP_ARGS="--dev-bind / / --chdir $(pwd)"
+            for d in $(sort -u ${storeDiskContents}); do
+              BWRAP_ARGS="$BWRAP_ARGS --ro-bind $d $(pwd)/store/$(basename $d)"
+            done
 
-        echo Creating a ${config.microvm.storeDiskType}
-        bwrap $BWRAP_ARGS -- time ${mkfsCommand} || \
-          (
-            echo "Bubblewrap failed. Falling back to copying...">&2
-            cp -a $(sort -u ${storeDiskContents}) store/
-            time ${mkfsCommand}
-          )
-      '';
+            echo Creating a ${config.microvm.storeDiskType}
+            bwrap $BWRAP_ARGS -- time ${mkfsCommand} || \
+              (
+                echo "Bubblewrap failed. Falling back to copying...">&2
+                cp -a $(sort -u ${storeDiskContents}) store/
+                time ${mkfsCommand}
+              )
+          '';
     })
 
     (lib.mkIf (config.microvm.registerClosure && config.nix.enable) {

@@ -22,6 +22,29 @@ imperatively with the provided `microvm` command.
 
 [Project Presentation (video)](https://media.ccc.de/v/nixcon-2023-34861-microvm-nix)
 
+> **What is a MicroVM?**
+>
+> A MicroVM is a minimal virtual machine optimized for fast boot times and low
+> overhead. Unlike traditional VMs that emulate legacy PC hardware (BIOS, IDE,
+> VGA), MicroVMs use a stripped-down machine model with only
+> [virtio](https://wiki.osdev.org/Virtio) paravirtualized devices:
+>
+> | Device | Purpose |
+> |--------|---------|
+> | virtio-net | Network interfaces (with optional vhost-net acceleration) |
+> | virtio-blk | Block devices for persistent storage |
+> | virtio-serial | Serial port multiplexing and communication channels |
+> | virtio-console | Fast serial console (hvc0) built on virtio-serial |
+> | virtio-9p / virtiofs | Shared filesystem access with host |
+> | virtio-balloon | Dynamic memory management |
+> | virtio-vsock | Host-guest socket communication |
+>
+> This approach avoids emulation overhead, making MicroVMs ideal for isolated
+> workloads where containers aren't isolated enough but full VMs are too heavy.
+>
+> See [QEMU's microvm documentation](https://www.qemu.org/docs/master/system/i386/microvm.html)
+> for technical details on the machine model.
+
 ## At a glance
 
 - MicroVMs are Virtual Machines but use special device interfaces
@@ -44,6 +67,11 @@ imperatively with the provided `microvm` command.
   networking which requires no additional setup on the host.
 - For high-throughput TAP networking with `qemu`, enable `tap.vhost = true`
   to use vhost-net kernel acceleration (~10 Gbps vs ~1.5 Gbps without).
+- For eBPF observability tools, enable `microvm.kernelBtf = true` to include
+  BTF (BPF Type Format) debug information in the kernel. BTF allows tools like
+  `bpftrace`, `bcc` (tcptop, execsnoop), and custom eBPF programs to attach to
+  kernel functions without needing kernel headers or recompilation. See the
+  [btf-vhost example](./examples/btf-vhost/) for a complete setup.
 
 ## Hypervisors
 
@@ -79,6 +107,16 @@ nix run .#my-microvm
 
 ## Examples
 
+See the [examples directory](./examples/) for complete, documented configurations.
+
+| Example | Command | Description |
+|---------|---------|-------------|
+| [console-demo](./examples/console-demo/) | `nix run .#console-demo` | Learn serial vs virtio-console |
+| [btf-vhost](./examples/btf-vhost/) | `nix run .#btf-vhost` | eBPF/BTF tools + vhost networking |
+| [microvms-host](./examples/microvms-host/) | `nix run .#vm` | Nested MicroVMs (one per hypervisor) |
+| [qemu-vnc](./examples/qemu-vnc/) | `nix run .#qemu-vnc` | XFCE desktop via VNC |
+| [graphics](./examples/graphics/) | `nix run .#graphics firefox` | Wayland graphics passthrough |
+
 ### Run MicroVMs on your local machine
 
 ```shell
@@ -93,23 +131,30 @@ nix run microvm#stratovirt-example
 nix run microvm#vfkit-example
 ```
 
-### Run a MicroVM example with nested MicroVMs on 5 different Hypervisors
+### Nested MicroVMs
+
+Run a MicroVM that hosts nested MicroVMs for all supported hypervisors:
 
 ```shell
 nix run microvm#vm
 ```
 
-Check `networkctl status virbr0` for the DHCP leases of the nested
-MicroVMs. They listen for ssh with an empty root password.
+Check `networkctl status virbr0` for DHCP leases. SSH into nested VMs with
+root password `toor`.
 
-### Experimental: run graphical applications with graphics support
+### Graphical applications
 
-On Linux with cloud-hypervisor and Wayland forwarding:
+VNC desktop (QEMU):
 ```shell
-nix run microvm#graphics neverball
+nix run microvm#qemu-vnc
+# Connect: vncviewer localhost:5900
 ```
 
-On macOS with vfkit, enable graphics with `microvm.graphics.enable = true`.
+Wayland passthrough (cloud-hypervisor):
+```shell
+nix run microvm#waypipe-client  # Run on host first
+nix run microvm#graphics firefox
+```
 
 ## Commercial support
 
