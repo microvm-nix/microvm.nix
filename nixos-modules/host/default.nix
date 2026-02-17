@@ -182,21 +182,7 @@ in
         };
       };
 
-      "microvm-virtiofsd@" =
-        let
-          runFromBootedOrCurrent = pkgs.writeShellScript "microvm-runFromBootedOrCurrent" ''
-            NAME="$1"
-            VM="$2"
-            cd "${stateDir}/$VM"
-
-            if [ -e booted ]; then
-              exec booted/bin/$NAME
-            else
-              exec current/bin/$NAME
-            fi
-          '';
-
-        in {
+      "microvm-virtiofsd@" = {
           description = "VirtioFS daemons for MicroVM '%i'";
           before = [ "microvm@%i.service" ];
           after = [ "local-fs.target" ];
@@ -206,7 +192,6 @@ in
           serviceConfig = {
             WorkingDirectory = "${stateDir}/%i";
             ExecStart = "${stateDir}/%i/current/bin/virtiofsd-run";
-            ExecStop = "${runFromBootedOrCurrent} virtiofsd-shutdown %i";
             LimitNOFILE = 1048576;
             NotifyAccess = "all";
             PrivateTmp = "yes";
@@ -214,6 +199,7 @@ in
             RestartSec = "5s";
             SyslogIdentifier = "microvm-virtiofsd@%i";
             Type = "notify";
+            KillMode = "mixed";
           };
         };
 
