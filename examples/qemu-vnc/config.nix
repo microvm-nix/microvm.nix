@@ -1,6 +1,6 @@
-# examples/console-demo/config.nix
+# examples/qemu-vnc/config.nix
 #
-# Shared configuration variables for the console demo example.
+# Shared configuration variables for the qemu-vnc example.
 #
 # This imports from the centralized constants.nix to ensure consistent
 # port allocations across all examples (enabling concurrent testing).
@@ -9,4 +9,4 @@ let
   # Import centralized constants
   constants = import ../lib/constants.nix;
 in
-constants.console-demo
+constants.qemu-vnc

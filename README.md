@@ -156,6 +156,24 @@ nix run microvm#waypipe-client  # Run on host first
 nix run microvm#graphics firefox
 ```
 
+### Automated Testing
+
+All examples include automated tests. Run the full test suite:
+
+```shell
+nix run .#test-all-examples           # Run all tests
+nix run .#test-all-examples-repeat    # Run 3 times (catch flaky failures)
+nix run .#cleanup-vms                 # Clean up stale VMs before testing
+```
+
+If you get port conflicts, run `cleanup-vms` first or specify individual tests:
+```shell
+nix run .#test-all-examples -- console-demo qemu-vnc
+```
+
+See [examples/README.md](./examples/README.md) for detailed testing documentation,
+port allocations, and individual test commands.
+
 ## Commercial support
 
 Accelerate your operations and secure your infrastructure with support from a

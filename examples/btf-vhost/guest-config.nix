@@ -10,9 +10,7 @@
 }:
 
 {
-  # ════════════════════════════════════════════════════════════════════
   # Kernel Console Configuration
-  # ════════════════════════════════════════════════════════════════════
   # We configure BOTH consoles in the kernel command line:
   # - console=ttyS0: Early boot messages go to serial (available immediately)
   # - console=hvc0: Later messages also go to virtio-console
@@ -25,9 +23,7 @@
     "console=hvc0" # virtio-console: primary after boot
   ];
 
-  # ════════════════════════════════════════════════════════════════════
   # Getty Services (Login Prompts)
-  # ════════════════════════════════════════════════════════════════════
   # Run login prompts on both consoles so you can login via either
 
   # ttyS0: Serial console getty (slower, but always available)
@@ -45,9 +41,7 @@
   # Autologin on consoles for convenience
   services.getty.autologinUser = "root";
 
-  # ════════════════════════════════════════════════════════════════════
   # Network Configuration
-  # ════════════════════════════════════════════════════════════════════
   # Use systemd-networkd with static IP addressing.
   systemd.network = {
     enable = true;
@@ -67,9 +61,7 @@
     5001
   ]; # SSH + iperf2
 
-  # ════════════════════════════════════════════════════════════════════
   # SSH Configuration (INSECURE - for testing only)
-  # ════════════════════════════════════════════════════════════════════
   # WARNING: This allows root login with empty password!
   # This is intentional for ease of testing. Do not use in production.
   services.openssh = {
@@ -91,9 +83,7 @@
   # Disable password quality checks (allow empty password)
   security.pam.services.sshd.allowNullPassword = true;
 
-  # ════════════════════════════════════════════════════════════════════
   # eBPF/BTF Tools
-  # ════════════════════════════════════════════════════════════════════
   # These tools demonstrate BTF is working in the kernel.
   environment.systemPackages = with pkgs; [
     bcc # BPF Compiler Collection (tcptop, execsnoop, etc.)
@@ -102,9 +92,7 @@
     iperf2 # For testing network throughput
   ];
 
-  # ════════════════════════════════════════════════════════════════════
   # Message of the Day
-  # ════════════════════════════════════════════════════════════════════
   users.motd = ''
     ╔═══════════════════════════════════════════════════════════════╗
     ║              BTF + vhost MicroVM Test Environment             ║

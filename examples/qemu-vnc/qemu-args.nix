@@ -1,17 +1,31 @@
 # examples/qemu-vnc/qemu-args.nix
 #
-# QEMU command-line arguments for VNC and input devices.
+# QEMU command-line arguments for VNC, input devices, and serial console.
+#
+# This file is parameterized to accept config for the serial port.
+
+{ config }:
 
 [
-  # VNC server on display :0 (port 5900)
+  # Serial Console (for automated testing)
+  # TCP-accessible serial console on ttyS0
+  # Connect with: nc localhost <serialPort>
+  "-chardev"
+  "socket,id=serial0,host=localhost,port=${toString config.serialPort},server=on,wait=off"
+  "-serial"
+  "chardev:serial0"
+
+  # VNC Display
+  # VNC server - port is 5900 + display number
+  # Display :0 = port 5900
   "-vnc"
-  ":0"
+  ":${toString (config.vncPort - 5900)}"
 
-  # QXL graphics adapter (optimized for virtualization)
+  # Standard VGA (compatible with all QEMU builds including minimal ones)
   "-vga"
-  "qxl"
+  "std"
 
-  # Input devices for VNC interaction
+  # Input Devices
   "-device"
   "virtio-keyboard"
   "-usb"

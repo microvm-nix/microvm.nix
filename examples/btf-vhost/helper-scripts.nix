@@ -15,9 +15,7 @@
 { pkgs, config }:
 
 {
-  # ════════════════════════════════════════════════════════════════════
   # microvm-setup-network
-  # ════════════════════════════════════════════════════════════════════
   # Creates the bridge and TAP interface on the host.
   # Must be run (with sudo) before starting the VM.
   microvm-setup-network = ''
@@ -40,10 +38,11 @@
 
     echo "Creating TAP interface $TAP..."
     if ! ip link show "$TAP" &>/dev/null; then
-      sudo ip tuntap add dev "$TAP" mode tap multi_queue
+      # user=$USER allows the current user to use the TAP without root
+      sudo ip tuntap add dev "$TAP" mode tap user "$USER" multi_queue
       sudo ip link set "$TAP" master "$BRIDGE"
       sudo ip link set "$TAP" up
-      echo "  ✓ TAP interface $TAP created (multi-queue) and attached to $BRIDGE"
+      echo "  ✓ TAP interface $TAP created (multi-queue, user=$USER) and attached to $BRIDGE"
     else
       echo "  • TAP interface $TAP already exists"
     fi
@@ -55,9 +54,7 @@
     echo "  VM IP:  ${config.vmAddr}"
   '';
 
-  # ════════════════════════════════════════════════════════════════════
   # microvm-ssh
-  # ════════════════════════════════════════════════════════════════════
   # SSH into the VM. Passwordless (empty password configured).
   microvm-ssh = ''
     #!/usr/bin/env bash
@@ -68,9 +65,7 @@
       root@${config.vmAddr} "$@"
   '';
 
-  # ════════════════════════════════════════════════════════════════════
   # microvm-console
-  # ════════════════════════════════════════════════════════════════════
   # Connect to virtio-console (hvc0) - fast, for interactive use.
   microvm-console = ''
     #!/usr/bin/env bash
@@ -81,9 +76,7 @@
     exec ${pkgs.netcat}/bin/nc localhost ${toString config.virtioConsolePort}
   '';
 
-  # ════════════════════════════════════════════════════════════════════
   # microvm-serial
-  # ════════════════════════════════════════════════════════════════════
   # Connect to serial console (ttyS0) - for kernel/debug output.
   microvm-serial = ''
     #!/usr/bin/env bash
@@ -94,9 +87,7 @@
     exec ${pkgs.netcat}/bin/nc localhost ${toString config.serialPort}
   '';
 
-  # ════════════════════════════════════════════════════════════════════
   # microvm-test
-  # ════════════════════════════════════════════════════════════════════
   # Automated connectivity test suite.
   # Tests: console ports, ping, SSH, BTF/eBPF tools, network throughput.
   microvm-test = ''
@@ -247,9 +238,7 @@
     exit $FAILED
   '';
 
-  # ════════════════════════════════════════════════════════════════════
   # microvm-teardown-network
-  # ════════════════════════════════════════════════════════════════════
   # Remove the bridge and TAP interface from the host.
   microvm-teardown-network = ''
     #!/usr/bin/env bash

@@ -22,6 +22,8 @@ in
   qemu-vnc = nixosToApp ../examples/qemu-vnc;
   btf-vhost = nixosToApp ../examples/btf-vhost;
   console-demo = nixosToApp ../examples/console-demo;
+  http-server = nixosToApp ../examples/http-server;
+  valkey-server = nixosToApp ../examples/valkey-server;
 
   graphics = {
     type = "app";
@@ -61,5 +63,25 @@ in
         exec ${pkgs.waypipe}/bin/waypipe --vsock -s 6000 client
       ''
     );
+  };
+
+  # Run all example tests with pre-flight port checking
+  test-all-examples = {
+    type = "app";
+    program = "${import ../examples/run-all-tests.nix { inherit pkgs; }}/bin/test-all-examples";
+  };
+
+  # Run all example tests multiple times (default: 3)
+  test-all-examples-repeat = {
+    type = "app";
+    program = "${
+      import ../examples/run-all-tests-repeat.nix { inherit pkgs; }
+    }/bin/test-all-examples-repeat";
+  };
+
+  # Clean up stale VM processes before running tests
+  cleanup-vms = {
+    type = "app";
+    program = "${import ../examples/cleanup-vms.nix { inherit pkgs; }}/bin/cleanup-vms";
   };
 }

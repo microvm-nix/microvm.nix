@@ -73,8 +73,9 @@ Each nested VM:
 
 ```
 microvms-host/
-├── default.nix      # Main entry point
+├── default.nix        # Main entry point
+├── config.nix         # Configuration (imports from lib/constants.nix)
 ├── network-config.nix # MAC/IP address generation
-├── nested-vms.nix   # Nested VM configurations
-└── README.md        # This file
+├── nested-vms.nix     # Nested VM configurations
+└── README.md          # This file
 ```

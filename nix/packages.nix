@@ -12,8 +12,37 @@ let
   };
 
   inherit (pkgs) lib;
+
+  # Helper to convert example directories to runner packages
+  # These are the advanced examples in examples/ directory
+  exampleToRunner =
+    configFile:
+    (import configFile {
+      inherit self nixpkgs system;
+    }).config.microvm.declaredRunner;
+
+  # Advanced example runners (exposed as packages for testing)
+  # Note: graphics example requires packages argument, built with empty default
+  advancedExamples = lib.optionalAttrs (lib.hasSuffix "-linux" system) {
+    btf-vhost = exampleToRunner ../examples/btf-vhost;
+    console-demo = exampleToRunner ../examples/console-demo;
+    qemu-vnc = exampleToRunner ../examples/qemu-vnc;
+    http-server = exampleToRunner ../examples/http-server;
+    valkey-server = exampleToRunner ../examples/valkey-server;
+    graphics =
+      (import ../examples/graphics {
+        inherit self nixpkgs system;
+        packages = "";
+        tapInterface = null;
+      }).config.microvm.declaredRunner;
+    microvms-host =
+      (import ../examples/microvms-host {
+        inherit self nixpkgs system;
+      }).config.microvm.declaredRunner;
+  };
 in
-{
+advancedExamples
+// {
   build-microvm = pkgs.callPackage ../pkgs/build-microvm.nix { inherit self; };
   doc = pkgs.callPackage ../pkgs/doc.nix { };
   microvm = import ../pkgs/microvm-command.nix {

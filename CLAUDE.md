@@ -17,6 +17,10 @@ nix run .#cloud-hypervisor-example
 # Run all checks (comprehensive test matrix)
 nix flake check
 
+# Run automated example tests (see examples/README.md for details)
+nix run .#test-all-examples           # Run all example tests
+nix run .#test-all-examples-repeat    # Run 3 times (catch flaky failures)
+
 # Build documentation
 nix build .#doc
 
@@ -71,26 +75,45 @@ flake.nix
 
 ## Examples Structure
 
-Examples are organized in `examples/` with each as a directory:
+Examples are organized in `examples/` with each as a directory. See [examples/README.md](./examples/README.md) for full documentation including automated testing.
 
 ```
 examples/
-├── README.md              # Overview and comparison table
+├── README.md              # Overview, testing docs, port allocations
+├── lib/                   # Shared test infrastructure
+│   ├── constants.nix      # Centralized port allocations
+│   ├── test-lib.nix       # Test script generators
+│   └── *.nix              # Console and getty configs
 ├── btf-vhost/             # eBPF/BTF + vhost networking
 │   ├── default.nix        # Entry point
-│   ├── config.nix         # Shared variables (IPs, ports)
+│   ├── config.nix         # Imports from lib/constants.nix
 │   ├── guest-config.nix   # NixOS guest configuration
 │   ├── helper-scripts.nix # bin/ scripts (setup, test, ssh)
 │   └── qemu-consoles.nix  # QEMU console arguments
 ├── microvms-host/         # Nested MicroVMs (one per hypervisor)
 │   ├── default.nix        # Entry point (filters hypervisors by OS)
+│   ├── config.nix         # Imports from lib/constants.nix
 │   ├── network-config.nix # MAC/IP address generation
 │   └── nested-vms.nix     # Per-hypervisor VM configs
 ├── qemu-vnc/              # VNC graphical desktop
-└── graphics/              # Wayland graphics passthrough
+├── graphics/              # Wayland graphics passthrough
+└── run-all-tests.nix      # Test runner for all examples
 ```
 
 Apps are defined in `nix/apps.nix` and reference `examples/<name>/default.nix`.
+
+### Running Example Tests
+
+```bash
+# Run all example tests
+nix run .#test-all-examples
+
+# Run tests 3 times (catch intermittent failures)
+nix run .#test-all-examples-repeat
+
+# Test individual example
+nix build .#console-demo && ./result/bin/run-test
+```
 
 ## Adding New Options
 
@@ -142,3 +165,19 @@ When adding features, check `lib/runners/*.nix` for hypervisor-specific implemen
 - `lib.kernel.yes/no/module` for kernel config options
 - `writeShellScript` for generated scripts in runner packages
 - `builtins.listToAttrs` + `lib.concatMap` for dynamic attribute generation
+
+## Important: Never Use --impure
+
+**Never use `--impure` with nix commands.** All builds must be pure and reproducible.
+
+```bash
+# WRONG - never do this
+nix build --impure .#something
+nix run --impure .#something
+
+# CORRECT - pure builds only
+nix build .#something
+nix run .#something
+```
+
+If a build requires `--impure`, that indicates a design problem that needs to be fixed properly (e.g., missing inputs, hardcoded paths, or environment dependencies).

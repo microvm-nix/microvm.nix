@@ -19,9 +19,7 @@ builtins.listToAttrs (
           system.stateVersion = lib.trivial.release;
           networking.hostName = "${hypervisor}-microvm";
 
-          # ════════════════════════════════════════════════════════════════
           # MicroVM Configuration
-          # ════════════════════════════════════════════════════════════════
           microvm = {
             inherit hypervisor;
             interfaces = [
@@ -34,15 +32,11 @@ builtins.listToAttrs (
             ];
           };
 
-          # ════════════════════════════════════════════════════════════════
           # Network (DHCP from host bridge)
-          # ════════════════════════════════════════════════════════════════
           systemd.network.enable = true;
           # Uses default 99-ethernet-default-dhcp.network
 
-          # ════════════════════════════════════════════════════════════════
           # SSH Access
-          # ════════════════════════════════════════════════════════════════
           users.users.root.password = "toor";
           services.openssh = {
             enable = true;

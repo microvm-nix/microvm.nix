@@ -66,36 +66,51 @@ nixpkgs.lib.nixosSystem {
     self.nixosModules.microvm
 
     (
-      { lib, pkgs, ... }:
+      {
+        lib,
+        pkgs,
+        config,
+        ...
+      }:
       let
+        # Import port/network config from shared constants
+        portConfig = import ./config.nix;
+
         # Import helper scripts (needs pkgs)
-        helperScripts = import ./helper-scripts.nix { inherit pkgs config; };
+        helperScripts = import ./helper-scripts.nix {
+          pkgs = pkgs;
+          config = portConfig;
+        };
 
         # Import guest configuration (needs lib, pkgs, config)
-        guestConfig = import ./guest-config.nix { inherit lib pkgs config; };
+        guestConfig = import ./guest-config.nix {
+          inherit lib pkgs;
+          config = portConfig;
+        };
+
+        # Hostname for this VM (used in process naming)
+        hostName = "btf-vhost-microvm";
       in
       {
         system.stateVersion = lib.trivial.release;
-        networking.hostName = "btf-vhost-microvm";
+        networking.hostName = hostName;
 
-        # ════════════════════════════════════════════════════════════════════
         # MicroVM Configuration
-        # ════════════════════════════════════════════════════════════════════
 
         # Enable BTF for eBPF tools
         microvm.kernelBtf = true;
 
         microvm = {
           hypervisor = "qemu";
-          mem = config.mem;
-          vcpu = config.vcpu;
+          mem = portConfig.mem;
+          vcpu = portConfig.vcpu;
 
           # TAP interface with vhost-net acceleration
           interfaces = [
             {
               type = "tap";
-              id = config.tapInterface;
-              mac = config.vmMac;
+              id = portConfig.tapInterface;
+              mac = portConfig.vmMac;
               tap.vhost = true;
             }
           ];
@@ -103,16 +118,19 @@ nixpkgs.lib.nixosSystem {
           # Disable default stdio serial - we use TCP sockets instead
           qemu.serialConsole = false;
 
-          # Add TCP-accessible console arguments
-          qemu.extraArgs = qemuConsoleArgs;
+          # Add TCP-accessible console arguments and process naming
+          # Process name uses hostName for easy identification in ps output
+          qemu.extraArgs = [
+            "-name"
+            "${hostName},process=${hostName}"
+          ]
+          ++ qemuConsoleArgs;
 
           # Add helper scripts to the runner package
           binScripts = helperScripts;
         };
 
-        # ════════════════════════════════════════════════════════════════════
         # Guest NixOS Configuration (imported from guest-config.nix)
-        # ════════════════════════════════════════════════════════════════════
 
         # Kernel console configuration
         boot.kernelParams = guestConfig.boot.kernelParams;

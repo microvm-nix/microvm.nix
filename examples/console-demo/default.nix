@@ -36,13 +36,15 @@ nixpkgs.lib.nixosSystem {
 
     (
       { lib, pkgs, ... }:
+      let
+        # Hostname for this VM (used in process naming)
+        hostName = "console-demo";
+      in
       {
         system.stateVersion = lib.trivial.release;
-        networking.hostName = "console-demo";
+        networking.hostName = hostName;
 
-        # ════════════════════════════════════════════════════════════════════
         # MicroVM Configuration
-        # ════════════════════════════════════════════════════════════════════
         microvm = {
           hypervisor = "qemu";
           mem = config.mem;
@@ -54,12 +56,15 @@ nixpkgs.lib.nixosSystem {
           # Disable default stdio serial - we use TCP sockets instead
           qemu.serialConsole = false;
 
-          # Add our TCP console configuration
-          qemu.extraArgs = qemuConsoleArgs;
+          # Add TCP console configuration and process naming
+          # Process name uses hostName for easy identification in ps output
+          qemu.extraArgs = [
+            "-name"
+            "${hostName},process=${hostName}"
+          ]
+          ++ qemuConsoleArgs;
 
-          # ══════════════════════════════════════════════════════════════════
           # Helper Scripts
-          # ══════════════════════════════════════════════════════════════════
           binScripts = {
             # Connect to ttyS0 (serial) - for watching boot
             connect-serial = ''
@@ -230,40 +235,72 @@ nixpkgs.lib.nixosSystem {
               fi
 
               # ─────────────────────────────────────────────────────────────────
-              echo "4. Testing serial console (ttyS0)..."
+              echo "4. Testing serial console (ttyS0) on port $SERIAL_PORT..."
               # ─────────────────────────────────────────────────────────────────
+              info "Command: echo 'echo SERIAL_TEST' | nc localhost $SERIAL_PORT"
               SERIAL_RESPONSE=$(echo "echo SERIAL_TEST_$$" | timeout $CMD_TIMEOUT ${pkgs.netcat}/bin/nc localhost "$SERIAL_PORT" 2>/dev/null | head -10 || true)
               if echo "$SERIAL_RESPONSE" | grep -q "SERIAL_TEST_$$"; then
-                pass "Serial console (ttyS0) responds to commands"
+                pass "Serial console (ttyS0) responds to echo command"
               else
-                info "Serial console may need manual verification"
-                info "Response: $(echo "$SERIAL_RESPONSE" | head -1)"
+                info "Serial console echo test inconclusive"
+                info "Response: $(echo "$SERIAL_RESPONSE" | tr '\n' ' ' | head -c 60)"
               fi
 
               # ─────────────────────────────────────────────────────────────────
-              echo "5. Testing virtio console (hvc0)..."
+              echo "5. Testing virtio console (hvc0) on port $VIRTIO_PORT..."
               # ─────────────────────────────────────────────────────────────────
+              info "Command: echo 'echo VIRTIO_TEST' | nc localhost $VIRTIO_PORT"
               VIRTIO_RESPONSE=$(echo "echo VIRTIO_TEST_$$" | timeout $CMD_TIMEOUT ${pkgs.netcat}/bin/nc localhost "$VIRTIO_PORT" 2>/dev/null | head -10 || true)
               if echo "$VIRTIO_RESPONSE" | grep -q "VIRTIO_TEST_$$"; then
-                pass "Virtio console (hvc0) responds to commands"
+                pass "Virtio console (hvc0) responds to echo command"
               else
-                info "Virtio console may need manual verification"
-                info "Response: $(echo "$VIRTIO_RESPONSE" | head -1)"
+                info "Virtio console echo test inconclusive"
+                info "Response: $(echo "$VIRTIO_RESPONSE" | tr '\n' ' ' | head -c 60)"
               fi
 
               # ─────────────────────────────────────────────────────────────────
-              echo "6. Checking /proc/consoles in guest..."
+              echo "6. Running 'ps ax' via virtio console..."
               # ─────────────────────────────────────────────────────────────────
+              info "Command: echo 'ps ax' | nc localhost $VIRTIO_PORT"
+              PS_OUTPUT=$(echo "ps ax" | timeout $CMD_TIMEOUT ${pkgs.netcat}/bin/nc localhost "$VIRTIO_PORT" 2>/dev/null | head -20 || true)
+              if echo "$PS_OUTPUT" | grep -qE "PID|init|systemd"; then
+                pass "ps ax executed successfully"
+                info "Sample output:"
+                echo "$PS_OUTPUT" | grep -E "PID|init|systemd|getty" | head -5 | while read -r line; do
+                  echo "    $line"
+                done
+              else
+                info "ps ax output unclear"
+                info "Response: $(echo "$PS_OUTPUT" | head -1)"
+              fi
+
+              # ─────────────────────────────────────────────────────────────────
+              echo "7. Checking /proc/consoles in guest..."
+              # ─────────────────────────────────────────────────────────────────
+              info "Command: echo 'cat /proc/consoles' | nc localhost $VIRTIO_PORT"
               CONSOLES=$(echo "cat /proc/consoles" | timeout $CMD_TIMEOUT ${pkgs.netcat}/bin/nc localhost "$VIRTIO_PORT" 2>/dev/null | grep -E "ttyS0|hvc0" || true)
               if echo "$CONSOLES" | grep -q "ttyS0"; then
                 pass "ttyS0 registered in /proc/consoles"
+                info "  $(echo "$CONSOLES" | grep ttyS0 | head -1)"
               fi
               if echo "$CONSOLES" | grep -q "hvc0"; then
                 pass "hvc0 registered in /proc/consoles"
+                info "  $(echo "$CONSOLES" | grep hvc0 | head -1)"
               fi
 
               # ─────────────────────────────────────────────────────────────────
-              echo "7. Shutting down VM..."
+              echo "8. Testing hostname command via serial console..."
+              # ─────────────────────────────────────────────────────────────────
+              info "Command: echo 'hostname' | nc localhost $SERIAL_PORT"
+              HOSTNAME_RESPONSE=$(echo "hostname" | timeout $CMD_TIMEOUT ${pkgs.netcat}/bin/nc localhost "$SERIAL_PORT" 2>/dev/null | head -5 || true)
+              if echo "$HOSTNAME_RESPONSE" | grep -q "console-demo"; then
+                pass "Serial console returns correct hostname: console-demo"
+              else
+                info "Hostname via serial: $(echo "$HOSTNAME_RESPONSE" | tr '\n' ' ' | head -c 40)"
+              fi
+
+              # ─────────────────────────────────────────────────────────────────
+              echo "9. Shutting down VM..."
               # ─────────────────────────────────────────────────────────────────
               # Send poweroff command
               echo "poweroff" | timeout $CMD_TIMEOUT ${pkgs.netcat}/bin/nc localhost "$VIRTIO_PORT" 2>/dev/null || true
@@ -290,9 +327,7 @@ nixpkgs.lib.nixosSystem {
           };
         };
 
-        # ════════════════════════════════════════════════════════════════════
         # Kernel Console Configuration
-        # ════════════════════════════════════════════════════════════════════
         # Configure BOTH consoles in kernel command line:
         #   - console=ttyS0: Early boot output goes to serial
         #   - console=hvc0: Primary console after virtio loads
@@ -304,9 +339,7 @@ nixpkgs.lib.nixosSystem {
           "console=hvc0" # virtio-console: primary
         ];
 
-        # ════════════════════════════════════════════════════════════════════
         # Getty Configuration
-        # ════════════════════════════════════════════════════════════════════
         # Run login prompts on both consoles
 
         # Serial console getty
@@ -327,9 +360,7 @@ nixpkgs.lib.nixosSystem {
         # Empty root password
         users.users.root.password = "";
 
-        # ════════════════════════════════════════════════════════════════════
         # Minimal Environment
-        # ════════════════════════════════════════════════════════════════════
         # Just the essentials for demonstrating console access
         environment.systemPackages = with pkgs; [
           coreutils
