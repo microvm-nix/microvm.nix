@@ -5,7 +5,7 @@ let
     proto == "virtiofs"
   ) config.microvm.shares;
 
-  requiresVirtiofsd = virtiofsShares != [];
+  requiresVirtiofsd = virtiofsShares != [] && config.microvm.hypervisor != "vfkit";
 
   inherit (pkgs.python3Packages) supervisor;
   supervisord = lib.getExe' supervisor "supervisord";
