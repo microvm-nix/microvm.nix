@@ -22,6 +22,16 @@ let
     runnerDrv = declaredRunner.drvPath;
   };
 
+  # Deploy scripts run on the operator's machine, not on the target.
+  # Use /usr/bin/env bash so they work on any platform (e.g. macOS
+  # deploying to a Linux host).
+  writeDeployScript = name: text: pkgs.writeTextFile {
+    inherit name;
+    executable = true;
+    destination = "/bin/${name}";
+    text = "#!/usr/bin/env bash\n" + text;
+  };
+
   canSwitchViaSsh =
     config.system.switch.enable &&
     # MicroVM must be reachable through SSH
@@ -94,7 +104,7 @@ in
 
   # Implementations
   config.microvm.deploy = {
-    installOnHost = pkgs.writeShellScriptBin "microvm-install-on-host" ''
+    installOnHost = writeDeployScript "microvm-install-on-host" ''
       set -eou pipefail
 
       USAGE="Usage: $0 root@<host> [--use-remote-sudo]"
@@ -170,7 +180,7 @@ in
     '';
 
     sshSwitch = lib.mkIf canSwitchViaSsh (
-      pkgs.writeShellScriptBin "microvm-switch" ''
+      writeDeployScript "microvm-switch" ''
         set -eou pipefail
 
         USAGE="Usage: $0 root@<target> [--use-remote-sudo]"
@@ -211,7 +221,7 @@ in
       ''
     );
 
-    rebuild = with config.microvm.deploy; pkgs.writeShellScriptBin "microvm-rebuild" ''
+    rebuild = with config.microvm.deploy; writeDeployScript "microvm-rebuild" ''
       set -eou pipefail
 
       HOST="$1"
