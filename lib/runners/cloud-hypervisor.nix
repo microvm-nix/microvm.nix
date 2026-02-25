@@ -210,7 +210,7 @@ in {
           readonly = "on";
         } // mqOps))
         ++
-        map ({ image, serial, direct, readOnly, ... }:
+        map ({ image, serial, direct, readOnly, imageType, ... }:
           opsMapped (
             {
               path = toString image;
@@ -222,6 +222,7 @@ in {
                 if readOnly
                 then "on"
                 else "off";
+              image_type = toString imageType;
             } //
             lib.optionalAttrs (serial != null) {
               inherit serial;

@@ -296,6 +296,17 @@ in
             default = "ext4";
             description = "Filesystem for automatic creation and mounting";
           };
+          imageType = mkOption {
+            type = types.enum [ "raw" "qcow2" "vhd" "vhdx" ];
+            default = "raw";
+            description = ''
+              Format of the image (only passed to the hypervisor, does not change format of the image created if `autoCreate` is true).
+
+              ::: {.note}
+              Only supported with cloud-hypervisor.
+              :::
+            '';
+          };
         };
       });
     };
