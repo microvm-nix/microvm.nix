@@ -22,6 +22,7 @@ in
     ./rosetta.nix
     ./optimization.nix
     ./ssh-deploy.nix
+    ./vsock-ssh.nix
   ];
 
   config = {
