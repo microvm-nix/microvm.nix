@@ -1771,6 +1771,17 @@ string</p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
 </ul>
+<h2 id="microvmvolumesimagetype"><a class="header" href="#microvmvolumesimagetype">microvm.volumes.*.imageType</a></h2>
+<p>Format of the image (only passed to the hypervisor, does not change format of the image created if <code>autoCreate</code> is true).</p>
+<p><strong>Note:</strong> Only supported with cloud-hypervisor.</p>
+<p><em>Type:</em>
+one of “raw”, “qcow2”, “vhd”, “vhdx”</p>
+<p><em>Default:</em>
+<code>"raw"</code></p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
 <h2 id="microvmvolumeslabel"><a class="header" href="#microvmvolumeslabel">microvm.volumes.*.label</a></h2>
 <p>Label of the volume, if any. Only applicable if <code>autoCreate</code> is true; otherwise labeling of the volume must be done manually</p>
 <p><em>Type:</em>
