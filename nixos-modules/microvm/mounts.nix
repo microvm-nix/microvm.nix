@@ -44,7 +44,7 @@ lib.mkIf config.microvm.guest.enable {
       "/nix/store" = {
         device = roStoreDisk;
         fsType = storeDiskType;
-        options = [ "x-systemd.requires=systemd-modules-load.service" ];
+        options = [ "x-systemd.after=systemd-modules-load.service" ];
         neededForBoot = true;
         noCheck = true;
       };
@@ -72,7 +72,7 @@ lib.mkIf config.microvm.guest.enable {
       "/nix/.ro-store" = {
         device = roStoreDisk;
         fsType = storeDiskType;
-        options = [ "ro" "x-systemd.requires=systemd-modules-load.service" ];
+        options = [ "ro" "x-systemd.after=systemd-modules-load.service" ];
         neededForBoot = true;
         noCheck = true;
       };
@@ -121,8 +121,8 @@ lib.mkIf config.microvm.guest.enable {
         device = tag;
         fsType = proto;
         options = {
-          "virtiofs" = [ "defaults" "x-systemd.requires=systemd-modules-load.service" ];
-          "9p" = [ "trans=virtio" "version=9p2000.L" "msize=65536" "x-systemd.requires=systemd-modules-load.service" ];
+          "virtiofs" = [ "defaults" "x-systemd.after=systemd-modules-load.service" ];
+          "9p" = [ "trans=virtio" "version=9p2000.L" "msize=65536" "x-systemd.after=systemd-modules-load.service" ];
         }.${proto};
       } // lib.optionalAttrs (source == "/nix/store" || mountPoint == config.microvm.writableStoreOverlay) {
         neededForBoot = true;
