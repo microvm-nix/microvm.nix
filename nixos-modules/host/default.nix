@@ -29,11 +29,11 @@ in
       "vhost_net"
     ];
 
-    system.activationScripts.microvm-host = ''
-      mkdir -p ${stateDir}
-      chown ${user}:${group} ${stateDir}
-      chmod u+rwx,g+w ${stateDir}
-    '';
+    systemd.tmpfiles.settings."10-microvm"."${stateDir}".d = {
+      user = user;
+      group = group;
+      mode = "0770";
+    };
 
     environment.systemPackages = [
       microvmCommand
