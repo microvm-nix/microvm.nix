@@ -32,7 +32,7 @@ in
     systemd.tmpfiles.settings."10-microvm"."${stateDir}".d = {
       user = user;
       group = group;
-      mode = "0770";
+      mode = "0775";
     };
 
     environment.systemPackages = [
