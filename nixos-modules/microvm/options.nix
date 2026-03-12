@@ -410,6 +410,11 @@ in
             description = "Turn off write access";
             default = false;
           };
+          cache = mkOption {
+            type = enum [ "auto" "always" "metadata" "never" ];
+            description = "Virtiofs caching policy for the file system";
+            default = "auto";
+          };
         };
       }));
     };
