@@ -120,5 +120,8 @@ lib.mkIf config.microvm.guest.enable {
     # 32 MB is just an optimistic guess, not based on experience
     lib.optional (config.microvm.mem < 32) ''
       MicroVM ${hostName}: ${toString config.microvm.mem} MB of RAM is uncomfortably narrow.
+    ''
+    ++ lib.optional config.nix.optimise.automatic ''
+      Optimising the nix store is not recommended as it either uses lots of file handles with virtiofsd or as it doesn't do what you expect with a block device.
     '';
 }
