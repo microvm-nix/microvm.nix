@@ -19,6 +19,7 @@ That is possible without even requiring a network transport by just
 making the journals available to the host as a share. Because journald
 identifies hosts by their `/etc/machine-id`, the `microvm.machineId` should be set.
 
+```
 microvm.shares = [ {
   # On the host
   source = "/var/lib/microvms/${config.networking.hostName}/journal";
