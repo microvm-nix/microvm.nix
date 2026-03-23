@@ -127,6 +127,8 @@ let
 
   tapMultiQueue = vcpu > 1;
 
+  useHotPlugMemory = hotplugMem > 0;
+
   forwardingOptions = lib.concatMapStrings ({ proto, from, host, guest }: {
     host = "hostfwd=${proto}:${host.address}:${toString host.port}-" +
            "${guest.address}:${toString guest.port},";
@@ -161,10 +163,6 @@ lib.warnIf (mem == 2048) ''
 
   command = if initialBalloonMem != 0
   then throw "qemu does not support initialBalloonMem"
-  else if hotplugMem != 0
-  then throw "qemu does not support hotplugMem"
-  else if hotpluggedMem != 0
-  then throw "qemu does not support hotpluggedMem"
   else lib.escapeShellArgs (
     [
       "${qemu}/bin/qemu-system-${arch}"
@@ -255,6 +253,10 @@ lib.warnIf (mem == 2048) ''
     lib.optionals (socket != null) [ "-qmp" "unix:${socket},server,nowait" ] ++
     lib.optionals balloon [
 	    "-device" ("virtio-balloon,free-page-reporting=on,id=balloon0" + lib.optionalString (deflateOnOOM) ",deflate-on-oom=on")
+    ] ++
+    lib.optionals useHotPlugMemory [
+      "-object" "memory-backend-ram,id=vmem0,size=${toString hotplugMem}M"
+      "-device" "virtio-mem-pci,id=vm0,memdev=vmem0,requested-size=${toString hotpluggedMem}M"
     ] ++
     builtins.concatMap ({ image, letter, serial, direct, readOnly, ... }:
       [ "-drive"
