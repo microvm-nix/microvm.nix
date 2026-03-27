@@ -142,16 +142,8 @@ let
 
 
     async def handle(reader, writer):
-        chunks = []
-        while True:
-            chunk = await reader.read(65536)
-            if not chunk:
-                break
-            chunks.append(chunk)
-            if chunk.endswith(b"\n"):
-                break
+        data = await reader.read(65536)
         writer.close()
-        data = b"".join(chunks)
         if data:
             notify.sendto(data, notify_socket)
 
