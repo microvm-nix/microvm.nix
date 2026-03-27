@@ -126,6 +126,45 @@ let
     vulkan = true;
   };
 
+  # A lightweight proxy that forwards systemd notifications from a vsock
+  # Unix socket to the host's NOTIFY_SOCKET. Unlike socat, it closes the
+  # connection immediately after reading, which unblocks the guest's
+  # blocking recv() (systemd does shutdown(SHUT_WR) + recv() as an
+  # end-of-message handshake, but cloud-hypervisor does not propagate the
+  # half-close to the host-side Unix socket).
+  vsockNotifyProxy = pkgs.writers.writePython3Bin "vsock-notify-proxy" {} ''
+    import asyncio
+    import os
+    import socket
+
+    notify_socket = os.environ["NOTIFY_SOCKET"]
+    notify = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+
+
+    async def handle(reader, writer):
+        chunks = []
+        while True:
+            chunk = await reader.read(65536)
+            if not chunk:
+                break
+            chunks.append(chunk)
+            if chunk.endswith(b"\n"):
+                break
+        writer.close()
+        data = b"".join(chunks)
+        if data:
+            notify.sendto(data, notify_socket)
+
+
+    async def main():
+        path = os.environ["VSOCK_NOTIFY_PATH"]
+        server = await asyncio.start_unix_server(handle, path=path)
+        await server.serve_forever()
+
+
+    asyncio.run(main())
+  '';
+
   oemStringValues = platformOEMStrings ++ lib.optional supportsNotifySocket "io.systemd.credential:vmm.notify_socket=vsock-stream:2:8888";
   oemStringOptions = lib.optional (oemStringValues != []) "oem_strings=[${lib.concatStringsSep "," oemStringValues}]";
   platformExtracted = extractOptValues "--platform" extraArgs;
@@ -155,11 +194,9 @@ in {
     # Ensure notify sockets are removed if cloud-hypervisor didn't exit cleanly the last time
     rm -f ${vsockPath} ${vsockPath}_8888
 
-    # Start socat to forward systemd notify socket over vsock
+    # Forward systemd notify messages from guest (via vsock) to host
     if [ -n "''${NOTIFY_SOCKET:-}" ]; then
-      # -T2 is required because cloud-hypervisor does not handle partial
-      # shutdown of the stream, like systemd v256+ does.
-      ${pkgs.socat}/bin/socat -T2 UNIX-LISTEN:${vsockPath}_8888,fork UNIX-SENDTO:$NOTIFY_SOCKET &
+      VSOCK_NOTIFY_PATH=${vsockPath}_8888 ${vsockNotifyProxy}/bin/vsock-notify-proxy &
     fi
   '' + lib.optionalString graphics.enable ''
     rm -f ${graphics.socket}
