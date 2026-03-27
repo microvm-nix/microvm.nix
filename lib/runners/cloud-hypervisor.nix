@@ -126,12 +126,20 @@ let
     vulkan = true;
   };
 
-  # A lightweight proxy that forwards systemd notifications from a vsock
-  # Unix socket to the host's NOTIFY_SOCKET. Unlike socat, it closes the
-  # connection immediately after reading, which unblocks the guest's
-  # blocking recv() (systemd does shutdown(SHUT_WR) + recv() as an
-  # end-of-message handshake, but cloud-hypervisor does not propagate the
-  # half-close to the host-side Unix socket).
+  # A proxy that forwards systemd notifications from cloud-hypervisor's vsock socket. It
+  # intentionally calls read only once and closes the connection immediately, which unblocks the
+  # guest's blocking recv() (systemd does shutdown(SHUT_WR) + recv() as an
+  # end-of-message handshake in sd-daemon.c, but cloud-hypervisor does not propagate the half-close
+  # to the host-side Unix socket).
+  #
+  # Previously, this used socat with a 2-second timeout but this causes systemd to stall on every
+  # notification, causing extremely slow boot times.
+  #
+  # An important caveat is that the message could theoretically be truncated but this should not
+  # happen in practice unless the message is large (systemd notifications are small).
+  #
+  # TODO(rzhikharevich): Ideally, cloud-hypervisor should propagate the half-close, then the
+  # theoretical truncation risk could be fixed by closing the connection after detecting it.
   vsockNotifyProxy = pkgs.writers.writePython3Bin "vsock-notify-proxy" {} ''
     import asyncio
     import os
