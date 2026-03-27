@@ -126,6 +126,45 @@ let
     vulkan = true;
   };
 
+  # A proxy that forwards systemd notifications from cloud-hypervisor's vsock socket. It
+  # intentionally calls read only once and closes the connection immediately, which unblocks the
+  # guest's blocking recv() (systemd does shutdown(SHUT_WR) + recv() as an
+  # end-of-message handshake in sd-daemon.c, but cloud-hypervisor does not propagate the half-close
+  # to the host-side Unix socket).
+  #
+  # Previously, this used socat with a 2-second timeout but this causes systemd to stall on every
+  # notification, causing extremely slow boot times.
+  #
+  # An important caveat is that the message could theoretically be truncated but this should not
+  # happen in practice unless the message is large (systemd notifications are small).
+  #
+  # TODO(rzhikharevich): Ideally, cloud-hypervisor should propagate the half-close, then the
+  # theoretical truncation risk could be fixed by closing the connection after detecting it.
+  vsockNotifyProxy = pkgs.writers.writePython3Bin "vsock-notify-proxy" {} ''
+    import asyncio
+    import os
+    import socket
+
+    notify_socket = os.environ["NOTIFY_SOCKET"]
+    notify = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+
+
+    async def handle(reader, writer):
+        data = await reader.read(65536)
+        writer.close()
+        if data:
+            notify.sendto(data, notify_socket)
+
+
+    async def main():
+        path = os.environ["VSOCK_NOTIFY_PATH"]
+        server = await asyncio.start_unix_server(handle, path=path)
+        await server.serve_forever()
+
+
+    asyncio.run(main())
+  '';
+
   oemStringValues = platformOEMStrings ++ lib.optional supportsNotifySocket "io.systemd.credential:vmm.notify_socket=vsock-stream:2:8888";
   oemStringOptions = lib.optional (oemStringValues != []) "oem_strings=[${lib.concatStringsSep "," oemStringValues}]";
   platformExtracted = extractOptValues "--platform" extraArgs;
@@ -155,11 +194,9 @@ in {
     # Ensure notify sockets are removed if cloud-hypervisor didn't exit cleanly the last time
     rm -f ${vsockPath} ${vsockPath}_8888
 
-    # Start socat to forward systemd notify socket over vsock
+    # Forward systemd notify messages from guest (via vsock) to host
     if [ -n "''${NOTIFY_SOCKET:-}" ]; then
-      # -T2 is required because cloud-hypervisor does not handle partial
-      # shutdown of the stream, like systemd v256+ does.
-      ${pkgs.socat}/bin/socat -T2 UNIX-LISTEN:${vsockPath}_8888,fork UNIX-SENDTO:$NOTIFY_SOCKET &
+      VSOCK_NOTIFY_PATH=${vsockPath}_8888 ${vsockNotifyProxy}/bin/vsock-notify-proxy &
     fi
   '' + lib.optionalString graphics.enable ''
     rm -f ${graphics.socket}
