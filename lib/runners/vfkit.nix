@@ -13,7 +13,7 @@ let
 
   inherit (microvmConfig)
     vcpu mem user interfaces shares socket
-    storeOnDisk kernel initrdPath kernelParams
+    storeOnDisk storeDisk kernel initrdPath kernelParams
     balloon devices credentialFiles vsock graphics;
 
   inherit (microvmConfig.vfkit) extraArgs logLevel rosetta;
@@ -43,6 +43,9 @@ let
     ] else [
       "--device" "virtio-serial,stdio"
     ])
+    ++ lib.optionals storeOnDisk [
+      "--device" "virtio-blk,path=${storeDisk},readonly"
+    ]
     ++ (builtins.concatMap ({ image, ... }: [
       "--device" "virtio-blk,path=${image}"
     ]) volumesWithLetters)
@@ -113,8 +116,6 @@ in
     then throw "vfkit does not support credentialFiles"
     else if vsock.cid != null
     then throw "vfkit vsock support not yet implemented in microvm.nix"
-    else if storeOnDisk
-    then throw "vfkit does not support storeOnDisk. Use virtiofs shares instead (already configured in examples)."
     else
       let
         baseCmd = lib.escapeShellArgs allArgsWithoutSocket;
