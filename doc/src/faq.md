@@ -134,6 +134,42 @@ The more secure solution would be writing custom
 `services.udev.extraRules` that assign ownership/permissions to the
 individually used block devices.
 
+## I'm on macOS and builds fail with `Required system: 'aarch64-linux'`. What do I do?
+
+On macOS, **microvm.nix** uses the `vfkit` hypervisor to run Linux
+guests through Apple's native Virtualization.framework. While vfkit
+itself runs natively on macOS, the guest NixOS system still has to be
+built for Linux, and `aarch64-darwin` / `x86_64-darwin` cannot produce
+Linux store paths on their own. You therefore need access to a Linux
+builder. Without one, `nix run` will fail with errors like:
+
+```
+error: Cannot build '/nix/store/...-nixos-system-....drv'.
+       Reason: required system or feature not available
+       Required system: 'aarch64-linux' with features {}
+       Current system: 'aarch64-darwin' with features {apple-virt, ...}
+```
+
+Any of the following approaches work — pick whichever fits your setup:
+
+- **nix-darwin `linux-builder`**: nixpkgs ships a lightweight Linux
+  builder VM that integrates with nix-darwin. Enable it with
+  `nix.linux-builder.enable = true;` in your `darwin-configuration.nix`.
+  See the [nixcademy write-up](https://nixcademy.com/posts/macos-linux-builder/)
+  for a walkthrough.
+- **Determinate Nix native Linux builder**: [Determinate Nix](https://docs.determinate.systems/troubleshooting/native-linux-builder/)
+  provides a native Linux builder on macOS (currently in closed beta).
+- **`nix-rosetta-builder`**: [`nix-rosetta-builder`](https://github.com/cpick/nix-rosetta-builder)
+  runs an `x86_64-linux` builder on Apple Silicon through Rosetta —
+  useful when you specifically need an `x86_64-linux` builder.
+- **Remote Linux machine**: configure an existing Linux machine as a
+  remote builder via `/etc/nix/machines`.
+
+The `microvm.cachix.org` substituter advertised by the flake is
+**optional**. If you prefer not to trust additional binary caches,
+decline the prompt (or pass `--no-accept-flake-config`) and Nix will
+build everything from source on your Linux builder.
+
 ## My virtiofs-shared sops-nix /run/secrets disappears when the host is updated!
 
 A workaround may be setting `sops.keepGenerations = 0;`, effectively
