@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-18ad240c.js";
+            window.path_to_searchindex_js = "searchindex-f9b2631b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-724fa209.js"></script>
@@ -216,7 +216,10 @@ overhead has been reduced a lot by replacing emulated devices with
 other Hypervisors that have been explicitly authored for
 <em>virtio</em>. Some of them are written in Rust, a programming language
 that is renowned for being safer than C. On macOS, vfkit leverages
-Apple’s native Virtualization.framework for running Linux VMs.</p>
+Apple’s native Virtualization.framework for running Linux VMs.
+Note that building the guest still requires access to a Linux builder; see
+<a href="./faq.html#im-on-macos-and-builds-fail-with-required-system-aarch64-linux-what-do-i-do">the FAQ</a>
+for setup options.</p>
 
                     </main>
 

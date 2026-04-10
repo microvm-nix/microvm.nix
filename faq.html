@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-18ad240c.js";
+            window.path_to_searchindex_js = "searchindex-f9b2631b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-724fa209.js"></script>
@@ -285,6 +285,37 @@ which was removed from microvm.nix:</p>
 <p>The more secure solution would be writing custom
 <code>services.udev.extraRules</code> that assign ownership/permissions to the
 individually used block devices.</p>
+<h2 id="im-on-macos-and-builds-fail-with-required-system-aarch64-linux-what-do-i-do"><a class="header" href="#im-on-macos-and-builds-fail-with-required-system-aarch64-linux-what-do-i-do">I’m on macOS and builds fail with <code>Required system: 'aarch64-linux'</code>. What do I do?</a></h2>
+<p>On macOS, <strong>microvm.nix</strong> uses the <code>vfkit</code> hypervisor to run Linux
+guests through Apple’s native Virtualization.framework. While vfkit
+itself runs natively on macOS, the guest NixOS system still has to be
+built for Linux, and <code>aarch64-darwin</code> / <code>x86_64-darwin</code> cannot compile
+or cross compile those. You therefore need access to a Linux
+builder. Without one, <code>nix run</code> will fail with errors like:</p>
+<pre><code>error: Cannot build '/nix/store/...-nixos-system-....drv'.
+       Reason: required system or feature not available
+       Required system: 'aarch64-linux' with features {}
+       Current system: 'aarch64-darwin' with features {apple-virt, ...}
+</code></pre>
+<p>Any of the following approaches work — pick whichever fits your setup:</p>
+<ul>
+<li><strong>nix-darwin <code>linux-builder</code></strong>: nixpkgs ships a lightweight Linux
+builder VM that integrates with nix-darwin. Enable it with
+<code>nix.linux-builder.enable = true;</code> in your <code>darwin-configuration.nix</code>.
+See the <a href="https://nixcademy.com/posts/macos-linux-builder/">nixcademy write-up</a>
+for a walkthrough.</li>
+<li><strong>Determinate Nix native Linux builder</strong>: <a href="https://docs.determinate.systems/troubleshooting/native-linux-builder/">Determinate Nix</a>
+provides a native Linux builder on macOS (currently in closed beta).</li>
+<li><strong><code>nix-rosetta-builder</code></strong>: <a href="https://github.com/cpick/nix-rosetta-builder"><code>nix-rosetta-builder</code></a>
+runs an <code>x86_64-linux</code> builder on Apple Silicon through Rosetta —
+useful when you specifically need an <code>x86_64-linux</code> builder.</li>
+<li><strong>Remote Linux machine</strong>: configure an existing Linux machine as a
+remote builder via <code>/etc/nix/machines</code>.</li>
+</ul>
+<p>The <code>microvm.cachix.org</code> substituter advertised by the flake is
+<strong>optional</strong>. If you prefer not to trust additional binary caches,
+decline the prompt (or pass <code>--no-accept-flake-config</code>) and Nix will
+build everything from source on your Linux builder.</p>
 <h2 id="my-virtiofs-shared-sops-nix-runsecrets-disappears-when-the-host-is-updated"><a class="header" href="#my-virtiofs-shared-sops-nix-runsecrets-disappears-when-the-host-is-updated">My virtiofs-shared sops-nix /run/secrets disappears when the host is updated!</a></h2>
 <p>A workaround may be setting <code>sops.keepGenerations = 0;</code>, effectively
 stopping sops-nix from ever removing old generations in
