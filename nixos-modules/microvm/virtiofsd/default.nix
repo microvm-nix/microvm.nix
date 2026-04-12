@@ -16,7 +16,10 @@ in
     virtiofsd-run =
       let
         supervisordConfig = {
-          supervisord.nodaemon = true;
+          supervisord = {
+            nodaemon = true;
+            user = "root";
+          };
 
           "eventlistener:notify" = {
             command = pkgs.writers.writePython3 "supervisord-event-handler" { } (
