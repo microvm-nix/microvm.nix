@@ -21,12 +21,12 @@ in {
   };
 
   config = lib.mkIf config.microvm.guest.enable {
-    microvm.bootDisk = pkgs.runCommandLocal "microvm-bootdisk.img" {
-      nativeBuildInputs = with pkgs; [
+    microvm.bootDisk = pkgs.buildPackages.runCommandLocal "microvm-bootdisk.img" {
+      nativeBuildInputs = with pkgs.buildPackages; [
         parted
         libguestfs
       ];
-      LIBGUESTFS_PATH = pkgs.libguestfs-appliance;
+      LIBGUESTFS_PATH = pkgs.buildPackages.libguestfs-appliance;
     } ''
       # kernel + initrd + slack, in sectors
       EFI_SIZE=$(( ( ( $(stat -c %s ${kernelPath}) + $(stat -c %s ${initrdPath}) + 16 * 4096 ) / ( 2048 * 512 ) + 1 ) * 2048 ))

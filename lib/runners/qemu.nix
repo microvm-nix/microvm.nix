@@ -14,9 +14,9 @@ let
     configureFlags = oa.configureFlags ++ [
       "--enable-libusb"
     ];
-    buildInputs = oa.buildInputs ++ (with pkgs; [
-      libusb1
-    ]);
+    buildInputs = oa.buildInputs ++ [
+      vmHostPackages.libusb1
+    ];
   });
 
   minimizeQemuClosureSize = pkg: pkg.override (oa: {
@@ -133,7 +133,7 @@ let
     host = "hostfwd=${proto}:${host.address}:${toString host.port}-" +
            "${guest.address}:${toString guest.port},";
     guest = "guestfwd=${proto}:${guest.address}:${toString guest.port}-" +
-            "cmd:${pkgs.netcat}/bin/nc ${host.address} ${toString host.port},";
+            "cmd:${vmHostPackages.netcat}/bin/nc ${host.address} ${toString host.port},";
   }.${from}) forwardPorts;
 
   writeQmp = data: ''

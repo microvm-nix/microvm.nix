@@ -64,7 +64,7 @@ in
         config.microvm.storeDiskType
       ];
 
-      microvm.storeDisk = pkgs.runCommandLocal "microvm-store-disk.${config.microvm.storeDiskType}" {
+      microvm.storeDisk = pkgs.buildPackages.runCommandLocal "microvm-store-disk.${config.microvm.storeDiskType}" {
         nativeBuildInputs = [
           pkgs.buildPackages.time
           pkgs.buildPackages.bubblewrap
