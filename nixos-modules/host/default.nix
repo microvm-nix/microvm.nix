@@ -34,11 +34,45 @@ in
       "vhost_net"
     ];
 
-    systemd.tmpfiles.settings."10-microvm"."${stateDir}".d = {
-      user = user;
-      group = group;
-      mode = "0775";
-    };
+    systemd.tmpfiles.settings."10-microvm" =
+      builtins.foldl'
+        (
+          result: name:
+          result
+          // (
+            let
+              microvmConfig = config.microvm.vms.${name};
+              inherit (microvmConfig) flake;
+              isFlake = flake != null;
+              guestConfig =
+                if isFlake then
+                  flake.nixosConfigurations.${name}.config
+                else if microvmConfig.evaluatedConfig != null then
+                  microvmConfig.evaluatedConfig.config
+                else
+                  microvmConfig.config.config;
+            in
+            builtins.foldl' (
+              result: share:
+              result
+              // lib.optionalAttrs (share.source != "/nix/store") {
+                "${share.source}".d = {
+                  # Only adjust permissions if directory doesn't exist
+                  user = ":${user}";
+                  group = ":${group}";
+                  mode = ":0775";
+                };
+              }
+            ) { } guestConfig.microvm.shares
+          )
+        )
+        {
+          "${stateDir}".d = {
+            inherit user group;
+            mode = "0775";
+          };
+        }
+        (builtins.attrNames config.microvm.vms);
 
     environment.systemPackages = [
       microvmCommand
