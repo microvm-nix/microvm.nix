@@ -64,16 +64,35 @@ ls -l /var/lib/microvms/*/{current,booted}/share/microvm/system
 
 ## Removing MicroVMs
 
+### Imperative MicroVMs
+
 First, stop the MicroVM:
 
 ```bash
 systemctl stop microvm@$NAME
 ```
 
+### Declarative MicroVMs
+
+Remove the VM from `microvm.vms.<name>` in your host configuration and
+stop the VM:
+
+```bash
+systemctl stop microvm@$NAME
+```
+
+Removing a declaration does **not** automatically stop the running
+service by default. To opt in to that behavior, set
+`microvm.host.stopOrphans = true;` on the host — see
+[Declarative MicroVMs → Reconciliation on host rebuild](./declarative.md).
+
+### Cleaning up state
+
 If you don't use absolute filesystem paths for sockets, volumes, or
 shares, all MicroVM state is kept under `/var/lib/microvms/$NAME/`.
-The `microvm@.serivce` systemd service template depends on existence
-of this directory.
+The `microvm@.service` systemd service template depends on existence
+of this directory. State is **not** removed automatically, even for
+declarative MicroVMs — clean it up manually:
 
 ```bash
 rm -rf /var/lib/microvms/$NAME

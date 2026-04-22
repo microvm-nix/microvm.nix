@@ -312,6 +312,24 @@ in
     # Enable Kernel Same-Page Merging
     hardware.ksm.enable = lib.mkDefault true;
 
+    system.activationScripts.microvm-stop-orphans = lib.optionalString config.microvm.host.stopOrphans ''
+      declared=" ${lib.concatStringsSep " " (builtins.attrNames config.microvm.vms)} "
+      if [ -d /run/current-system/etc/systemd/system ]; then
+        for f in /run/current-system/etc/systemd/system/install-microvm-*.service; do
+          [ -e "$f" ] || continue
+          name="$(basename "$f" .service)"
+          name="''${name#install-microvm-}"
+          case "$declared" in
+            *" $name "*) continue ;;
+          esac
+          if ${pkgs.systemd}/bin/systemctl is-active --quiet "microvm@$name.service" 2>/dev/null; then
+            echo "microvm: stopping orphan microvm@$name.service (removed from microvm.vms)" >&2
+            ${pkgs.systemd}/bin/systemctl stop "microvm@$name.service" || true
+          fi
+        done
+      fi
+    '';
+
     # TODO: remove in 2026
     system.activationScripts.microvm-update-check = ''
       if [ -d ${stateDir} ]; then
