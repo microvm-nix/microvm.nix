@@ -81,18 +81,17 @@ stop the VM:
 systemctl stop microvm@$NAME
 ```
 
-Removing a declaration does **not** automatically stop the running
-service by default. To opt in to that behavior, set
-`microvm.host.stopOrphans = true;` on the host — see
-[Declarative MicroVMs → Reconciliation on host rebuild](./declarative.md).
+Removing a declaration does **not** automatically stop the running service by default.
+To opt in to that behavior, set `microvm.host.stopOrphans = true;` on the host.
+See [Declarative MicroVMs → Reconciliation on host rebuild](./declarative.md) for more information.
 
 ### Cleaning up state
 
 If you don't use absolute filesystem paths for sockets, volumes, or
 shares, all MicroVM state is kept under `/var/lib/microvms/$NAME/`.
 The `microvm@.service` systemd service template depends on existence
-of this directory. State is **not** removed automatically, even for
-declarative MicroVMs — clean it up manually:
+of this directory. State is **never** removed automatically, even for
+declarative MicroVMs — it must be manually cleaned up:
 
 ```bash
 rm -rf /var/lib/microvms/$NAME
