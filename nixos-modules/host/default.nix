@@ -314,20 +314,17 @@ in
 
     system.activationScripts.microvm-stop-orphans = lib.optionalString config.microvm.host.stopOrphans ''
       declared=" ${lib.concatMapAttrsStringSep " " (name: _: name) config.microvm.vms} "
-      if [ -d /run/current-system/etc/systemd/system ]; then
-        for f in /run/current-system/etc/systemd/system/install-microvm-*.service; do
-          [ -e "$f" ] || continue
-          name="$(basename "$f" .service)"
-          name="''${name#install-microvm-}"
-          case "$declared" in
-            *" $name "*) continue ;;
-          esac
-          if ${lib.getExe' config.systemd.package "systemctl"} is-active --quiet "microvm@$name.service" 2>/dev/null; then
-            echo "microvm: stopping orphan microvm@$name.service (removed from microvm.vms)" >&2
-            ${lib.getExe' config.systemd.package "systemctl"} stop "microvm@$name.service" || true
-          fi
-        done
-      fi
+      for unit in $(systemctl list-unit-files --no-legend 'install-microvm-*.service' 2>/dev/null | awk '{print $1}'); do
+        name="''${unit#install-microvm-}"
+        name="''${name%.service}"
+        case "$declared" in
+          *" $name "*) continue ;;
+        esac
+        if systemctl is-active --quiet "microvm@$name.service"; then
+          echo "microvm: stopping orphan microvm@$name.service (removed from microvm.vms)" >&2
+          systemctl stop "microvm@$name.service" || true
+        fi
+      done
     '';
 
     # TODO: remove in 2026
