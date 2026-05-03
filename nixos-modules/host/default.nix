@@ -314,7 +314,8 @@ in
 
     system.activationScripts.microvm-stop-orphans = lib.optionalString config.microvm.host.stopOrphans ''
       declared=" ${lib.concatMapAttrsStringSep " " (name: _: name) config.microvm.vms} "
-      for unit in $(systemctl list-unit-files --no-legend 'install-microvm-*.service' 2>/dev/null | awk '{print $1}'); do
+      while read -r unit _; do
+        [ -n "$unit" ] || continue
         name="''${unit#install-microvm-}"
         name="''${name%.service}"
         case "$declared" in
@@ -324,7 +325,7 @@ in
           echo "microvm: stopping orphan microvm@$name.service (removed from microvm.vms)" >&2
           systemctl stop "microvm@$name.service" || true
         fi
-      done
+      done < <(systemctl list-unit-files --no-legend 'install-microvm-*.service' 2>/dev/null)
     '';
 
     # TODO: remove in 2026
