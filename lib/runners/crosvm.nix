@@ -76,11 +76,6 @@ in {
         "--vhost-user" "gpu,socket=${graphics.socket}"
       ]
       ++
-      lib.optionals (builtins.compareVersions crosvmPkg.version "107.1" < 0) [
-        # workarounds
-        "--seccomp-log-failures"
-      ]
-      ++
       lib.optionals (pivotRoot != null) [
         "--pivot-root"
         pivotRoot
