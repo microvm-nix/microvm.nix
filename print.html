@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-f9b2631b.js";
+            window.path_to_searchindex_js = "searchindex-abc78c2b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-724fa209.js"></script>
@@ -1082,6 +1082,17 @@ boolean</p>
 one of “gtk”, “cocoa”</p>
 <p><em>Default:</em></p>
 <pre><code class="language-nix">if pkgs.stdenv.hostPlatform.isDarwin then "cocoa" else "gtk"
+</code></pre>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmgraphicscrosvmpackage"><a class="header" href="#microvmgraphicscrosvmpackage">microvm.graphics.crosvmPackage</a></h2>
+<p>crosvm package to use when running graphics (for cloud-hypervisor and crosvm)</p>
+<p><em>Type:</em>
+package</p>
+<p><em>Default:</em></p>
+<pre><code class="language-nix">"${pkgs.crosvm}"
 </code></pre>
 <p><em>Declared by:</em></p>
 <ul>
