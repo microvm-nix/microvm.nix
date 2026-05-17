@@ -69,10 +69,14 @@ let
   # Attrs representing CHV mem options
   memOps = opsMapped ({
     size = "${toString mem}M";
-    mergeable = "on";
     # Shared memory is required for usage with virtiofsd but it
     # prevents Kernel Same-page Merging.
     shared = if useVirtiofs || graphics.enable then "on" else "off";
+  }
+  # mergeable cannot be defined when shared is "on":
+  #   Fatal error: ParsingConfig(Validation(InvalidSharedMemoryWithMergeable))
+  // lib.optionalAttrs (!useVirtiofs && !graphics.enable) {
+    mergeable = "on";
   }
   # add ballooning options and override 'size' key
   // lib.optionalAttrs useHotPlugMemory {
