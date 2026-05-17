@@ -2,11 +2,11 @@
   "nodes": {
     "nixpkgs": {
       "locked": {
-        "lastModified": 1772773019,
-        "narHash": "sha256-E1bxHxNKfDoQUuvriG71+f+s/NT0qWkImXsYZNFFfCs=",
+        "lastModified": 1778869304,
+        "narHash": "sha256-30sZNZoA1cqF5JNO9fVX+wgiQYjB7HJqqJ4ztCDeBZE=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "aca4d95fce4914b3892661bcb80b8087293536c6",
+        "rev": "d233902339c02a9c334e7e593de68855ad26c4cb",
         "type": "github"
       },
       "original": {
@@ -25,11 +25,11 @@
     "spectrum": {
       "flake": false,
       "locked": {
-        "lastModified": 1772189877,
-        "narHash": "sha256-i1p90Rgssb//aNiTDFq46ZG/fk3LmyRLChtp/9lddyA=",
+        "lastModified": 1778940603,
+        "narHash": "sha256-voSM8dZNlaOWN3kbYFky+FNY6fFQOEw0xF+ZMpZKkCQ=",
         "ref": "refs/heads/main",
-        "rev": "fe39e122d898f66e89ffa17d4f4209989ccb5358",
-        "revCount": 1255,
+        "rev": "367dd227f539267eae2b62770b4c17b88ac8c1f1",
+        "revCount": 1265,
         "type": "git",
         "url": "https://spectrum-os.org/git/spectrum"
       },
