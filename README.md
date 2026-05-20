@@ -1,6 +1,10 @@
 # MicroVM.nix
 
 <p align="center">
+  <a href="https://gradient.wavelens.io/organization/microvm-nix/project/packages">
+    <img src="https://gradient.wavelens.io/api/v1/projects/microvm-nix/packages/badge" alt="Gradient Badge">
+  </a>
+  <br>
   <strong>Handbook:</strong>
   <a href="https://microvm-nix.github.io/microvm.nix/">HTML</a>
   <a href="doc/src/SUMMARY.md">Markdown</a>
