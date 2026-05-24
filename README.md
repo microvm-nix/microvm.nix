@@ -10,7 +10,7 @@
   <strong><a href="./CHANGELOG.md">Changelog</a></strong>
   •
   <a href="https://gradient.wavelens.io/organization/microvm-nix/project/packages">
-    <img src="https://gradient.wavelens.io/api/v1/projects/microvm-nix/packages/badge" alt="Gradient Badge">
+    <img src="https://gradient.wavelens.io/api/v1/projects/microvm-nix/packages/badge" alt="Gradient Badge" style="vertical-align: middle;">
   </a>
 </p>
 <p align="center">
