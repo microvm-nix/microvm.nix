@@ -124,10 +124,9 @@
         )
       );
 
-      # Takes too much memory in `nix flake show`
-      # checks = forAllSystems (system:
-      #   import ./checks { inherit self nixpkgs system; }
-      # );
+      checks = forAllSystems (system:
+        import ./checks { inherit self nixpkgs system; }
+      );
 
       # hydraJobs are checks
       hydraJobs = forAllSystems (system:

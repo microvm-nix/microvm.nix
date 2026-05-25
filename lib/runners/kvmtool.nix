@@ -49,12 +49,12 @@ in {
       ++
       lib.optionals balloon [ "--balloon" ]
       ++
-      builtins.concatMap ({ serial, direct, readOnly, ... }:
+      builtins.concatMap ({ image, serial, direct, readOnly, ... }:
         lib.warnIf (serial != null) ''
           Volume serial is not supported for kvmtool
         ''
         [ "-d"
-          (lib.escapeShellArg "image${
+          (lib.escapeShellArg "${image}${
             lib.optionalString direct ",direct"
           }${
             lib.optionalString readOnly ",ro"

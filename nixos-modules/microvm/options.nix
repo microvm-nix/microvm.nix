@@ -591,6 +591,13 @@ in
         '';
       };
 
+      crosvmPackage = mkOption {
+        description = "crosvm package to use when running graphics (for cloud-hypervisor and crosvm)";
+        default = pkgs.crosvm;
+        defaultText = literalExpression ''"''${pkgs.crosvm}"'';
+        type = types.package;
+      };
+
       backend = mkOption {
         type = types.enum [ "gtk" "cocoa" ];
         default = if pkgs.stdenv.hostPlatform.isDarwin then "cocoa" else "gtk";

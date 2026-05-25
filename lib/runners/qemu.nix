@@ -249,7 +249,7 @@ lib.warnIf (mem == 2048) ''
     lib.optionals canSandbox [
       "-sandbox" "on"
     ] ++
-    lib.optionals (user != null) [ "-user" user ] ++
+    lib.optionals (user != null) [ "-run-with" "user=${user}" ] ++
     lib.optionals (socket != null) [ "-qmp" "unix:${socket},server,nowait" ] ++
     lib.optionals balloon [
 	    "-device" ("virtio-balloon,free-page-reporting=on,id=balloon0" + lib.optionalString (deflateOnOOM) ",deflate-on-oom=on")
