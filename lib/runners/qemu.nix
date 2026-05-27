@@ -162,13 +162,15 @@ lib.warnIf (mem == 2048) ''
   inherit tapMultiQueue;
 
   command = if initialBalloonMem != 0
-  then throw "qemu does not support initialBalloonMem"
+  then throw "QEMU does not support initialBalloonMem"
+  else if (useHotPlugMemory && machine == "microvm")
+  then throw "QEMU's microvm machine type does not support virtio-mem"
   else lib.escapeShellArgs (
     [
       "${qemu}/bin/qemu-system-${arch}"
       "-name" hostName
       "-M" machineConfig
-      "-m" (toString mem)
+      "-m" "${toString mem}M${lib.optionalString useHotPlugMemory ",maxmem=${toString (mem + hotplugMem)}M"}"
       "-smp" (toString vcpu)
       "-nodefaults" "-no-user-config"
       # qemu just hangs after shutdown, allow to exit by rebooting
