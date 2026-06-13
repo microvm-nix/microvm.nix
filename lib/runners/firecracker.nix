@@ -1,5 +1,6 @@
 { pkgs
 , microvmConfig
+, linuxTarget
 , ...
 }:
 
@@ -16,7 +17,7 @@ let
 
   kernelPath = {
     x86_64-linux = "${kernel.dev}/vmlinux";
-    aarch64-linux = "${kernel.out}/${pkgs.stdenv.hostPlatform.linux-kernel.target}";
+    aarch64-linux = "${kernel.out}/${linuxTarget}";
   }.${system};
 
   # Firecracker config, as JSON in `configFile`

@@ -2,6 +2,7 @@
 , microvmConfig
 , macvtapFds
 , withDriveLetters
+, linuxTarget
 , ...
 }:
 
@@ -114,7 +115,7 @@ let
     then "pci"
     else "device";
 
-  kernelPath = "${kernel.out}/${pkgs.stdenv.hostPlatform.linux-kernel.target}";
+  kernelPath = "${kernel.out}/${linuxTarget}";
 
   enumerate = n: xs:
     if xs == []
