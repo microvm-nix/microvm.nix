@@ -3,6 +3,7 @@
 , macvtapFds
 , extractOptValues
 , extractParamValue
+, linuxTarget
 , ...
 }:
 
@@ -23,7 +24,7 @@ let
 
   kernelPath = {
     x86_64-linux = "${kernel.dev}/vmlinux";
-    aarch64-linux = "${kernel.out}/${pkgs.stdenv.hostPlatform.linux-kernel.target}";
+    aarch64-linux = "${kernel.out}/${linuxTarget}";
   }.${pkgs.stdenv.hostPlatform.system};
 
   kernelConsoleDefault =

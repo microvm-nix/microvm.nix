@@ -1,5 +1,6 @@
 { pkgs
 , microvmConfig
+, linuxTarget
 , ...
 }:
 
@@ -38,7 +39,7 @@ in {
         "-c" (toString vcpu)
         "--console" "serial"
         "--rng"
-        "-k" (lib.escapeShellArg "${kernel}/${pkgs.stdenv.hostPlatform.linux-kernel.target}")
+        "-k" (lib.escapeShellArg "${kernel}/${linuxTarget}")
         "-i" initrdPath
         "-p" (lib.escapeShellArg "console=ttyS0 reboot=k panic=1 ${toString microvmConfig.kernelParams}")
       ]
