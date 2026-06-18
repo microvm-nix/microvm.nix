@@ -263,7 +263,7 @@ lib.warnIf (mem == 2048) ''
 	    "-device" ("virtio-balloon,free-page-reporting=on,id=balloon0" + lib.optionalString (deflateOnOOM) ",deflate-on-oom=on")
     ] ++
     lib.optionals useHotPlugMemory [
-      "-object" "memory-backend-ram,id=vmem0,size=${toString hotplugMem}M"
+      "-object" "memory-backend-memfd,id=vmem0,size=${toString hotplugMem}M,share=on"
       "-device" "virtio-mem-pci,id=vm0,memdev=vmem0,requested-size=${toString hotpluggedMem}M"
     ] ++
     builtins.concatMap ({ image, letter, serial, direct, readOnly, ... }:
