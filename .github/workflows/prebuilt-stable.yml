@@ -23,4 +23,4 @@ jobs:
       if: github.ref != 'refs/heads/main'
       with:
         name: microvm
-    - run: nix build -L .#prebuilt --override-input nixpkgs github:nixos/nixpkgs/release-25.11
+    - run: nix build -L .#prebuilt --override-input nixpkgs github:nixos/nixpkgs/release-26.05
