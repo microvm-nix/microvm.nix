@@ -25,11 +25,11 @@
     "spectrum": {
       "flake": false,
       "locked": {
-        "lastModified": 1778940603,
-        "narHash": "sha256-voSM8dZNlaOWN3kbYFky+FNY6fFQOEw0xF+ZMpZKkCQ=",
+        "lastModified": 1782134439,
+        "narHash": "sha256-5SKRxv2zxTIkvgW3hT8ggqhltgQE3hMb8ExfU6PhWjE=",
         "ref": "refs/heads/main",
-        "rev": "367dd227f539267eae2b62770b4c17b88ac8c1f1",
-        "revCount": 1265,
+        "rev": "1e746f2b283f0d4964131e80b6a4f1def99f7510",
+        "revCount": 1396,
         "type": "git",
         "url": "https://spectrum-os.org/git/spectrum"
       },
