@@ -27,10 +27,12 @@
       apps = forAllSystems (system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
+          guestSystem = if nixpkgs.lib.hasSuffix "-darwin" system then nixpkgs.lib.replaceString "-darwin" "-linux" system else system;
           nixosToApp = configFile: {
             type = "app";
             program = "${(import configFile {
-              inherit self nixpkgs system;
+              inherit self nixpkgs;
+              system = guestSystem;
             }).config.microvm.declaredRunner}/bin/microvm-run";
           };
         in {

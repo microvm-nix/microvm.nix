@@ -1,6 +1,7 @@
 { pkgs
 , microvmConfig
 , withDriveLetters
+, linuxTarget
 , ...
 }:
 
@@ -21,7 +22,7 @@ let
   volumesWithLetters = withDriveLetters microvmConfig;
 
   # vfkit requires uncompressed kernel
-  kernelPath = "${kernel.out}/${pkgs.stdenv.hostPlatform.linux-kernel.target}";
+  kernelPath = "${kernel.out}/${linuxTarget}";
 
   kernelConsole = if graphics.enable then "tty0" else "hvc0";
 

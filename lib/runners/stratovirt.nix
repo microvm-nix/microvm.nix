@@ -2,6 +2,7 @@
 , microvmConfig
 , macvtapFds
 , withDriveLetters
+, linuxTarget
 , ...
 }:
 
@@ -93,7 +94,7 @@ in {
       "-m" (toString mem)
       "-smp" (toString vcpu)
 
-      "-kernel" "${kernel}/bzImage"
+      "-kernel" "${kernel}/${linuxTarget}"
       "-initrd" initrdPath
       "-append" "console=${console} edd=off reboot=t panic=-1 ${toString microvmConfig.kernelParams}"
 

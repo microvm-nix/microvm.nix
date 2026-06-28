@@ -1004,25 +1004,19 @@ in
       description = ''
         Flags to pass to mkfs.erofs
 
-        Omit `"-Efragments"` and `"-Ededupe"` to enable multi-threading.
+        `"-Ededupe"` is omitted by default because it forces single-threaded, slower builds.
+        Add it back if you prefer smaller images over fast, multi-threaded builds.
       '';
       default =
         [ "-zlz4hc" ]
         ++
         lib.optional (kernelAtLeast "5.16") "-Eztailpacking"
         ++
-        lib.optionals (kernelAtLeast "6.1") [
-          # not implemented with multi-threading
-          "-Efragments"
-          "-Ededupe"
-        ];
+        lib.optional (kernelAtLeast "6.1") "-Efragments";
       defaultText = lib.literalExpression ''
         [ "-zlz4hc" ]
           ++ lib.optional (kernelAtLeast "5.16") "-Eztailpacking"
-          ++ lib.optionals (kernelAtLeast "6.1") [
-          "-Efragments"
-          "-Ededupe"
-        ]
+          ++ lib.optional (kernelAtLeast "6.1") "-Efragments"
         '';
     };
 
@@ -1061,12 +1055,12 @@ in
 
   config = lib.mkMerge [ {
     microvm.qemu.machine =
-      lib.mkIf (pkgs.stdenv.hostPlatform.system == "x86_64-linux") (
+      lib.mkIf (lib.elem pkgs.stdenv.hostPlatform.system [ "x86_64-linux" "x86_64-darwin" ]) (
         lib.mkDefault "microvm"
       );
   } {
     microvm.qemu.machine =
-      lib.mkIf (pkgs.stdenv.hostPlatform.system == "aarch64-linux") (
+      lib.mkIf (lib.elem pkgs.stdenv.hostPlatform.system [ "aarch64-linux" "aarch64-darwin" ]) (
         lib.mkDefault "virt"
       );
   } ];

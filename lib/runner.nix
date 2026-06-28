@@ -14,8 +14,10 @@ let
     inherit microvmConfig hypervisorConfig;
   }) openMacvtapFds macvtapFds;
 
+  linuxTarget = pkgs.linux.target or pkgs.stdenv.hostPlatform.linux-kernel.target;
+
   hypervisorConfig = import (./runners + "/${microvmConfig.hypervisor}.nix") {
-    inherit pkgs microvmConfig macvtapFds withDriveLetters extractOptValues extractParamValue;
+    inherit pkgs microvmConfig macvtapFds withDriveLetters extractOptValues extractParamValue linuxTarget;
   };
 
   inherit (hypervisorConfig) command canShutdown shutdownCommand;

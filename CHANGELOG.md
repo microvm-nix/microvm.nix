@@ -29,6 +29,11 @@
   is no longer first copied into the build directory. A mount
   namespace is setup with bubblewrap instead. mkfs.erofs can now run
   multi-threaded.
+* `microvm.storeDiskErofsFlags` no longer includes `-Ededupe` by
+  default, so erofs store disks build multi-threaded by default. This
+  results in a much faster build for a slightly larger image.
+  `-Efragments` is kept as it is compatible with multi-threading. Add
+  `-Ededupe` back to favor small image size over build speed.
 
 ## 0.5.0 (2024-04-06)
 

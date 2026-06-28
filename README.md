@@ -9,8 +9,8 @@
   •
   <strong><a href="./CHANGELOG.md">Changelog</a></strong>
   •
-  <sup><a href="https://gradient.wavelens.io/organization/microvm-nix/project/packages">
-    <img src="https://gradient.wavelens.io/api/v1/projects/microvm-nix/packages/badge" alt="Gradient Badge" align="middle">
+  <sup><a href="https://public.gradient.ci/organization/microvm-nix/project/packages">
+    <img src="https://public.gradient.ci/api/v1/projects/microvm-nix/packages/badge" alt="Gradient Badge" align="middle">
   </a></sup>
 </p>
 <p align="center">

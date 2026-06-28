@@ -25,7 +25,7 @@ in
   # In order to access the vfio dev the permissions must be set
   # for the user/group running the VMM later.
   #
-  # Insprired by https://www.kernel.org/doc/html/next/driver-api/vfio.html#vfio-usage-example
+  # Inspired by https://www.kernel.org/doc/html/next/driver-api/vfio.html#vfio-usage-example
   #
   # assert we could get the IOMMU group number (=: name of VFIO dev)
   ''

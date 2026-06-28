@@ -6,16 +6,16 @@ let
   };
 
   erofs-utils =
-    # Are any extended options specified?
-    if lib.any (with lib; flip elem ["-Ededupe" "-Efragments"]) config.microvm.storeDiskErofsFlags
+    # Is deduplication option specified?
+    if lib.elem "-Ededupe" config.microvm.storeDiskErofsFlags
     then
-      # If extended options are present,
-      # stick to the single-threaded erofs-utils
-      # to not scare anyone with warning messages.
+      # If specified, stick to the single-threaded erofs-utils
+      # to not scare anyone with warning messages. mkfs.erofs
+      # has no multi-threaded -Ededupe, so it forces
+      # single-threaded compression.
       pkgs.buildPackages.erofs-utils
     else
-      # If no extended options are configured,
-      # rebuild mkfs.erofs with multi-threading.
+      # Otherwise rebuild mkfs.erofs with multi-threading.
       pkgs.buildPackages.erofs-utils.overrideAttrs (attrs: {
         configureFlags = attrs.configureFlags ++ [
           "--enable-multithreading"

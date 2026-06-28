@@ -2,6 +2,7 @@
 , microvmConfig
 , macvtapFds
 , withDriveLetters
+, linuxTarget
 , ...
 }:
 
@@ -76,26 +77,31 @@ let
   machineOpts =
     if microvmConfig.qemu.machineOpts != null
     then microvmConfig.qemu.machineOpts
-    else {
-      x86_64-linux = {
-        inherit accel;
-        mem-merge = "on";
-        acpi = "on";
-      } // lib.optionalAttrs (machine == "microvm") {
-        pit = "off";
-        pic = "off";
-        pcie = if requirePci then "on" else "off";
-        rtc = "on";
-        usb = if requireUsb then "on" else "off";
-      };
-      aarch64-linux = {
-        inherit accel;
-        gic-version = "max";
-      };
-      aarch64-darwin = {
-        inherit accel;
-      };
-    }.${system};
+    else
+      let
+        x86MachineOpts = {
+          inherit accel;
+          mem-merge = "on";
+          acpi = "on";
+        } // lib.optionalAttrs (machine == "microvm") {
+          pit = "off";
+          pic = "off";
+          pcie = if requirePci then "on" else "off";
+          rtc = "on";
+          usb = if requireUsb then "on" else "off";
+        };
+      in
+      {
+        x86_64-linux = x86MachineOpts;
+        x86_64-darwin = x86MachineOpts;
+        aarch64-linux = {
+          inherit accel;
+          gic-version = "max";
+        };
+        aarch64-darwin = {
+          inherit accel;
+        };
+      }.${system};
 
   machineConfig = builtins.concatStringsSep "," (
     [ machine ] ++
@@ -109,7 +115,7 @@ let
     then "pci"
     else "device";
 
-  kernelPath = "${kernel.out}/${pkgs.stdenv.hostPlatform.linux-kernel.target}";
+  kernelPath = "${kernel.out}/${linuxTarget}";
 
   enumerate = n: xs:
     if xs == []
@@ -162,13 +168,15 @@ lib.warnIf (mem == 2048) ''
   inherit tapMultiQueue;
 
   command = if initialBalloonMem != 0
-  then throw "qemu does not support initialBalloonMem"
+  then throw "QEMU does not support initialBalloonMem"
+  else if (useHotPlugMemory && machine == "microvm")
+  then throw "QEMU's microvm machine type does not support virtio-mem"
   else lib.escapeShellArgs (
     [
       "${qemu}/bin/qemu-system-${arch}"
       "-name" hostName
       "-M" machineConfig
-      "-m" (toString mem)
+      "-m" "${toString mem}M${lib.optionalString useHotPlugMemory ",maxmem=${toString (mem + hotplugMem)}M"}"
       "-smp" (toString vcpu)
       "-nodefaults" "-no-user-config"
       # qemu just hangs after shutdown, allow to exit by rebooting

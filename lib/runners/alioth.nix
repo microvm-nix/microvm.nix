@@ -1,5 +1,6 @@
 { pkgs
 , microvmConfig
+, linuxTarget
 , ...
 }:
 
@@ -32,7 +33,7 @@ in {
         "${aliothPkg}/bin/alioth" "run"
         "--memory" "size=${toString mem}M,backend=memfd"
         "--num-cpu" (toString vcpu)
-        "-k" (lib.escapeShellArg "${kernel}/${pkgs.stdenv.hostPlatform.linux-kernel.target}")
+        "-k" (lib.escapeShellArg "${kernel}/${linuxTarget}")
         "-i" initrdPath
         "-c" (lib.escapeShellArg "console=ttyS0 reboot=k panic=1 ${toString microvmConfig.kernelParams}")
         "--entropy"
