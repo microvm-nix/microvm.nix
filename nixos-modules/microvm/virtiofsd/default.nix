@@ -22,6 +22,8 @@ in
           };
 
           "eventlistener:notify" = {
+            # Increase the event queue buffer size such that we don't drop RUNNING events while the event handler hasn't started up yet
+            buffer_size = (1 + builtins.length virtiofsShares) * 16;
             command = pkgs.writers.writePython3 "supervisord-event-handler" { } (
               pkgs.replaceVars  ./supervisord-event-handler.py {
                 # 1 for the event handler process
