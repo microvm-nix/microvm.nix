@@ -339,11 +339,10 @@ lib.warnIf (mem == 2048) ''
             (microvmConfig.cpu == null && system != "x86_64-linux")
           ) ",romfile="
         }${
-          # mq=on needs a backend with matching queues: tap gets
-          # queues=N on the netdev above, macvtap opens one fd per
-          # queue. user (SLIRP) and bridge-helper netdevs are
-          # single-queue -- advertising VIRTIO_NET_F_MQ there makes the
-          # guest steer flows onto queues the backend never services,
+          # mq=on needs a backend with matching queues:
+          # tap gets queues=N on the netdev above, macvtap opens one fd per queue.
+          # user (SLIRP) and bridge-helper netdevs are single-queue -- advertising VIRTIO_NET_F_MQ
+          # there makes the guest steer flows onto queues the backend never services,
           # so inbound hostfwd connections stall.
           lib.optionalString (
             (type == "tap" || type == "macvtap") && tapMultiQueue && requirePci
