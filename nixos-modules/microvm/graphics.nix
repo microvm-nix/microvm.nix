@@ -11,7 +11,7 @@ let
   '';
   # Waypipe. Needs `microvm#waypipe-client` on the host.
   run-waypipe = with pkgs; writeShellScriptBin "run-waypipe" ''
-    exec ${lib.getExe waypipe}/bin/waypipe --vsock -s 2:6000 server $@
+    exec ${lib.getExe waypipe} --vsock -s 2:6000 server $@
   '';
 in
 lib.mkIf config.microvm.graphics.enable {
