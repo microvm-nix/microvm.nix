@@ -16,7 +16,7 @@ let
   processedExtraArgs = builtins.foldl'
     (args: opt: (extractOptValues opt args).args)
     extraArgs
-    ["--vsock" "--platform"];
+    ["--vsock" "--platform" "--cpus"];
 
   hasUserConsole = (extractOptValues "--console" extraArgs).values != [];
   hasUserSerial = (extractOptValues "--serial" extraArgs).values != [];
@@ -144,6 +144,14 @@ let
     else
       lib.concatStringsSep "," (oemStringOptions ++ userPlatformOpts);
 
+  userCpusOpts = (extractOptValues "--cpus" extraArgs).values;
+  userCpusBoot = extractParamValue "boot" (lib.concatStringsSep "," userCpusOpts);
+  cpusOps =
+    if userCpusBoot != null then
+      throw "Cannot set `microvm.vcpu` and --cpus 'boot=${userCpusBoot}...' via `microvm.cloud-hypervisor.extraArgs` at the same time"
+    else
+      lib.concatStringsSep "," ([ "boot=${toString vcpu}" ] ++ userCpusOpts);
+
   cloudhypervisorPkg = microvmConfig.cloud-hypervisor.package;
 in {
   inherit tapMultiQueue supportsNotifySocket;
@@ -187,7 +195,7 @@ in {
     else lib.escapeShellArgs (
       [
         "${cloudhypervisorPkg}/bin/cloud-hypervisor"
-        "--cpus" "boot=${toString vcpu}"
+        "--cpus" cpusOps
         "--watchdog"
         "--kernel" kernelPath
         "--initramfs" initrdPath
