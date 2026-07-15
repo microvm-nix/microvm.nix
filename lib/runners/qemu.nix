@@ -269,7 +269,7 @@ lib.warnIf (mem == 2048) ''
     builtins.concatMap ({ image, letter, serial, direct, readOnly, ... }:
       [ "-drive"
         "id=vd${letter},format=raw,file=${image},if=none,aio=${aioEngine},discard=unmap${
-          lib.optionalString (direct != null) ",cache=none"
+          lib.optionalString direct ",cache=none"
         },read-only=${if readOnly then "on" else "off"}"
         "-device"
         "virtio-blk-${devType},drive=vd${letter}${
