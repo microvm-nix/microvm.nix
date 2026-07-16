@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-3b3a894d.js";
+            window.path_to_searchindex_js = "searchindex-7edd86a2.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-9fefae61.js"></script>
@@ -588,9 +588,11 @@ one of “tcp”, “udp”</p>
 </ul>
 <h2 id="microvmgraphicsenable"><a class="header" href="#microvmgraphicsenable">microvm.graphics.enable</a></h2>
 <p>Enable GUI support.</p>
-<p>MicroVMs with graphics are intended for the interactive
-use-case. They cannot be started through systemd jobs.</p>
-<p>The display backend is chosen by <code>microvm.graphics.backend</code>.</p>
+<p>The graphics backend is chosen by <code>microvm.graphics.backend</code>.
+The <code>gtk</code> and <code>cocoa</code> backends are intended for the interactive
+use-case and cannot be started through systemd jobs.
+The <code>headless</code> backend can be started through a systemd job
+as it does not open a host window.</p>
 <p><em>Type:</em>
 boolean</p>
 <p><em>Default:</em></p>
@@ -604,7 +606,7 @@ boolean</p>
 <p>QEMU display backend to use when <code>graphics.enable</code> is true.</p>
 <p>Defaults to <code>cocoa</code> on Darwin hosts and <code>gtk</code> otherwise.</p>
 <p><em>Type:</em>
-one of “gtk”, “cocoa”</p>
+one of “gtk”, “cocoa”, “headless”</p>
 <p><em>Default:</em></p>
 <pre><code class="language-nix">if pkgs.stdenv.hostPlatform.isDarwin then "cocoa" else "gtk"
 </code></pre>
