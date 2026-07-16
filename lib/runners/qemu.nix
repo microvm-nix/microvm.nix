@@ -246,6 +246,9 @@ lib.warnIf (mem == 2048) ''
            gtk = [
              "-display" "gtk,gl=on" "-device" "virtio-vga-gl"
            ];
+           headless = [
+             "-display" "egl-headless" "-device" "virtio-gpu-gl"
+           ];
          }.${graphics.backend};
        in
          displayArgs ++ [
