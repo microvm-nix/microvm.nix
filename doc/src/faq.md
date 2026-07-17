@@ -139,7 +139,7 @@ individually used block devices.
 On macOS, **microvm.nix** uses the `vfkit` hypervisor to run Linux
 guests through Apple's native Virtualization.framework. While vfkit
 itself runs natively on macOS, the guest NixOS system still has to be
-built for Linux, and `aarch64-darwin` / `x86_64-darwin` cannot compile
+built for Linux, and `aarch64-darwin` cannot compile
 or cross compile those. You therefore need access to a Linux
 builder. Without one, `nix run` will fail with errors like:
 

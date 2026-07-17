@@ -93,7 +93,6 @@ let
       in
       {
         x86_64-linux = x86MachineOpts;
-        x86_64-darwin = x86MachineOpts;
         aarch64-linux = {
           inherit accel;
           gic-version = "max";

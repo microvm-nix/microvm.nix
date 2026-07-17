@@ -1,4 +1,4 @@
-name: "prebuilt-25.11"
+name: "prebuilt-26.05"
 
 on:
   workflow_dispatch: # allows manual triggering
