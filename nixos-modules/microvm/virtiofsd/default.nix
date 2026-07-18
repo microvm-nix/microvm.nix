@@ -33,7 +33,7 @@ in
             events = "PROCESS_STATE";
           };
         } // builtins.listToAttrs (
-          map ({ tag, socket, source, readOnly, cache, ... }: {
+          map ({ tag, socket, source, readOnly, cache, posixAcl, extraArgs, ... }: {
             name = "program:virtiofsd-${tag}";
             value = {
               stderr_syslog = true;
@@ -52,7 +52,7 @@ in
                   --shared-dir=${lib.escapeShellArg source} \
                   $OPT_RLIMIT \
                   --thread-pool-size ${toString config.microvm.virtiofsd.threadPoolSize} \
-                  --posix-acl --xattr \
+                  ${lib.optionalString posixAcl "--posix-acl --xattr"} \
                   --cache=${cache} \
                   ${lib.optionalString (config.microvm.virtiofsd.inodeFileHandles != null)
                     "--inode-file-handles=${config.microvm.virtiofsd.inodeFileHandles}"
@@ -61,7 +61,8 @@ in
                     "--tag=${tag}"
                   } \
                   ${lib.optionalString readOnly "--readonly"} \
-                  ${lib.concatStringsSep " " config.microvm.virtiofsd.extraArgs}
+                  ${lib.concatStringsSep " " config.microvm.virtiofsd.extraArgs} \
+                  ${lib.concatStringsSep " " extraArgs}
               '';
             };
           }) virtiofsShares

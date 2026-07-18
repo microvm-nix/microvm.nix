@@ -92,6 +92,31 @@ let
         };
       }) ];
     } ]
+    # virtiofs per-share options (posixAcl + extraArgs)
+    [ {
+      # no virtiofs share
+      id = null;
+    } {
+      id = "virtiofs";
+      modules = [ ({ config, ... }: {
+        microvm = {
+          shares = [ {
+            proto = "virtiofs";
+            tag = "test";
+            source = "/nix/store";
+            mountPoint = "/nix/.ro-store";
+            # Exercise the new per-share options: posix-acl must be off
+            # because --translate-uid conflicts with it.
+            posixAcl = false;
+            extraArgs = [ "--translate-uid" "guest:0:0:1" ];
+          } ];
+          testing.enableTest = builtins.elem config.microvm.hypervisor [
+            # Hypervisors that use virtiofsd
+            "qemu" "cloud-hypervisor" "crosvm"
+          ];
+        };
+      }) ];
+    } ]
     # rw-store
     [ {
       # none

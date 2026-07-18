@@ -21,6 +21,9 @@
   `microvm.virtiofsd.group` and
   `microvm.virtiofsd.inodeFileHandles` and
   `microvm.virtiofsd.threadPoolSize` now.
+* Per-share virtiofsd options: `microvm.shares.*.posixAcl` and
+  `.extraArgs`, enabling per-share UID/GID remapping via
+  `--translate-uid` / `--translate-gid`.
 * Add the [alioth VMM](https://github.com/google/alioth)
 * Fixes for the stratovirt VMM
 * New volume image files will be created with `truncate` instead of

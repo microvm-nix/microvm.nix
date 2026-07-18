@@ -415,6 +415,19 @@ in
             description = "Virtiofs caching policy for the file system, ignored when 9p is used";
             default = "auto";
           };
+          posixAcl = mkOption {
+            type = bool;
+            default = true;
+            description = ''
+              Pass `--posix-acl --xattr` to virtiofsd. Disable when using
+              `--translate-uid`/`--translate-gid` (they conflict with `--posix-acl`).
+            '';
+          };
+          extraArgs = mkOption {
+            type = listOf str;
+            default = [];
+            description = "Extra arguments passed to virtiofsd for this share.";
+          };
         };
       }));
     };
