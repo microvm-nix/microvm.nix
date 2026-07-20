@@ -95,6 +95,25 @@ lib.mkIf config.microvm.guest.enable {
         config.microvm.shares
     )
     ++
+    # check for virtiofs shares where posixAcl conflicts with translate-uid/gid
+    # (--posix-acl and --translate-uid/--translate-gid are mutually exclusive in virtiofsd;
+    # --translate-uid/gid can come from either per-share extraArgs or global microvm.virtiofsd.extraArgs)
+    map ({ tag, posixAcl, extraArgs, ... }: {
+      assertion = !(posixAcl && (
+        lib.any (s: lib.hasInfix "--translate-uid" s || lib.hasInfix "--translate-gid" s)
+          (config.microvm.virtiofsd.extraArgs ++ extraArgs)
+      ));
+      message = ''
+        MicroVM ${hostName}: virtiofs share "${tag}" has posixAcl=true but
+        extraArgs (per-share or global microvm.virtiofsd.extraArgs) contains
+        --translate-uid/--translate-gid, which conflict with --posix-acl.
+        Set posixAcl=false on this share to use UID/GID remapping.
+      '';
+    }) (
+      builtins.filter ({ proto, ... }: proto == "virtiofs")
+        config.microvm.shares
+    )
+    ++
     # blacklist forwardPorts
     [ {
       assertion =

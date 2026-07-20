@@ -420,7 +420,8 @@ in
             default = true;
             description = ''
               Pass `--posix-acl --xattr` to virtiofsd. Disable when using
-              `--translate-uid`/`--translate-gid` (they conflict with `--posix-acl`).
+              `--translate-uid`/`--translate-gid` (asserted to be mutually exclusive
+              with `--posix-acl`, see asserts.nix).
             '';
           };
           extraArgs = mkOption {
