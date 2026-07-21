@@ -239,15 +239,24 @@ lib.warnIf (mem == 2048) ''
     ] ++
        (if graphics.enable then (
        let
+         vulkanArgs =
+           if graphics.vulkan == null then
+             ""
+           else
+             {
+               venus = ",blob=true,hostmem=${graphics.hostmem},venus=true";
+               drm_native_context = ",blob=true,hostmem=${graphics.hostmem},drm_native_context=on";
+             }
+             .${graphics.vulkan};
          displayArgs = {
            cocoa = [
              "-display" "cocoa" "-device" "virtio-gpu"
            ];
            gtk = [
-             "-display" "gtk,gl=on" "-device" "virtio-vga-gl"
+             "-display" "gtk,gl=on" "-device" "virtio-vga-gl${vulkanArgs}"
            ];
            headless = [
-             "-display" "egl-headless" "-device" "virtio-gpu-gl"
+             "-display" "egl-headless" "-device" "virtio-gpu-gl${vulkanArgs}"
            ];
          }.${graphics.backend};
        in
