@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-a66141f4.js";
+            window.path_to_searchindex_js = "searchindex-c1890220.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-9fefae61.js"></script>
@@ -217,6 +217,31 @@ have options
 <code>-o xattr=sa -o acltype=posixacl</code>
 </div>
 
+<h2 id="per-share-virtiofsd-options"><a class="header" href="#per-share-virtiofsd-options">Per-share virtiofsd options</a></h2>
+<p>Each <code>virtiofs</code> share also supports:</p>
+<ul>
+<li><strong><code>posixAcl</code></strong> (bool, default <code>true</code>): pass <code>--posix-acl --xattr</code>.
+Set to <code>false</code> to use <code>--translate-uid</code>/<code>--translate-gid</code>.</li>
+<li><strong><code>extraArgs</code></strong> (list of strings, default <code>[]</code>): extra virtiofsd
+arguments for this share, appended after the global
+<code>microvm.virtiofsd.extraArgs</code>.</li>
+</ul>
+<p>Example: map guest uid 999 to host uid 1000 for a single share:</p>
+<pre><code class="language-nix">microvm.shares = [ {
+  proto = "virtiofs";
+  tag = "hermes-prompts";
+  source = "/var/lib/vibe-nix/hermes";
+  mountPoint = "/run/hermes/prompts";
+  posixAcl = false;
+  extraArgs = [
+    "--translate-uid" "guest:999:1000:1"
+    "--translate-gid" "guest:999:1000:1"
+  ];
+} ];
+</code></pre>
+<p><code>--translate-uid guest:GUEST_UID:HOST_UID:COUNT</code> remaps
+<code>[GUEST_UID, GUEST_UID+COUNT)</code> in the guest to
+<code>[HOST_UID, HOST_UID+COUNT)</code> on the host.</p>
 <h2 id="sharing-a-hosts-nixstore"><a class="header" href="#sharing-a-hosts-nixstore">Sharing a host’s <code>/nix/store</code></a></h2>
 <p>If a share with <code>source = "/nix/store"</code> is defined, size and build
 time of the stage1 squashfs for <code>/dev/vda</code> will be reduced

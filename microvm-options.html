@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-a66141f4.js";
+            window.path_to_searchindex_js = "searchindex-c1890220.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-9fefae61.js"></script>
@@ -1110,10 +1110,34 @@ one of “auto”, “always”, “metadata”, “never”</p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
 </ul>
+<h2 id="microvmsharesextraargs"><a class="header" href="#microvmsharesextraargs">microvm.shares.*.extraArgs</a></h2>
+<p>Extra arguments passed to virtiofsd for this share.</p>
+<p><em>Type:</em>
+list of string</p>
+<p><em>Default:</em></p>
+<pre><code class="language-nix">[ ]
+</code></pre>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
 <h2 id="microvmsharesmountpoint"><a class="header" href="#microvmsharesmountpoint">microvm.shares.*.mountPoint</a></h2>
 <p>Where to mount the share inside the container</p>
 <p><em>Type:</em>
 absolute path</p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmsharesposixacl"><a class="header" href="#microvmsharesposixacl">microvm.shares.*.posixAcl</a></h2>
+<p>Pass <code>--posix-acl --xattr</code> to virtiofsd. Disable when using
+<code>--translate-uid</code>/<code>--translate-gid</code> (asserted to be mutually exclusive
+with <code>--posix-acl</code>, see asserts.nix).</p>
+<p><em>Type:</em>
+boolean</p>
+<p><em>Default:</em></p>
+<pre><code class="language-nix">true
+</code></pre>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
