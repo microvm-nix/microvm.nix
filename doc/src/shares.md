@@ -42,6 +42,37 @@ have options
 </div>
 
 
+## Per-share virtiofsd options
+
+Each `virtiofs` share also supports:
+
+- **`posixAcl`** (bool, default `true`): pass `--posix-acl --xattr`.
+  Set to `false` to use `--translate-uid`/`--translate-gid`.
+- **`extraArgs`** (list of strings, default `[]`): extra virtiofsd
+  arguments for this share, appended after the global
+  `microvm.virtiofsd.extraArgs`.
+
+Example: map guest uid 999 to host uid 1000 for a single share:
+
+```nix
+microvm.shares = [ {
+  proto = "virtiofs";
+  tag = "hermes-prompts";
+  source = "/var/lib/vibe-nix/hermes";
+  mountPoint = "/run/hermes/prompts";
+  posixAcl = false;
+  extraArgs = [
+    "--translate-uid" "guest:999:1000:1"
+    "--translate-gid" "guest:999:1000:1"
+  ];
+} ];
+```
+
+`--translate-uid guest:GUEST_UID:HOST_UID:COUNT` remaps
+`[GUEST_UID, GUEST_UID+COUNT)` in the guest to
+`[HOST_UID, HOST_UID+COUNT)` on the host.
+
+
 ## Sharing a host's `/nix/store`
 
 If a share with `source = "/nix/store"` is defined, size and build
