@@ -38,7 +38,7 @@ let
     then "io_uring"
     else "threads";
 
-  inherit (microvmConfig) hostName machineId vcpu mem balloon initialBalloonMem deflateOnOOM hotplugMem hotpluggedMem user interfaces shares socket forwardPorts devices vsock graphics storeOnDisk kernel initrdPath storeDisk credentialFiles;
+  inherit (microvmConfig) fqdnOrHostName machineId vcpu mem balloon initialBalloonMem deflateOnOOM hotplugMem hotpluggedMem user interfaces shares socket forwardPorts devices vsock graphics storeOnDisk kernel initrdPath storeDisk credentialFiles;
   inherit (microvmConfig.qemu) machine extraArgs serialConsole pcieRootPorts;
 
   volumes = withDriveLetters microvmConfig;
@@ -173,7 +173,7 @@ lib.warnIf (mem == 2048) ''
   else lib.escapeShellArgs (
     [
       "${qemu}/bin/qemu-system-${arch}"
-      "-name" hostName
+      "-name" fqdnOrHostName
       "-M" machineConfig
       "-m" "${toString mem}M${lib.optionalString useHotPlugMemory ",maxmem=${toString (mem + hotplugMem)}M"}"
       "-smp" (toString vcpu)
@@ -299,7 +299,7 @@ lib.warnIf (mem == 2048) ''
     lib.warnIf (
       forwardPorts != [] &&
       ! builtins.any ({ type, ... }: type == "user") interfaces
-    ) "${hostName}: forwardPortsOptions only running with user network" (
+    ) "${fqdnOrHostName}: forwardPortsOptions only running with user network" (
       builtins.concatMap ({ type, id, mac, bridge, tap ? {}, ... }: [
         "-netdev" (
           lib.concatStringsSep "," (
