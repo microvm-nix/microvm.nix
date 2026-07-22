@@ -62,6 +62,10 @@ imperatively with the provided `microvm` command.
 | [alioth](https://github.com/google/alioth)                              | Rust     | no virtiofs shares, no control socket                 |
 | [vfkit](https://github.com/crc-org/vfkit)                               | Go       | macOS only, no 9p shares, no tap/bridge networking    |
 
+## Nixpkgs/NixOS compatibility
+
+We aim to support the currently supported Nixpkgs/NixOS releases - nixos-unstable and the current stable release.
+Currently there are no releases being tagged, but we run [Gradient CI](https://public.gradient.ci/organization/microvm-nix) to ensure compatibility and we recommend to consume the repo from the default branch via flakes.
 
 ## Installation
 
