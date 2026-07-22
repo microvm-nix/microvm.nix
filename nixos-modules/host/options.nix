@@ -27,6 +27,27 @@
       '';
     };
 
+    host.stopOrphans = mkOption {
+      type = types.bool;
+      default = false;
+      description = ''
+        When a MicroVM is removed from `microvm.vms.<name>` and
+        `nixos-rebuild switch` is run, stop the running
+        `microvm@<name>.service` instance. This matches the behavior
+        of ordinary `systemd.services.<name>` on config removal.
+
+        Only affects VMs that were previously declared in
+        `microvm.vms` (detected via the presence of
+        `install-microvm-<name>.service` in the previous generation).
+        Imperative MicroVMs managed via the `microvm` command are
+        never touched.
+
+        State under `/var/lib/microvms/<name>/` is never removed.
+        Defaults to `false` to preserve existing behavior; set to
+        `true` to opt in to reconciliation.
+      '';
+    };
+
     vms = mkOption {
       type = with types; attrsOf (submodule ({ config, name, ... }: {
         options = {
