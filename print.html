@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-c1890220.js";
+            window.path_to_searchindex_js = "searchindex-53873d84.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-9fefae61.js"></script>
@@ -1125,12 +1125,35 @@ package</p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
 </ul>
+<h2 id="microvmgraphicshostmem"><a class="header" href="#microvmgraphicshostmem">microvm.graphics.hostmem</a></h2>
+<p>Size of the QEMU virtio-gpu host memory window, typically between 256M and 8G.
+The value must include a unit suffix (M or G).</p>
+<p><em>Type:</em>
+string</p>
+<p><em>Default:</em></p>
+<pre><code class="language-nix">"256M"
+</code></pre>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
 <h2 id="microvmgraphicssocket"><a class="header" href="#microvmgraphicssocket">microvm.graphics.socket</a></h2>
 <p>Path of vhost-user socket</p>
 <p><em>Type:</em>
 string</p>
 <p><em>Default:</em></p>
 <pre><code class="language-nix">"$HOSTNAME-gpu.sock"
+</code></pre>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmgraphicsvulkan"><a class="header" href="#microvmgraphicsvulkan">microvm.graphics.vulkan</a></h2>
+<p>QEMU Vulkan translation protocol to use for enabling virtio-gpu Vulkan support.</p>
+<p><em>Type:</em>
+null or one of “venus”, “drm_native_context”</p>
+<p><em>Default:</em></p>
+<pre><code class="language-nix">null
 </code></pre>
 <p><em>Declared by:</em></p>
 <ul>
