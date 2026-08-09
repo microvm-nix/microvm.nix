@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-8676ba2c.js";
+            window.path_to_searchindex_js = "searchindex-1699dcd3.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-9fefae61.js"></script>
@@ -2848,6 +2848,11 @@ tool will assume <code>git+file:///etc/nixos</code>. The source flakeref will be
 kept in <code>/var/lib/microvms/*/flake</code> for future updating the MicroVM.</p>
 <pre><code class="language-bash">microvm -f git+https://... -c my-microvm
 </code></pre>
+<p>If <code>-f</code> points to a local flake, the path must be absolute. <code>create</code>
+evaluates the flake from an internal temporary directory, so a
+relative path (including <code>.</code>) will not resolve against your shell’s
+current working directory and the flake will not be found. Use
+<code>-f $(pwd)</code> or a full path instead, e.g. <code>-f /path/to/flake</code>.</p>
 <h3 id="enabling-microvm-autostart"><a class="header" href="#enabling-microvm-autostart">Enabling MicroVM autostart</a></h3>
 <p>Extension of the host’s systemd units must happen declaratively in the
 host’s NixOS configuration:</p>
