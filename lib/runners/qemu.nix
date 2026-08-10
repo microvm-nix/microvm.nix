@@ -413,10 +413,17 @@ lib.warnIf (mem == 2048) ''
               };
             } ];
           }}
-           # wait for exit
-          cat
         ) | \
         ${vmHostPackages.socat}/bin/socat STDIO UNIX:${socket},shut-none
+
+        # Wait for the guest to actually shut down.
+        # Probing the socket instead of reading stdin makes the wait independent
+        # of how this script was invoked. QEMU stops accepting connections on the
+        # QMP socket once it exits, so a failing connect is the signal that it is
+        # gone.
+        while ${vmHostPackages.socat}/bin/socat -u /dev/null UNIX:${socket} 2>/dev/null; do
+          sleep 1
+        done
     ''
     else throw "Cannot shutdown without socket";
 
