@@ -35,9 +35,9 @@ let
     };
   };
 
-  microvmDoc = makeOptionsDoc ../nixos-modules/microvm/options.nix;
+  microvmDoc = makeOptionsDoc ../nixos-modules/microvm/default.nix;
 
-  hostDoc = makeOptionsDoc ../nixos-modules/host/options.nix;
+  hostDoc = makeOptionsDoc ../nixos-modules/host/default.nix;
 
 in
 runCommand "microvm.nix-doc" {
