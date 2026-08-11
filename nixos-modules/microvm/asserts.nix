@@ -114,6 +114,43 @@ lib.mkIf config.microvm.guest.enable {
         config.microvm.shares
     )
     ++
+    # platform device passthrough requires Crosvm's DT overlay plumbing
+    map ({ path, ... }: {
+      assertion = config.microvm.hypervisor == "crosvm";
+      message = ''
+        MicroVM ${hostName}: platform device "${path}" is only supported with crosvm.
+      '';
+    }) (
+      builtins.filter ({ bus, ... }: bus == "platform") config.microvm.devices
+    )
+    ++
+    map ({ path, crosvm, ... }: {
+      assertion = crosvm.dtSymbol != null;
+      message = ''
+        MicroVM ${hostName}: platform device "${path}" requires `crosvm.dtSymbol`.
+      '';
+    }) (
+      builtins.filter ({ bus, ... }: bus == "platform") config.microvm.devices
+    )
+    ++
+    [ {
+      assertion =
+        !(builtins.any ({ bus, ... }: bus == "platform") config.microvm.devices)
+        || config.microvm.crosvm.deviceTreeOverlays != [];
+      message = ''
+        MicroVM ${hostName}: platform devices require at least one `microvm.crosvm.deviceTreeOverlays` entry.
+      '';
+    } ]
+    ++
+    [ {
+      assertion =
+        config.microvm.crosvm.deviceTreeOverlays == []
+        || config.microvm.hypervisor == "crosvm";
+      message = ''
+        MicroVM ${hostName}: `microvm.crosvm.deviceTreeOverlays` is only supported with crosvm.
+      '';
+    } ]
+    ++
     # blacklist forwardPorts
     [ {
       assertion =

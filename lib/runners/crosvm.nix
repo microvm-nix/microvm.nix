@@ -12,7 +12,7 @@ let
     vcpu mem balloon initialBalloonMem hotplugMem hotpluggedMem user volumes shares
     socket devices vsock graphics credentialFiles
     kernel initrdPath storeDisk storeOnDisk;
-  inherit (microvmConfig.crosvm) pivotRoot extraArgs;
+  inherit (microvmConfig.crosvm) pivotRoot extraArgs deviceTreeOverlays;
 
   crosvmPkg = microvmConfig.crosvm.package;
 
@@ -136,14 +136,26 @@ in {
         "--vsock" (toString vsock.cid)
       ]
       ++
+      builtins.concatMap (overlay: [
+        "--device-tree-overlay"
+        overlay
+      ]) deviceTreeOverlays
+      ++
       [
         "--initrd" initrdPath
         kernelPath
       ]
     )
-    + " " + # Move vfio-pci outside of
-      lib.concatStringsSep " " (lib.concatMap ({ bus, path, ... }: {
-        pci = [ "--vfio" "/sys/bus/pci/devices/${path},iommu=viommu" ];
+    + " " + # Keep host device paths outside of the Nix store.
+      lib.escapeShellArgs (lib.concatMap ({ bus, path, crosvm, ... }: {
+        pci = [
+          "--vfio"
+          "/sys/bus/pci/devices/${path},iommu=${crosvm.iommu}${lib.optionalString (crosvm.guestAddress != null) ",guest-address=${crosvm.guestAddress}"}${lib.optionalString (crosvm.dtSymbol != null) ",dt-symbol=${crosvm.dtSymbol}"}"
+        ];
+        platform = [
+          "--vfio"
+          "/sys/bus/platform/devices/${path},iommu=${crosvm.iommu},dt-symbol=${crosvm.dtSymbol}"
+        ];
         usb = throw "USB passthrough is not supported on crosvm";
       }.${bus}) devices)
     + " " + lib.escapeShellArgs extraArgs;
