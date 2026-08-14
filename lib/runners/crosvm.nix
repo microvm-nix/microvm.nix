@@ -80,7 +80,7 @@ in {
       )
       ++
       lib.optionals storeOnDisk [
-        "-r" "${storeDisk}${lib.optionalString storeDiskDirect ",o_direct=true"}"
+        "--block" "${storeDisk},o_direct=${lib.boolToString storeDiskDirect},ro=true"
       ]
       ++
       lib.optionals graphics.enable [
