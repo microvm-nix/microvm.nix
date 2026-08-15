@@ -13,7 +13,7 @@ let
   stratovirtPkg = microvmConfig.stratovirt.package;
 
   inherit (microvmConfig)
-    hostName
+    fqdnOrHostName
     vcpu mem balloon initialBalloonMem hotplugMem hotpluggedMem interfaces shares socket forwardPorts devices
     kernel initrdPath credentialFiles
     storeOnDisk storeDisk;
@@ -89,7 +89,7 @@ in {
     [
       "${pkgs.expect}/bin/unbuffer"
       "${stratovirtPkg}/bin/stratovirt"
-      "-name" hostName
+      "-name" fqdnOrHostName
       "-machine" machine
       "-m" (toString mem)
       "-smp" (toString vcpu)
@@ -143,7 +143,7 @@ in {
     lib.warnIf (
       forwardPorts != [] &&
       ! builtins.any ({ type, ... }: type == "user") interfaces
-    ) "${hostName}: forwardPortsOptions only running with user network" (
+    ) "${fqdnOrHostName}: forwardPortsOptions only running with user network" (
       builtins.concatMap ({ type, id, mac, bridge, ... }: [
         "-netdev" (
           lib.concatStringsSep "," (
