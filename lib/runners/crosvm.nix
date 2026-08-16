@@ -74,7 +74,7 @@ in {
       )
       ++
       lib.optionals storeOnDisk [
-        "-r" storeDisk
+        "--block" "${storeDisk},ro=true"
       ]
       ++
       lib.optionals graphics.enable [
