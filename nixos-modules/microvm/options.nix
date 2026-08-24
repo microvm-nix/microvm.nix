@@ -434,7 +434,7 @@ in
     };
 
     devices = mkOption {
-      description = "PCI/USB devices that are passed from the host to the MicroVM";
+      description = "PCI/platform/USB devices that are passed from the host to the MicroVM";
       default = [];
       example = literalExpression /* nix */ ''
         [ {
@@ -450,12 +450,12 @@ in
           path = "vendorid=0xabcd,productid=0x0123";
         } ]
       '';
-      type = with types; listOf (submodule {
+      type = with types; listOf (submodule ({ config, ... }: {
         options = {
           bus = mkOption {
-            type = enum [ "pci" "usb" ];
+            type = enum [ "pci" "platform" "usb" ];
             description = ''
-              Device is either on the `pci` or the `usb` bus
+              Bus that identifies the host device.
             '';
           };
           path = mkOption {
@@ -487,8 +487,26 @@ in
               '';
             };
           };
+          crosvm = {
+            dtSymbol = mkOption {
+              type = nullOr str;
+              default = null;
+              description = "Device-tree symbol assigned to this device.";
+            };
+            guestAddress = mkOption {
+              type = nullOr str;
+              default = null;
+              description = "PCI address assigned to this device in the guest.";
+            };
+            iommu = mkOption {
+              type = enum [ "off" "viommu" "coiommu" "pkvm-iommu" ];
+              default = if config.bus == "platform" then "off" else "viommu";
+              defaultText = literalExpression ''if config.bus == "platform" then "off" else "viommu"'';
+              description = "Crosvm IOMMU mode for this device.";
+            };
+          };
         };
-      });
+      }));
     };
 
     vsock.cid = mkOption {
@@ -816,6 +834,12 @@ in
       type = with types; listOf str;
       default = [];
       description = "Extra arguments to pass to crosvm.";
+    };
+
+    crosvm.deviceTreeOverlays = mkOption {
+      type = with types; listOf str;
+      default = [];
+      description = "Device-tree overlay filenames passed to Crosvm.";
     };
 
     crosvm.pivotRoot = mkOption {
