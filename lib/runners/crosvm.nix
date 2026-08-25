@@ -172,7 +172,7 @@ in {
   shutdownCommand =
     if socket != null
     then ''
-        ${crosvmPkg}/bin/crosvm powerbtn ${socket}
+        ${crosvmPkg}/bin/crosvm ${if pkgs.stdenv.hostPlatform.isAarch64 then "stop" else "powerbtn"} ${socket}
       ''
     else throw "Cannot shutdown without socket";
 

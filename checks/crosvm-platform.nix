@@ -131,6 +131,9 @@ lib.optionalAttrs (lib.hasSuffix "-linux" system) {
     assert lib.hasInfix "/sys/bus/pci/devices/0000:01:00.0,iommu=off,guest-address=00:1f.0" runner.command;
     assert lib.hasInfix "--mem 'size=512,base=0x2000000000'" layoutRunner.command;
     assert lib.hasInfix "--platform-mmio 'base=0x60000000,size=0x1fa0000000'" layoutRunner.command;
+    assert lib.hasInfix (
+      if pkgs.stdenv.hostPlatform.isAarch64 then "crosvm stop" else "crosvm powerbtn"
+    ) runner.shutdownCommand;
     assert assertionsPass valid;
     assert assertionsPass layout;
     assert !assertionsPass missingSymbol;
