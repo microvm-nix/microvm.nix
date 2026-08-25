@@ -12,7 +12,8 @@ let
     vcpu mem balloon initialBalloonMem hotplugMem hotpluggedMem user volumes shares
     socket devices vsock graphics credentialFiles
     kernel initrdPath storeDisk storeOnDisk;
-  inherit (microvmConfig.crosvm) pivotRoot extraArgs deviceTreeOverlays;
+  inherit (microvmConfig.crosvm)
+    pivotRoot extraArgs deviceTreeOverlays memoryBase platformMmio;
 
   crosvmPkg = microvmConfig.crosvm.package;
 
@@ -27,11 +28,13 @@ let
     vulkan = true;
   };
 
+  formatAddress = value: "0x${lib.toLower (lib.toHexString value)}";
+
   vfioDeviceArgs = { bus, path, crosvm, ... }: [
     "--vfio"
     ({
       pci = "/sys/bus/pci/devices/${path},iommu=${crosvm.iommu}${lib.optionalString (crosvm.guestAddress != null) ",guest-address=${crosvm.guestAddress}"}${lib.optionalString (crosvm.dtSymbol != null) ",dt-symbol=${crosvm.dtSymbol}"}";
-      platform = "/sys/bus/platform/devices/${path},iommu=${crosvm.iommu},dt-symbol=${crosvm.dtSymbol}";
+      platform = "/sys/bus/platform/devices/${path},iommu=${crosvm.iommu},dt-symbol=${crosvm.dtSymbol}${lib.optionalString (crosvm.mmioBase != null) ",mmio-base=${formatAddress crosvm.mmioBase}"}${lib.optionalString crosvm.mapEarly ",map-early=true"}";
       usb = throw "USB passthrough is not supported on crosvm";
     }.${bus})
   ];
@@ -70,7 +73,8 @@ in {
     else lib.escapeShellArgs (
       [
         "${crosvmPkg}/bin/crosvm" "run"
-        "-m" (toString mem)
+        (if memoryBase == null then "-m" else "--mem")
+        (if memoryBase == null then toString mem else "size=${toString mem},base=${formatAddress memoryBase}")
         "-c" (toString vcpu)
         "--serial" "type=stdout,console=true,stdin=true"
         "-p" "console=ttyS0 reboot=k panic=1 ${toString microvmConfig.kernelParams}"
@@ -143,6 +147,11 @@ in {
       ++
       lib.optionals (vsock.cid != null) [
         "--vsock" (toString vsock.cid)
+      ]
+      ++
+      lib.optionals (platformMmio != null) [
+        "--platform-mmio"
+        "base=${formatAddress platformMmio.base},size=${formatAddress platformMmio.size}"
       ]
       ++
       builtins.concatMap (overlay: [
