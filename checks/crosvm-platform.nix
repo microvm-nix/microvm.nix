@@ -25,7 +25,11 @@ let
           {
             bus = "platform";
             path = "6800000.ethernet test";
-            crosvm.dtSymbol = "mgbe0";
+            crosvm = {
+              dtSymbol = "mgbe0";
+              mmioBase = 1711276032;
+              mapEarly = true;
+            };
           }
           {
             bus = "pci";
@@ -42,6 +46,24 @@ let
   runner = import ../lib/runners/crosvm.nix {
     inherit pkgs;
     microvmConfig = valid.config.microvm;
+    macvtapFds = { };
+    linuxTarget = pkgs.linux.target or pkgs.stdenv.hostPlatform.linux-kernel.target;
+  };
+  layout = makeConfig [
+    {
+      nixpkgs.hostPlatform = "aarch64-linux";
+      microvm.crosvm = {
+        memoryBase = 137438953472;
+        platformMmio = {
+          base = 1610612736;
+          size = 135828340736;
+        };
+      };
+    }
+  ];
+  layoutRunner = import ../lib/runners/crosvm.nix {
+    inherit pkgs;
+    microvmConfig = layout.config.microvm;
     macvtapFds = { };
     linuxTarget = pkgs.linux.target or pkgs.stdenv.hostPlatform.linux-kernel.target;
   };
@@ -73,15 +95,49 @@ let
       };
     }
   ];
+  fixedPci = makeConfig [
+    {
+      microvm.devices = [
+        {
+          bus = "pci";
+          path = "0000:01:00.0";
+          crosvm.mmioBase = 1711276032;
+        }
+      ];
+    }
+  ];
+  unsupportedLayout = makeConfig [
+    {
+      microvm.crosvm.memoryBase = 137438953472;
+    }
+  ];
+  overlappingLayout = makeConfig [
+    {
+      nixpkgs.hostPlatform = "aarch64-linux";
+      microvm.crosvm = {
+        memoryBase = 2147483648;
+        platformMmio = {
+          base = 2415919104;
+          size = 268435456;
+        };
+      };
+    }
+  ];
 in
 lib.optionalAttrs (lib.hasSuffix "-linux" system) {
   crosvm-platform-devices =
     assert lib.hasInfix "--device-tree-overlay 'overlay file.dtbo'" runner.command;
-    assert lib.hasInfix "'/sys/bus/platform/devices/6800000.ethernet test,iommu=off,dt-symbol=mgbe0'" runner.command;
+    assert lib.hasInfix "'/sys/bus/platform/devices/6800000.ethernet test,iommu=off,dt-symbol=mgbe0,mmio-base=0x66000000,map-early=true'" runner.command;
     assert lib.hasInfix "/sys/bus/pci/devices/0000:01:00.0,iommu=off,guest-address=00:1f.0" runner.command;
+    assert lib.hasInfix "--mem 'size=512,base=0x2000000000'" layoutRunner.command;
+    assert lib.hasInfix "--platform-mmio 'base=0x60000000,size=0x1fa0000000'" layoutRunner.command;
     assert assertionsPass valid;
+    assert assertionsPass layout;
     assert !assertionsPass missingSymbol;
     assert !assertionsPass missingOverlay;
     assert !assertionsPass unsupportedHypervisor;
+    assert !assertionsPass fixedPci;
+    assert !assertionsPass unsupportedLayout;
+    assert !assertionsPass overlappingLayout;
     pkgs.runCommand "crosvm-platform-devices" { } "touch $out";
 }
