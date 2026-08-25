@@ -1,6 +1,15 @@
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 let
   inherit (config.networking) hostName;
+  crosvmLayoutEnabled =
+    config.microvm.crosvm.memoryBase != null
+    || config.microvm.crosvm.platformMmio != null;
+  memoryEnd =
+    if config.microvm.crosvm.memoryBase == null then null
+    else config.microvm.crosvm.memoryBase + config.microvm.mem * 1024 * 1024;
+  platformMmioEnd =
+    if config.microvm.crosvm.platformMmio == null then null
+    else config.microvm.crosvm.platformMmio.base + config.microvm.crosvm.platformMmio.size;
 
 in
 lib.mkIf config.microvm.guest.enable {
@@ -128,6 +137,13 @@ lib.mkIf config.microvm.guest.enable {
       '';
     }) (builtins.filter ({ bus, ... }: bus == "platform") config.microvm.devices)
     ++
+    map ({ path, bus, crosvm, ... }: {
+      assertion = (crosvm.mmioBase == null && !crosvm.mapEarly) || bus == "platform";
+      message = ''
+        MicroVM ${hostName}: Crosvm fixed/early mapping for device "${path}" is only supported on the platform bus.
+      '';
+    }) config.microvm.devices
+    ++
     [
       {
         assertion =
@@ -143,6 +159,27 @@ lib.mkIf config.microvm.guest.enable {
           || config.microvm.hypervisor == "crosvm";
         message = ''
           MicroVM ${hostName}: `microvm.crosvm.deviceTreeOverlays` is only supported with Crosvm.
+        '';
+      }
+      {
+        assertion =
+          !crosvmLayoutEnabled
+          || (
+            config.microvm.hypervisor == "crosvm"
+            && pkgs.stdenv.hostPlatform.system == "aarch64-linux"
+          );
+        message = ''
+          MicroVM ${hostName}: explicit Crosvm RAM/platform MMIO layout requires AArch64 and the crosvm hypervisor.
+        '';
+      }
+      {
+        assertion =
+          memoryEnd == null
+          || platformMmioEnd == null
+          || memoryEnd <= config.microvm.crosvm.platformMmio.base
+          || platformMmioEnd <= config.microvm.crosvm.memoryBase;
+        message = ''
+          MicroVM ${hostName}: Crosvm RAM and platform MMIO ranges overlap.
         '';
       }
     ]

@@ -504,6 +504,16 @@ in
               defaultText = literalExpression ''if config.bus == "platform" then "off" else "viommu"'';
               description = "Crosvm IOMMU mode for this device.";
             };
+            mmioBase = mkOption {
+              type = nullOr ints.unsigned;
+              default = null;
+              description = "Exact guest physical address for a single-region Crosvm platform device.";
+            };
+            mapEarly = mkOption {
+              type = bool;
+              default = false;
+              description = "Map this Crosvm platform device before guest execution starts.";
+            };
           };
         };
       }));
@@ -840,6 +850,29 @@ in
       type = with types; listOf str;
       default = [];
       description = "Device-tree overlay filenames passed to Crosvm.";
+    };
+
+    crosvm.memoryBase = mkOption {
+      type = with types; nullOr ints.unsigned;
+      default = null;
+      description = "Base guest physical address of Crosvm RAM.";
+    };
+
+    crosvm.platformMmio = mkOption {
+      type = with types; nullOr (submodule {
+        options = {
+          base = mkOption {
+            type = ints.unsigned;
+            description = "Base guest physical address of the Crosvm platform MMIO aperture.";
+          };
+          size = mkOption {
+            type = ints.positive;
+            description = "Size in bytes of the Crosvm platform MMIO aperture.";
+          };
+        };
+      });
+      default = null;
+      description = "Explicit Crosvm platform MMIO aperture.";
     };
 
     crosvm.pivotRoot = mkOption {
