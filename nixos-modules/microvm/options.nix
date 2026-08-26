@@ -875,6 +875,43 @@ in
       description = "Explicit Crosvm platform MMIO aperture.";
     };
 
+    crosvm.protection = {
+      mode = mkOption {
+        type = types.enum [
+          "unprotected"
+          "protected-without-firmware"
+          "protected-with-firmware"
+        ];
+        default = "unprotected";
+        description = "Crosvm guest-memory protection mode.";
+      };
+
+      firmware = mkOption {
+        type = with types; nullOr path;
+        default = null;
+        description = "Custom firmware used by protected-with-firmware mode.";
+      };
+
+      swiotlbSizeMiB = mkOption {
+        type = with types; nullOr ints.positive;
+        default = null;
+        description = ''
+          Size in MiB of the protected guest's static SWIOTLB restricted DMA
+          pool. Protected guests use Crosvm's 64 MiB default when this is null.
+        '';
+      };
+
+      allowDeviceAssignment = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Allow platform devices using Crosvm's pKVM IOMMU path in this
+          protected guest. This requires a host backend that implements
+          protected device assignment and reset.
+        '';
+      };
+    };
+
     crosvm.pivotRoot = mkOption {
       type = with types; nullOr str;
       default = null;

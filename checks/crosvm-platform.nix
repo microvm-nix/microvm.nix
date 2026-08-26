@@ -68,6 +68,79 @@ let
     linuxTarget = pkgs.linux.target or pkgs.stdenv.hostPlatform.linux-kernel.target;
   };
   assertionsPass = nixos: builtins.all ({ assertion, ... }: assertion) nixos.config.assertions;
+  protected = makeConfig [
+    {
+      nixpkgs.hostPlatform = "aarch64-linux";
+      microvm.crosvm.protection.mode = "protected-without-firmware";
+    }
+  ];
+  protectedRunner = import ../lib/runners/crosvm.nix {
+    inherit pkgs;
+    microvmConfig = protected.config.microvm;
+    macvtapFds = { };
+    linuxTarget = pkgs.linux.target or pkgs.stdenv.hostPlatform.linux-kernel.target;
+  };
+  protectedWithFirmware = makeConfig [
+    {
+      nixpkgs.hostPlatform = "aarch64-linux";
+      microvm.crosvm.protection = {
+        mode = "protected-with-firmware";
+        firmware = pkgs.writeText "test-pvmfw" "";
+      };
+    }
+  ];
+  protectedFirmwareRunner = import ../lib/runners/crosvm.nix {
+    inherit pkgs;
+    microvmConfig = protectedWithFirmware.config.microvm;
+    macvtapFds = { };
+    linuxTarget = pkgs.linux.target or pkgs.stdenv.hostPlatform.linux-kernel.target;
+  };
+  protectedWithAssignedDevice = makeConfig [
+    {
+      nixpkgs.hostPlatform = "aarch64-linux";
+      microvm = {
+        crosvm = {
+          deviceTreeOverlays = [ "mgbe0.dtbo" ];
+          protection = {
+            mode = "protected-without-firmware";
+            allowDeviceAssignment = true;
+          };
+        };
+        devices = [
+          {
+            bus = "platform";
+            path = "6800000.ethernet";
+            crosvm = {
+              dtSymbol = "mgbe0";
+              iommu = "pkvm-iommu";
+            };
+          }
+        ];
+      };
+    }
+  ];
+  protectedMissingFirmware = makeConfig [
+    {
+      nixpkgs.hostPlatform = "aarch64-linux";
+      microvm.crosvm.protection.mode = "protected-with-firmware";
+    }
+  ];
+  protectedWithShare = makeConfig [
+    {
+      nixpkgs.hostPlatform = "aarch64-linux";
+      microvm = {
+        crosvm.protection.mode = "protected-without-firmware";
+        shares = [
+          {
+            tag = "test-share";
+            source = "/tmp";
+            mountPoint = "/tmp/shared";
+            proto = "9p";
+          }
+        ];
+      };
+    }
+  ];
   missingSymbol = makeConfig [
     {
       microvm = {
@@ -131,16 +204,24 @@ lib.optionalAttrs (lib.hasSuffix "-linux" system) {
     assert lib.hasInfix "/sys/bus/pci/devices/0000:01:00.0,iommu=off,guest-address=00:1f.0" runner.command;
     assert lib.hasInfix "--mem 'size=512,base=0x2000000000'" layoutRunner.command;
     assert lib.hasInfix "--platform-mmio 'base=0x60000000,size=0x1fa0000000'" layoutRunner.command;
+    assert lib.hasInfix "--protected-vm-without-firmware --swiotlb 64" protectedRunner.command;
+    assert lib.hasInfix "--protected-vm-with-firmware" protectedFirmwareRunner.command;
+    assert !lib.hasInfix "--swiotlb" runner.command;
     assert lib.hasInfix (
       if pkgs.stdenv.hostPlatform.isAarch64 then "crosvm stop" else "crosvm powerbtn"
     ) runner.shutdownCommand;
     assert assertionsPass valid;
     assert assertionsPass layout;
+    assert assertionsPass protected;
+    assert assertionsPass protectedWithFirmware;
+    assert assertionsPass protectedWithAssignedDevice;
     assert !assertionsPass missingSymbol;
     assert !assertionsPass missingOverlay;
     assert !assertionsPass unsupportedHypervisor;
     assert !assertionsPass fixedPci;
     assert !assertionsPass unsupportedLayout;
     assert !assertionsPass overlappingLayout;
+    assert !assertionsPass protectedMissingFirmware;
+    assert !assertionsPass protectedWithShare;
     pkgs.runCommand "crosvm-platform-devices" { } "touch $out";
 }
