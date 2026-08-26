@@ -13,9 +13,24 @@ let
     socket devices vsock graphics credentialFiles
     kernel initrdPath storeDisk storeOnDisk;
   inherit (microvmConfig.crosvm)
-    pivotRoot extraArgs deviceTreeOverlays memoryBase platformMmio;
+    pivotRoot extraArgs deviceTreeOverlays memoryBase platformMmio protection;
 
   crosvmPkg = microvmConfig.crosvm.package;
+  isProtected = protection.mode != "unprotected";
+  protectionArgs =
+    {
+      unprotected = [ ];
+      protected-without-firmware = [ "--protected-vm-without-firmware" ];
+      protected-with-firmware = [
+        "--protected-vm-with-firmware"
+        (toString protection.firmware)
+      ];
+    }
+    .${protection.mode}
+    ++ lib.optionals isProtected [
+      "--swiotlb"
+      (toString (if protection.swiotlbSizeMiB == null then 64 else protection.swiotlbSizeMiB))
+    ];
 
   kernelPath = {
     x86_64-linux = "${kernel.dev}/vmlinux";
@@ -157,6 +172,8 @@ in {
       builtins.concatMap (overlay: [
         "--device-tree-overlay" overlay
       ]) deviceTreeOverlays
+      ++
+      protectionArgs
       ++
       [
         "--initrd" initrdPath

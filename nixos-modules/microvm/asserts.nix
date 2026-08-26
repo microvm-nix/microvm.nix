@@ -10,6 +10,15 @@ let
   platformMmioEnd =
     if config.microvm.crosvm.platformMmio == null then null
     else config.microvm.crosvm.platformMmio.base + config.microvm.crosvm.platformMmio.size;
+  protection = config.microvm.crosvm.protection;
+  isProtected = protection.mode != "unprotected";
+  rawProtectionArgs = [
+    "--protected-vm"
+    "--protected-vm-with-firmware"
+    "--protected-vm-without-firmware"
+    "--swiotlb"
+    "--unprotected-vm-with-firmware"
+  ];
 
 in
 lib.mkIf config.microvm.guest.enable {
@@ -181,6 +190,62 @@ lib.mkIf config.microvm.guest.enable {
         message = ''
           MicroVM ${hostName}: Crosvm RAM and platform MMIO ranges overlap.
         '';
+      }
+      {
+        assertion = lib.all (arg: !builtins.elem arg config.microvm.crosvm.extraArgs) rawProtectionArgs;
+        message = "Use `microvm.crosvm.protection` instead of raw Crosvm protection arguments.";
+      }
+      {
+        assertion = !isProtected || config.microvm.hypervisor == "crosvm";
+        message = "Protected MicroVMs require the crosvm hypervisor.";
+      }
+      {
+        assertion = !isProtected || pkgs.stdenv.hostPlatform.system == "aarch64-linux";
+        message = "Crosvm protected MicroVMs are currently supported only on AArch64 Linux.";
+      }
+      {
+        assertion = protection.mode == "protected-with-firmware" || protection.firmware == null;
+        message = "`microvm.crosvm.protection.firmware` requires protected-with-firmware mode.";
+      }
+      {
+        assertion = protection.mode != "protected-with-firmware" || protection.firmware != null;
+        message = "protected-with-firmware mode requires `microvm.crosvm.protection.firmware`.";
+      }
+      {
+        assertion = isProtected || protection.swiotlbSizeMiB == null;
+        message = "`microvm.crosvm.protection.swiotlbSizeMiB` requires a protected mode.";
+      }
+      {
+        assertion = !isProtected || !config.microvm.balloon;
+        message = "Crosvm protected MicroVMs do not support ballooning.";
+      }
+      {
+        assertion = !isProtected || config.microvm.shares == [ ];
+        message = "Crosvm protected MicroVMs cannot use host shared-directory backends.";
+      }
+      {
+        assertion = !protection.allowDeviceAssignment || isProtected;
+        message = "Protected device assignment requires a protected Crosvm mode.";
+      }
+      {
+        assertion =
+          !protection.allowDeviceAssignment
+          || lib.all ({ crosvm, ... }: crosvm.iommu == "pkvm-iommu") config.microvm.devices;
+        message = "Protected device assignment requires `iommu = \"pkvm-iommu\"` for every assigned device.";
+      }
+      {
+        assertion =
+          !protection.allowDeviceAssignment
+          || lib.all ({ bus, ... }: bus == "platform") config.microvm.devices;
+        message = "Protected device assignment currently supports platform devices only.";
+      }
+      {
+        assertion = !isProtected || config.microvm.devices == [ ] || protection.allowDeviceAssignment;
+        message = "Crosvm protected MicroVM device assignment requires an explicit backend opt-in.";
+      }
+      {
+        assertion = !isProtected || !config.microvm.graphics.enable;
+        message = "Crosvm protected MicroVMs cannot use the host graphics backend.";
       }
     ]
     ++
