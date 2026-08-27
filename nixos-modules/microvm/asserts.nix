@@ -236,8 +236,8 @@ lib.mkIf config.microvm.guest.enable {
       {
         assertion =
           !protection.allowDeviceAssignment
-          || lib.all ({ bus, ... }: bus == "platform") config.microvm.devices;
-        message = "Protected device assignment currently supports platform devices only.";
+          || lib.all ({ bus, ... }: lib.elem bus [ "platform" "pci" ]) config.microvm.devices;
+        message = "Protected device assignment supports static platform and PCI devices only.";
       }
       {
         assertion = !isProtected || config.microvm.devices == [ ] || protection.allowDeviceAssignment;

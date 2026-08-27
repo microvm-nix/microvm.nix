@@ -115,10 +115,24 @@ let
               iommu = "pkvm-iommu";
             };
           }
+          {
+            bus = "pci";
+            path = "0001:01:00.0";
+            crosvm = {
+              guestAddress = "00:1f.0";
+              iommu = "pkvm-iommu";
+            };
+          }
         ];
       };
     }
   ];
+  protectedAssignedRunner = import ../lib/runners/crosvm.nix {
+    inherit pkgs;
+    microvmConfig = protectedWithAssignedDevice.config.microvm;
+    macvtapFds = { };
+    linuxTarget = pkgs.linux.target or pkgs.stdenv.hostPlatform.linux-kernel.target;
+  };
   protectedMissingFirmware = makeConfig [
     {
       nixpkgs.hostPlatform = "aarch64-linux";
@@ -206,6 +220,8 @@ lib.optionalAttrs (lib.hasSuffix "-linux" system) {
     assert lib.hasInfix "--platform-mmio 'base=0x60000000,size=0x1fa0000000'" layoutRunner.command;
     assert lib.hasInfix "--protected-vm-without-firmware --swiotlb 64" protectedRunner.command;
     assert lib.hasInfix "--protected-vm-with-firmware" protectedFirmwareRunner.command;
+    assert lib.hasInfix "/sys/bus/platform/devices/6800000.ethernet,iommu=pkvm-iommu,dt-symbol=mgbe0" protectedAssignedRunner.command;
+    assert lib.hasInfix "/sys/bus/pci/devices/0001:01:00.0,iommu=pkvm-iommu,guest-address=00:1f.0" protectedAssignedRunner.command;
     assert !lib.hasInfix "--swiotlb" runner.command;
     assert lib.hasInfix (
       if pkgs.stdenv.hostPlatform.isAarch64 then "crosvm stop" else "crosvm powerbtn"
