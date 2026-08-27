@@ -905,9 +905,9 @@ in
         type = types.bool;
         default = false;
         description = ''
-          Allow platform devices using Crosvm's pKVM IOMMU path in this
-          protected guest. This requires a host backend that implements
-          protected device assignment and reset.
+          Allow static platform and PCI devices using Crosvm's pKVM IOMMU
+          path in this protected guest. This requires a host backend that
+          implements protected device assignment and reset for every device.
         '';
       };
     };
