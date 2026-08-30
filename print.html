@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-1699dcd3.js";
+            window.path_to_searchindex_js = "searchindex-5f98cbb9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-9fefae61.js"></script>
@@ -716,6 +716,16 @@ attribute set of strings concatenated with “\n”</p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
 </ul>
+<h2 id="microvmbootdisk"><a class="header" href="#microvmbootdisk">microvm.bootDisk</a></h2>
+<p>Generated.</p>
+<p>Required for Hypervisors that do not support direct
+kernel+initrd loading.</p>
+<p><em>Type:</em>
+absolute path</p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/boot-disk.nix">microvm.nix/nixos-modules/microvm/boot-disk.nix</a></li>
+</ul>
 <h2 id="microvmcloud-hypervisorpackage"><a class="header" href="#microvmcloud-hypervisorpackage">microvm.cloud-hypervisor.package</a></h2>
 <p>The cloud-hypervisor package to use.</p>
 <p><em>Type:</em>
@@ -845,6 +855,64 @@ boolean</p>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmdeployinstallonhost"><a class="header" href="#microvmdeployinstallonhost">microvm.deploy.installOnHost</a></h2>
+<p>Use this script to deploy the working state of your local
+Flake on a target host that imports
+<code>microvm.nixosModules.host</code>:</p>
+<pre><code>nix run .#nixosConfigurations.$HOSTNAME.config.microvm.deploy.installOnHost root@example.com
+ssh root@example.com systemctl restart microvm@$HOSTNAME
+</code></pre>
+<ul>
+<li>Evaluate this MicroVM to a derivation</li>
+<li>Copy the derivation to the target host</li>
+<li>Build the MicroVM runner on the target host</li>
+<li>Install/update the MicroVM on the target host</li>
+</ul>
+<p>Can be followed by either:</p>
+<ul>
+<li><code>systemctl restart microvm@$HOSTNAME.service</code> on the
+target host, or</li>
+<li><code>config.microvm.deploy.sshSwitch</code></li>
+</ul>
+<p><em>Type:</em>
+package</p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/ssh-deploy.nix">microvm.nix/nixos-modules/microvm/ssh-deploy.nix</a></li>
+</ul>
+<h2 id="microvmdeployrebuild"><a class="header" href="#microvmdeployrebuild">microvm.deploy.rebuild</a></h2>
+<p><code>config.microvm.deploy.installOnHost</code> and <code>.sshSwitch</code> in one
+script. Akin to what nixos-rebuild does but for a remote
+MicroVM.</p>
+<pre><code>nix run .#nixosConfigurations.$HOSTNAME.config.microvm.deploy.rebuild root@example.com root@my-microvm.example.com switch
+</code></pre>
+<p><em>Type:</em>
+null or package</p>
+<p><em>Default:</em></p>
+<pre><code class="language-nix">null
+</code></pre>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/ssh-deploy.nix">microvm.nix/nixos-modules/microvm/ssh-deploy.nix</a></li>
+</ul>
+<h2 id="microvmdeploysshswitch"><a class="header" href="#microvmdeploysshswitch">microvm.deploy.sshSwitch</a></h2>
+<p>Instead of restarting a MicroVM for an update, perform it via
+SSH.</p>
+<p>The host’s /nix/store must be mounted, and the built
+<code>config.microvm.declaredRunner</code> must exist in it. Use
+<code>microvm.deploy.installOnHost</code> like this:</p>
+<pre><code>nix run .#nixosConfigurations.$HOSTNAME.config.microvm.deploy.installOnHost root@example.com
+nix run .#nixosConfigurations.$HOSTNAME.config.microvm.deploy.sshSwitch root@my-microvm.example.com switch
+</code></pre>
+<p><em>Type:</em>
+null or package</p>
+<p><em>Default:</em></p>
+<pre><code class="language-nix">null
+</code></pre>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/ssh-deploy.nix">microvm.nix/nixos-modules/microvm/ssh-deploy.nix</a></li>
 </ul>
 <h2 id="microvmdevices"><a class="header" href="#microvmdevices">microvm.devices</a></h2>
 <p>PCI/USB devices that are passed from the host to the MicroVM</p>
@@ -1736,6 +1804,14 @@ null or string</p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
 </ul>
+<h2 id="microvmstoredisk"><a class="header" href="#microvmstoredisk">microvm.storeDisk</a></h2>
+<p>Generated</p>
+<p><em>Type:</em>
+absolute path</p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/store-disk.nix">microvm.nix/nixos-modules/microvm/store-disk.nix</a></li>
+</ul>
 <h2 id="microvmstorediskerofsflags"><a class="header" href="#microvmstorediskerofsflags">microvm.storeDiskErofsFlags</a></h2>
 <p>Flags to pass to mkfs.erofs</p>
 <p><code>"-Ededupe"</code> is omitted by default because it forces single-threaded, slower builds.
@@ -2123,6 +2199,29 @@ null or signed integer</p>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmvsocksshenable"><a class="header" href="#microvmvsocksshenable">microvm.vsock.ssh.enable</a></h2>
+<p>Whether to enable SSH server listening on VSOCK for host-to-guest connections.</p>
+<p>When enabled, the guest’s SSH server will listen on the VSOCK interface, allowing the host to connect without
+network configuration. Requires <code>microvm.vsock.cid</code> to be set.</p>
+<p>From the host, connect using:</p>
+<ul>
+<li>For qemu/crosvm/kvmtool: <code>ssh vsock/&lt;CID&gt;</code></li>
+<li>For cloud-hypervisor: <code>ssh vsock-mux/&lt;path-to-notify.vsock&gt;</code></li>
+<li>Or use: <code>microvm -s &lt;vmname&gt;</code>
+.</li>
+</ul>
+<p><em>Type:</em>
+boolean</p>
+<p><em>Default:</em></p>
+<pre><code class="language-nix">false
+</code></pre>
+<p><em>Example:</em></p>
+<pre><code class="language-nix">true
+</code></pre>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/vsock-ssh.nix">microvm.nix/nixos-modules/microvm/vsock-ssh.nix</a></li>
 </ul>
 <h2 id="microvmwritablestoreoverlay"><a class="header" href="#microvmwritablestoreoverlay">microvm.writableStoreOverlay</a></h2>
 <p>Path to the writable /nix/store overlay.</p>
@@ -2911,7 +3010,7 @@ remote. There you’re going to have a repository state that is going
 to confuse fellow operators. Also, your local <code>--override-input</code>
 parameters will become meaningless on the remote filesystem.</li>
 </ul>
-<h2 id="microvmdeployrebuild"><a class="header" href="#microvmdeployrebuild">microvm.deploy.rebuild</a></h2>
+<h2 id="microvmdeployrebuild-1"><a class="header" href="#microvmdeployrebuild-1">microvm.deploy.rebuild</a></h2>
 <p>The <em>easy</em> interface that is named after <code>nixos-rebuild</code> combines the
 two scripts that are described below:</p>
 <ul>
@@ -2930,7 +3029,7 @@ host</li>
 ssh addresses must come before the actual <code>switch</code> argument:</p>
 <pre><code>nix run .#nixosConfigurations.my-microvm.config.microvm.deploy.rebuild root@example.com root@my-microvm.example.com switch
 </code></pre>
-<h2 id="microvmdeployinstallonhost"><a class="header" href="#microvmdeployinstallonhost">microvm.deploy.installOnHost</a></h2>
+<h2 id="microvmdeployinstallonhost-1"><a class="header" href="#microvmdeployinstallonhost-1">microvm.deploy.installOnHost</a></h2>
 <p>This script will evaluate only the system’s derivations locally. It
 then transfers these and their dependencies to the remote system so
 the actual build can be performed there.</p>
@@ -2939,7 +3038,7 @@ the MicroVM under <code>/var/lib/microvms/$NAME</code> so that the systemd
 services of the <code>host</code> module can pick it up.</p>
 <p>It is irrelevant whether you create a new MicroVM or update an
 existing one.</p>
-<h2 id="microvmdeploysshswitch"><a class="header" href="#microvmdeploysshswitch">microvm.deploy.sshSwitch</a></h2>
+<h2 id="microvmdeploysshswitch-1"><a class="header" href="#microvmdeploysshswitch-1">microvm.deploy.sshSwitch</a></h2>
 <p>Once the host has an updated MicroVM in its <code>/nix/store</code> (see above)
 the new system must be activated. For a proper state, this script does
 a bit more in the MicroVM than just <code>switch-to-configuration</code>:</p>
