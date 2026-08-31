@@ -12,6 +12,10 @@ let
     else config.microvm.crosvm.platformMmio.base + config.microvm.crosvm.platformMmio.size;
   protection = config.microvm.crosvm.protection;
   isProtected = protection.mode != "unprotected";
+  usesNativeCrosvmVirtiofs =
+    config.microvm.hypervisor == "crosvm"
+    && config.microvm.crosvm.virtiofsBackend == "crosvm";
+  virtiofsShares = builtins.filter ({ proto, ... }: proto == "virtiofs") config.microvm.shares;
   rawProtectionArgs = [
     "--protected-vm"
     "--protected-vm-with-firmware"
@@ -220,8 +224,38 @@ lib.mkIf config.microvm.guest.enable {
         message = "Crosvm protected MicroVMs do not support ballooning.";
       }
       {
-        assertion = !isProtected || config.microvm.shares == [ ];
-        message = "Crosvm protected MicroVMs cannot use host shared-directory backends.";
+        assertion =
+          !isProtected
+          || config.microvm.shares == [ ]
+          || (
+            usesNativeCrosvmVirtiofs
+            && builtins.length virtiofsShares == builtins.length config.microvm.shares
+          );
+        message = "Crosvm protected MicroVMs support only native Crosvm virtio-fs shares.";
+      }
+      {
+        assertion =
+          config.microvm.crosvm.virtiofsBackend == "vhost-user"
+          || config.microvm.hypervisor == "crosvm";
+        message = "The native Crosvm virtio-fs backend requires the crosvm hypervisor.";
+      }
+      {
+        assertion =
+          !usesNativeCrosvmVirtiofs
+          || lib.all ({ readOnly, ... }: !readOnly) virtiofsShares;
+        message = "The native Crosvm virtio-fs backend does not support read-only shares.";
+      }
+      {
+        assertion =
+          !usesNativeCrosvmVirtiofs
+          || lib.all ({ cache, ... }: cache != "metadata") virtiofsShares;
+        message = "The native Crosvm virtio-fs backend does not support metadata-only caching.";
+      }
+      {
+        assertion =
+          !usesNativeCrosvmVirtiofs
+          || lib.all ({ extraArgs, ... }: extraArgs == [ ]) virtiofsShares;
+        message = "The native Crosvm virtio-fs backend does not accept virtiofsd arguments.";
       }
       {
         assertion = !protection.allowDeviceAssignment || isProtected;

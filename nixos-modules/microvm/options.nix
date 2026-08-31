@@ -846,6 +846,19 @@ in
       description = "Extra arguments to pass to crosvm.";
     };
 
+    crosvm.virtiofsBackend = mkOption {
+      type = types.enum [
+        "vhost-user"
+        "crosvm"
+      ];
+      default = "vhost-user";
+      description = ''
+        Backend used for virtio-fs shares. The vhost-user backend starts an
+        external virtiofsd process. The crosvm backend uses Crosvm's native
+        virtio-fs device without DAX and does not start virtiofsd.
+      '';
+    };
+
     crosvm.deviceTreeOverlays = mkOption {
       type = with types; listOf str;
       default = [];

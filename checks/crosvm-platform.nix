@@ -155,6 +155,31 @@ let
       };
     }
   ];
+  protectedWithNativeVirtiofs = makeConfig [
+    {
+      nixpkgs.hostPlatform = "aarch64-linux";
+      microvm = {
+        crosvm = {
+          protection.mode = "protected-without-firmware";
+          virtiofsBackend = "crosvm";
+        };
+        shares = [
+          {
+            tag = "test-share";
+            source = "/tmp";
+            mountPoint = "/tmp/shared";
+            proto = "virtiofs";
+          }
+        ];
+      };
+    }
+  ];
+  protectedNativeVirtiofsRunner = import ../lib/runners/crosvm.nix {
+    inherit pkgs;
+    microvmConfig = protectedWithNativeVirtiofs.config.microvm;
+    macvtapFds = { };
+    linuxTarget = pkgs.linux.target or pkgs.stdenv.hostPlatform.linux-kernel.target;
+  };
   missingSymbol = makeConfig [
     {
       microvm = {
@@ -239,5 +264,10 @@ lib.optionalAttrs (lib.hasSuffix "-linux" system) {
     assert !assertionsPass overlappingLayout;
     assert !assertionsPass protectedMissingFirmware;
     assert !assertionsPass protectedWithShare;
+    assert assertionsPass protectedWithNativeVirtiofs;
+    assert lib.hasInfix "--shared-dir" protectedNativeVirtiofsRunner.command;
+    assert lib.hasInfix "/tmp:test-share:type=fs:cache=auto:dax=false:posix_acl=true" protectedNativeVirtiofsRunner.command;
+    assert !lib.hasInfix "--vhost-user type=fs" protectedNativeVirtiofsRunner.command;
+    assert !(protectedWithNativeVirtiofs.config.microvm.binScripts ? virtiofsd-run);
     pkgs.runCommand "crosvm-platform-devices" { } "touch $out";
 }

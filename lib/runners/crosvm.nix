@@ -13,7 +13,7 @@ let
     socket devices vsock graphics credentialFiles
     kernel initrdPath storeDisk storeOnDisk;
   inherit (microvmConfig.crosvm)
-    pivotRoot extraArgs deviceTreeOverlays memoryBase platformMmio protection;
+    pivotRoot extraArgs deviceTreeOverlays memoryBase platformMmio protection virtiofsBackend;
 
   crosvmPkg = microvmConfig.crosvm.package;
   isProtected = protection.mode != "unprotected";
@@ -130,10 +130,16 @@ in {
         ]
       ) volumes
       ++
-      builtins.concatMap ({ proto, tag, source, socket, readOnly, ... }: {
-        "virtiofs" = [
-          "--vhost-user" "type=fs,socket=${socket}"
-        ];
+      builtins.concatMap ({ proto, tag, source, socket, readOnly, cache, posixAcl, ... }: {
+        "virtiofs" =
+          if virtiofsBackend == "crosvm"
+          then [
+            "--shared-dir"
+            "${source}:${tag}:type=fs:cache=${cache}:dax=false:posix_acl=${lib.boolToString posixAcl}"
+          ]
+          else [
+            "--vhost-user" "type=fs,socket=${socket}"
+          ];
         "9p" = if readOnly then
           throw "Readonly 9p share is not supported"
         else [
