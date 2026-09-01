@@ -9,6 +9,20 @@
         Whether to enable the microvm.nix host module.
       '';
     };
+    host.installCommand = mkOption {
+      type = types.bool;
+      default = true;
+      description = ''
+        Whether to install the `microvm` management CLI into
+        `environment.systemPackages` on the host.
+
+        It shells out to `nix` to create/update/run VMs from a flake, so it
+        makes the Nix binary a runtime dependency of the host closure. Set to
+        false on appliance-style images that manage guests purely through the
+        generated `microvm@.service` units and must not ship Nix.
+      '';
+    };
+
     host.startupTimeout = mkOption {
       description = "Start up timeout for the VMs in seconds";
       type = types.ints.positive;

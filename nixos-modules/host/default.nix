@@ -74,7 +74,7 @@ in
         }
         (builtins.attrNames config.microvm.vms);
 
-    environment.systemPackages = [
+    environment.systemPackages = lib.optionals config.microvm.host.installCommand [
       microvmCommand
     ];
 
