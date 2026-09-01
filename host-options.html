@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-5f98cbb9.js";
+            window.path_to_searchindex_js = "searchindex-33521531.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-9fefae61.js"></script>
@@ -192,6 +192,22 @@ list of string</p>
 </ul>
 <h2 id="microvmhostenable"><a class="header" href="#microvmhostenable">microvm.host.enable</a></h2>
 <p>Whether to enable the microvm.nix host module.</p>
+<p><em>Type:</em>
+boolean</p>
+<p><em>Default:</em></p>
+<pre><code class="language-nix">true
+</code></pre>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/host/options.nix">microvm.nix/nixos-modules/host/options.nix</a></li>
+</ul>
+<h2 id="microvmhostinstallcommand"><a class="header" href="#microvmhostinstallcommand">microvm.host.installCommand</a></h2>
+<p>Whether to install the <code>microvm</code> management CLI into
+<code>environment.systemPackages</code> on the host.</p>
+<p>It shells out to <code>nix</code> to create/update/run VMs from a flake, so it
+makes the Nix binary a runtime dependency of the host closure. Set to
+false on appliance-style images that manage guests purely through the
+generated <code>microvm@.service</code> units and must not ship Nix.</p>
 <p><em>Type:</em>
 boolean</p>
 <p><em>Default:</em></p>
