@@ -38,7 +38,7 @@ let
     then "io_uring"
     else "threads";
 
-  inherit (microvmConfig) hostName machineId vcpu mem balloon initialBalloonMem deflateOnOOM hotplugMem hotpluggedMem user interfaces shares socket forwardPorts devices vsock graphics storeOnDisk kernel initrdPath storeDisk credentialFiles;
+  inherit (microvmConfig) hostName machineId vcpu mem balloon initialBalloonMem deflateOnOOM hotplugMem hotpluggedMem user interfaces shares socket forwardPorts devices vsock graphics storeOnDisk kernel initrdPath storeDisk storeDiskDirect credentialFiles;
   inherit (microvmConfig.qemu) machine extraArgs serialConsole pcieRootPorts;
 
   volumes = withDriveLetters microvmConfig;
@@ -232,7 +232,9 @@ lib.warnIf (mem == 2048) ''
       "-append" "${kernelConsole} reboot=t panic=-1 ${toString microvmConfig.kernelParams}"
     ] ++
     lib.optionals storeOnDisk [
-      "-drive" "id=store,format=raw,read-only=on,file=${storeDisk},if=none,aio=${aioEngine}"
+      "-drive" "id=store,format=raw,read-only=on,file=${storeDisk},if=none,aio=${aioEngine}${
+        lib.optionalString storeDiskDirect ",cache=none"
+      }"
       "-device" "virtio-blk-${devType},drive=store${lib.optionalString (devType == "pci") ",disable-legacy=on"}"
     ] ++
        (if graphics.enable then (

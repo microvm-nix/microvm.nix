@@ -13,6 +13,15 @@ rec {
 
   hypervisorsWithNetwork = hypervisors;
 
+  # Hypervisors whose store disk argument accepts a direct I/O flag
+  hypervisorsWithStoreDiskDirect = [
+    "qemu"
+    "cloud-hypervisor"
+    "crosvm"
+    "kvmtool"
+    "stratovirt"
+  ];
+
   defaultFsType = "ext4";
 
   withDriveLetters = { volumes, storeOnDisk, ... }:
