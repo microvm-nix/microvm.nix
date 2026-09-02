@@ -5,7 +5,7 @@ let
   };
 
   cfg = config.microvm;
-  hostName = config.networking.hostName or "$HOSTNAME";
+  fqdnOrHostName = config.networking.fqdnOrHostName or "$HOSTNAME";
   kernelAtLeast = lib.versionAtLeast config.boot.kernelPackages.kernel.version;
 in
 {
@@ -76,8 +76,8 @@ in
 
     socket = mkOption {
       description = "Hypervisor control socket path";
-      default = "${hostName}.sock";
-      defaultText = literalExpression ''"''${hostName}.sock"'';
+      default = "${fqdnOrHostName}.sock";
+      defaultText = literalExpression ''"''${fqdnOrHostName}.sock"'';
       type = with types; nullOr str;
     };
 
@@ -383,7 +383,7 @@ in
             type = nullOr str;
             default =
               if config.proto == "virtiofs"
-              then "${hostName}-virtiofs-${config.tag}.sock"
+              then "${fqdnOrHostName}-virtiofs-${config.tag}.sock"
               else null;
             description = "Socket for communication with virtiofs daemon";
           };
@@ -528,7 +528,7 @@ in
       type = with types; nullOr str;
       default =
         let
-          hash = builtins.hashString "sha256" "microvm.nix:${hostName}";
+          hash = builtins.hashString "sha256" "microvm.nix:${fqdnOrHostName}";
           hs = offset: len:
             builtins.substring offset len hash;
         in builtins.concatStringsSep "-" [
@@ -626,7 +626,7 @@ in
 
       socket = mkOption {
         type = types.str;
-        default = "${hostName}-gpu.sock";
+        default = "${fqdnOrHostName}-gpu.sock";
         description = ''
           Path of vhost-user socket
         '';
