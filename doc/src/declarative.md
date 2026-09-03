@@ -71,3 +71,25 @@ microvm.vms = {
 
 Note that building MicroVMs with the host increases build time and
 closure size of the host's system.
+
+## Reconciliation on host rebuild
+
+By default, removing a VM from `microvm.vms.<name>` does **not** stop the running `microvm@<name>.service`,
+because MicroVM lifecycle is decoupled from host configuration.
+Updates are meant to be applied via the imperative [`microvm` command](./microvm-command.md),
+and removing a declaration simply stops managing the VM declaratively.
+
+To opt in to reconciliation, so that removing a VM from `microvm.vms.<name>`
+and running `nixos-rebuild switch` stops the corresponding `microvm@<name>.service`,
+matches the behavior of ordinary `systemd.services.<name>` set:
+
+```nix
+microvm.host.stopOrphans = true;
+```
+
+When enabled:
+
+- State under `/var/lib/microvms/<name>/` is preserved, in case the VM is only being temporarily deactivated.
+  To fully remove a VM including its disk images, `rm -rf /var/lib/microvms/<name>` after the service has stopped.
+- Imperative MicroVMs managed via the `microvm` command are never touched;
+  only VMs that were previously declared in `microvm.vms` are considered.
