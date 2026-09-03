@@ -211,7 +211,7 @@ let
   ) binScripts;
 in
 
-vmHostPackages.buildPackages.runCommand "microvm-${microvmConfig.hypervisor}-${hostName}"
+vmHostPackages.buildPackages.runCommandLocal "microvm-${microvmConfig.hypervisor}-${hostName}"
 {
   # for `nix run`
   meta.mainProgram = "microvm-run";
