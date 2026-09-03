@@ -1,6 +1,28 @@
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 let
   inherit (config.networking) hostName;
+  crosvmLayoutEnabled =
+    config.microvm.crosvm.memoryBase != null
+    || config.microvm.crosvm.platformMmio != null;
+  memoryEnd =
+    if config.microvm.crosvm.memoryBase == null then null
+    else config.microvm.crosvm.memoryBase + config.microvm.mem * 1024 * 1024;
+  platformMmioEnd =
+    if config.microvm.crosvm.platformMmio == null then null
+    else config.microvm.crosvm.platformMmio.base + config.microvm.crosvm.platformMmio.size;
+  protection = config.microvm.crosvm.protection;
+  isProtected = protection.mode != "unprotected";
+  usesNativeCrosvmVirtiofs =
+    config.microvm.hypervisor == "crosvm"
+    && config.microvm.crosvm.virtiofsBackend == "crosvm";
+  virtiofsShares = builtins.filter ({ proto, ... }: proto == "virtiofs") config.microvm.shares;
+  rawProtectionArgs = [
+    "--protected-vm"
+    "--protected-vm-with-firmware"
+    "--protected-vm-without-firmware"
+    "--swiotlb"
+    "--unprotected-vm-with-firmware"
+  ];
 
 in
 lib.mkIf config.microvm.guest.enable {
@@ -113,6 +135,153 @@ lib.mkIf config.microvm.guest.enable {
       builtins.filter ({ proto, ... }: proto == "virtiofs")
         config.microvm.shares
     )
+    ++
+    map ({ path, ... }: {
+      assertion = config.microvm.hypervisor == "crosvm";
+      message = ''
+        MicroVM ${hostName}: platform device "${path}" is only supported with Crosvm.
+      '';
+    }) (builtins.filter ({ bus, ... }: bus == "platform") config.microvm.devices)
+    ++
+    map ({ path, crosvm, ... }: {
+      assertion = crosvm.dtSymbol != null;
+      message = ''
+        MicroVM ${hostName}: platform device "${path}" requires `crosvm.dtSymbol`.
+      '';
+    }) (builtins.filter ({ bus, ... }: bus == "platform") config.microvm.devices)
+    ++
+    map ({ path, bus, crosvm, ... }: {
+      assertion = (crosvm.mmioBase == null && !crosvm.mapEarly) || bus == "platform";
+      message = ''
+        MicroVM ${hostName}: Crosvm fixed/early mapping for device "${path}" is only supported on the platform bus.
+      '';
+    }) config.microvm.devices
+    ++
+    [
+      {
+        assertion =
+          !(builtins.any ({ bus, ... }: bus == "platform") config.microvm.devices)
+          || config.microvm.crosvm.deviceTreeOverlays != [];
+        message = ''
+          MicroVM ${hostName}: platform devices require a `microvm.crosvm.deviceTreeOverlays` entry.
+        '';
+      }
+      {
+        assertion =
+          config.microvm.crosvm.deviceTreeOverlays == []
+          || config.microvm.hypervisor == "crosvm";
+        message = ''
+          MicroVM ${hostName}: `microvm.crosvm.deviceTreeOverlays` is only supported with Crosvm.
+        '';
+      }
+      {
+        assertion =
+          !crosvmLayoutEnabled
+          || (
+            config.microvm.hypervisor == "crosvm"
+            && pkgs.stdenv.hostPlatform.system == "aarch64-linux"
+          );
+        message = ''
+          MicroVM ${hostName}: explicit Crosvm RAM/platform MMIO layout requires AArch64 and the crosvm hypervisor.
+        '';
+      }
+      {
+        assertion =
+          memoryEnd == null
+          || platformMmioEnd == null
+          || memoryEnd <= config.microvm.crosvm.platformMmio.base
+          || platformMmioEnd <= config.microvm.crosvm.memoryBase;
+        message = ''
+          MicroVM ${hostName}: Crosvm RAM and platform MMIO ranges overlap.
+        '';
+      }
+      {
+        assertion = lib.all (arg: !builtins.elem arg config.microvm.crosvm.extraArgs) rawProtectionArgs;
+        message = "Use `microvm.crosvm.protection` instead of raw Crosvm protection arguments.";
+      }
+      {
+        assertion = !isProtected || config.microvm.hypervisor == "crosvm";
+        message = "Protected MicroVMs require the crosvm hypervisor.";
+      }
+      {
+        assertion = !isProtected || pkgs.stdenv.hostPlatform.system == "aarch64-linux";
+        message = "Crosvm protected MicroVMs are currently supported only on AArch64 Linux.";
+      }
+      {
+        assertion = protection.mode == "protected-with-firmware" || protection.firmware == null;
+        message = "`microvm.crosvm.protection.firmware` requires protected-with-firmware mode.";
+      }
+      {
+        assertion = protection.mode != "protected-with-firmware" || protection.firmware != null;
+        message = "protected-with-firmware mode requires `microvm.crosvm.protection.firmware`.";
+      }
+      {
+        assertion = isProtected || protection.swiotlbSizeMiB == null;
+        message = "`microvm.crosvm.protection.swiotlbSizeMiB` requires a protected mode.";
+      }
+      {
+        assertion = !isProtected || !config.microvm.balloon;
+        message = "Crosvm protected MicroVMs do not support ballooning.";
+      }
+      {
+        assertion =
+          !isProtected
+          || config.microvm.shares == [ ]
+          || (
+            usesNativeCrosvmVirtiofs
+            && builtins.length virtiofsShares == builtins.length config.microvm.shares
+          );
+        message = "Crosvm protected MicroVMs support only native Crosvm virtio-fs shares.";
+      }
+      {
+        assertion =
+          config.microvm.crosvm.virtiofsBackend == "vhost-user"
+          || config.microvm.hypervisor == "crosvm";
+        message = "The native Crosvm virtio-fs backend requires the crosvm hypervisor.";
+      }
+      {
+        assertion =
+          !usesNativeCrosvmVirtiofs
+          || lib.all ({ readOnly, ... }: !readOnly) virtiofsShares;
+        message = "The native Crosvm virtio-fs backend does not support read-only shares.";
+      }
+      {
+        assertion =
+          !usesNativeCrosvmVirtiofs
+          || lib.all ({ cache, ... }: cache != "metadata") virtiofsShares;
+        message = "The native Crosvm virtio-fs backend does not support metadata-only caching.";
+      }
+      {
+        assertion =
+          !usesNativeCrosvmVirtiofs
+          || lib.all ({ extraArgs, ... }: extraArgs == [ ]) virtiofsShares;
+        message = "The native Crosvm virtio-fs backend does not accept virtiofsd arguments.";
+      }
+      {
+        assertion = !protection.allowDeviceAssignment || isProtected;
+        message = "Protected device assignment requires a protected Crosvm mode.";
+      }
+      {
+        assertion =
+          !protection.allowDeviceAssignment
+          || lib.all ({ crosvm, ... }: crosvm.iommu == "pkvm-iommu") config.microvm.devices;
+        message = "Protected device assignment requires `iommu = \"pkvm-iommu\"` for every assigned device.";
+      }
+      {
+        assertion =
+          !protection.allowDeviceAssignment
+          || lib.all ({ bus, ... }: lib.elem bus [ "platform" "pci" ]) config.microvm.devices;
+        message = "Protected device assignment supports static platform and PCI devices only.";
+      }
+      {
+        assertion = !isProtected || config.microvm.devices == [ ] || protection.allowDeviceAssignment;
+        message = "Crosvm protected MicroVM device assignment requires an explicit backend opt-in.";
+      }
+      {
+        assertion = !isProtected || !config.microvm.graphics.enable;
+        message = "Crosvm protected MicroVMs cannot use the host graphics backend.";
+      }
+    ]
     ++
     # blacklist forwardPorts
     [ {

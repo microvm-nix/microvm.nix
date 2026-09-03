@@ -434,7 +434,7 @@ in
     };
 
     devices = mkOption {
-      description = "PCI/USB devices that are passed from the host to the MicroVM";
+      description = "PCI/platform/USB devices that are passed from the host to the MicroVM";
       default = [];
       example = literalExpression /* nix */ ''
         [ {
@@ -450,12 +450,12 @@ in
           path = "vendorid=0xabcd,productid=0x0123";
         } ]
       '';
-      type = with types; listOf (submodule {
+      type = with types; listOf (submodule ({ config, ... }: {
         options = {
           bus = mkOption {
-            type = enum [ "pci" "usb" ];
+            type = enum [ "pci" "platform" "usb" ];
             description = ''
-              Device is either on the `pci` or the `usb` bus
+              Bus that identifies the host device.
             '';
           };
           path = mkOption {
@@ -487,8 +487,36 @@ in
               '';
             };
           };
+          crosvm = {
+            dtSymbol = mkOption {
+              type = nullOr str;
+              default = null;
+              description = "Device-tree symbol assigned to this device.";
+            };
+            guestAddress = mkOption {
+              type = nullOr str;
+              default = null;
+              description = "PCI address assigned to this device in the guest.";
+            };
+            iommu = mkOption {
+              type = enum [ "off" "viommu" "coiommu" "pkvm-iommu" ];
+              default = if config.bus == "platform" then "off" else "viommu";
+              defaultText = literalExpression ''if config.bus == "platform" then "off" else "viommu"'';
+              description = "Crosvm IOMMU mode for this device.";
+            };
+            mmioBase = mkOption {
+              type = nullOr ints.unsigned;
+              default = null;
+              description = "Exact guest physical address for a single-region Crosvm platform device.";
+            };
+            mapEarly = mkOption {
+              type = bool;
+              default = false;
+              description = "Map this Crosvm platform device before guest execution starts.";
+            };
+          };
         };
-      });
+      }));
     };
 
     vsock.cid = mkOption {
@@ -816,6 +844,85 @@ in
       type = with types; listOf str;
       default = [];
       description = "Extra arguments to pass to crosvm.";
+    };
+
+    crosvm.virtiofsBackend = mkOption {
+      type = types.enum [
+        "vhost-user"
+        "crosvm"
+      ];
+      default = "vhost-user";
+      description = ''
+        Backend used for virtio-fs shares. The vhost-user backend starts an
+        external virtiofsd process. The crosvm backend uses Crosvm's native
+        virtio-fs device without DAX and does not start virtiofsd.
+      '';
+    };
+
+    crosvm.deviceTreeOverlays = mkOption {
+      type = with types; listOf str;
+      default = [];
+      description = "Device-tree overlay filenames passed to Crosvm.";
+    };
+
+    crosvm.memoryBase = mkOption {
+      type = with types; nullOr ints.unsigned;
+      default = null;
+      description = "Base guest physical address of Crosvm RAM.";
+    };
+
+    crosvm.platformMmio = mkOption {
+      type = with types; nullOr (submodule {
+        options = {
+          base = mkOption {
+            type = ints.unsigned;
+            description = "Base guest physical address of the Crosvm platform MMIO aperture.";
+          };
+          size = mkOption {
+            type = ints.positive;
+            description = "Size in bytes of the Crosvm platform MMIO aperture.";
+          };
+        };
+      });
+      default = null;
+      description = "Explicit Crosvm platform MMIO aperture.";
+    };
+
+    crosvm.protection = {
+      mode = mkOption {
+        type = types.enum [
+          "unprotected"
+          "protected-without-firmware"
+          "protected-with-firmware"
+        ];
+        default = "unprotected";
+        description = "Crosvm guest-memory protection mode.";
+      };
+
+      firmware = mkOption {
+        type = with types; nullOr path;
+        default = null;
+        description = "Custom firmware used by protected-with-firmware mode.";
+      };
+
+      swiotlbSizeMiB = mkOption {
+        type = with types; nullOr ints.positive;
+        default = null;
+        description = ''
+          Size in MiB of the protected guest's static SWIOTLB restricted DMA
+          pool. Protected guests use Crosvm's 64 MiB default when this is null.
+        '';
+      };
+
+      allowDeviceAssignment = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Allow static platform and PCI devices using Crosvm's pKVM IOMMU
+          path in this protected guest. This requires a host backend that
+          implements protected device assignment and reset for every device.
+        '';
+      };
     };
 
     crosvm.pivotRoot = mkOption {
