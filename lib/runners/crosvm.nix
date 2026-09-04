@@ -148,8 +148,11 @@ in {
       ]
     )
     + " " + # Move vfio-pci outside of
-      lib.concatStringsSep " " (lib.concatMap ({ bus, path, ... }: {
-        pci = [ "--vfio" "/sys/bus/pci/devices/${path},iommu=viommu" ];
+      lib.concatStringsSep " " (lib.concatMap ({ bus, path, crosvm, ... }: let
+        iommu = if crosvm.iommu != null then crosvm.iommu else microvmConfig.crosvm.vfioIommu;
+        guestAddr = lib.optionalString (crosvm.guestAddress != null) ",guest-address=${crosvm.guestAddress}";
+      in {
+        pci = [ "--vfio" "/sys/bus/pci/devices/${path},iommu=${iommu}${guestAddr}" ];
         usb = throw "USB passthrough is not supported on crosvm";
       }.${bus}) devices)
     + " " + lib.escapeShellArgs extraArgs;
