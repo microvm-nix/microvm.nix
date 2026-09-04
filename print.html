@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-33521531.js";
+            window.path_to_searchindex_js = "searchindex-7de34996.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-9fefae61.js"></script>
@@ -1876,7 +1876,7 @@ package</p>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
 </ul>
 <h2 id="microvmsystemsymlink"><a class="header" href="#microvmsystemsymlink">microvm.systemSymlink</a></h2>
-<p>Whether to inclcude a symlink of <code>config.system.build.toplevel</code> to <code>share/microvm/system</code>.
+<p>Whether to include a symlink of <code>config.system.build.toplevel</code> to <code>share/microvm/system</code>.
 This is required for commands like <code>microvm -l</code> to function but removes reference to the uncompressed store content when using a disk image for the nix store.</p>
 <p><em>Type:</em>
 boolean</p>
@@ -3004,7 +3004,7 @@ this instead:</p>
 </code></pre>
 <p>If you don’t use absolute filesystem paths for sockets, volumes, or
 shares, all MicroVM state is kept under <code>/var/lib/microvms/$NAME/</code>.
-The <code>microvm@.serivce</code> systemd service template depends on existence
+The <code>microvm@.service</code> systemd service template depends on existence
 of this directory.</p>
 <pre><code class="language-bash">rm -rf /var/lib/microvms/$NAME
 </code></pre>
