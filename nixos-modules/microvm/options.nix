@@ -1062,7 +1062,7 @@ in
       type = types.bool;
       default = !config.microvm.storeOnDisk;
       description = ''
-        Whether to inclcude a symlink of `config.system.build.toplevel` to `share/microvm/system`.
+        Whether to include a symlink of `config.system.build.toplevel` to `share/microvm/system`.
         This is required for commands like `microvm -l` to function but removes reference to the uncompressed store content when using a disk image for the nix store.
       '';
     };
