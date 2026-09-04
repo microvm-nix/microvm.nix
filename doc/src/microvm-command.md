@@ -78,7 +78,7 @@ systemctl stop microvm@$NAME
 
 If you don't use absolute filesystem paths for sockets, volumes, or
 shares, all MicroVM state is kept under `/var/lib/microvms/$NAME/`.
-The `microvm@.serivce` systemd service template depends on existence
+The `microvm@.service` systemd service template depends on existence
 of this directory.
 
 ```bash
