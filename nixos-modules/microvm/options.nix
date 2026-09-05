@@ -1058,6 +1058,23 @@ in
       default = [ "-c" "zstd" "-j" "$NIX_BUILD_CORES" ];
     };
 
+    storeDiskDirect = mkOption {
+      type = types.bool;
+      default = builtins.elem config.microvm.hypervisor self-lib.hypervisorsWithStoreDiskDirect;
+      defaultText = lib.literalExpression ''builtins.elem config.microvm.hypervisor ${lib.generators.toPretty { multiline = false; } self-lib.hypervisorsWithStoreDiskDirect}'';
+      description = ''
+        Whether to open the `microvm.storeDisk` image with O_DIRECT,
+        bypassing the host page cache like `microvm.volumes.*.direct`.
+        The guest caches the store disk itself, so the host copy is
+        normally redundant.
+
+        Enabled by default on the hypervisors that support it:
+        ${lib.concatStringsSep ", " self-lib.hypervisorsWithStoreDiskDirect}.
+        Enabling it on any other hypervisor is an error. Set to `false`
+        if the store disk lives on a filesystem without O_DIRECT support.
+      '';
+    };
+
     systemSymlink = mkOption {
       type = types.bool;
       default = !config.microvm.storeOnDisk;

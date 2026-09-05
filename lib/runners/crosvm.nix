@@ -11,7 +11,7 @@ let
   inherit (microvmConfig)
     vcpu mem balloon initialBalloonMem hotplugMem hotpluggedMem user volumes shares
     socket devices vsock graphics credentialFiles
-    kernel initrdPath storeDisk storeOnDisk;
+    kernel initrdPath storeDisk storeOnDisk storeDiskDirect;
   inherit (microvmConfig.crosvm) pivotRoot extraArgs;
 
   crosvmPkg = microvmConfig.crosvm.package;
@@ -80,7 +80,7 @@ in {
       )
       ++
       lib.optionals storeOnDisk [
-        "-r" storeDisk
+        "-r" "${storeDisk}${lib.optionalString storeDiskDirect ",o_direct=true"}"
       ]
       ++
       lib.optionals graphics.enable [

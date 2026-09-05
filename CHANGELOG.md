@@ -37,6 +37,11 @@
   results in a much faster build for a slightly larger image.
   `-Efragments` is kept as it is compatible with multi-threading. Add
   `-Ededupe` back to favor small image size over build speed.
+* The store disk is now opened with O_DIRECT on crosvm, qemu,
+  cloud-hypervisor, kvmtool, and stratovirt to avoid double caching
+  in both the host and the guest. Set the new
+  `microvm.storeDiskDirect = false` to restore buffered reads.
+  Enabling it on an unsupported VMM is an error.
 
 ## 0.5.0 (2024-04-06)
 
