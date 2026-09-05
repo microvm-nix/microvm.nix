@@ -380,39 +380,13 @@ lib.warnIf (mem == 2048) ''
           exit 0
         fi
 
+        # Use ACPI power button. A Ctrl+Alt+Del via input-send-event needs a keyboard,
+        # which headless guests do not have: QEMU rejects it with "Input handler not
+        # found for event type key", so the guest never stops, only gets killed after
+        # the timeout.
         (
           ${writeQmp { execute = "qmp_capabilities"; }}
-          ${writeQmp {
-            execute = "input-send-event";
-            arguments.events = [ {
-              type = "key";
-              data = {
-                down = true;
-                key = {
-                  type = "qcode";
-                  data = "ctrl";
-                };
-              };
-            } {
-              type = "key";
-              data = {
-                down = true;
-                key = {
-                  type = "qcode";
-                  data = "alt";
-                };
-              };
-            } {
-              type = "key";
-              data = {
-                down = true;
-                key = {
-                  type = "qcode";
-                  data = "delete";
-                };
-              };
-            } ];
-          }}
+          ${writeQmp { execute = "system_powerdown"; }}
         ) | \
         ${vmHostPackages.socat}/bin/socat STDIO UNIX:${socket},shut-none
 
