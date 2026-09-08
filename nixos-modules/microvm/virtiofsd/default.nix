@@ -5,7 +5,13 @@ let
     proto == "virtiofs"
   ) config.microvm.shares;
 
-  requiresVirtiofsd = virtiofsShares != [] && config.microvm.hypervisor != "vfkit";
+  requiresVirtiofsd =
+    virtiofsShares != []
+    && config.microvm.hypervisor != "vfkit"
+    && !(
+      config.microvm.hypervisor == "crosvm"
+      && config.microvm.crosvm.virtiofsBackend == "crosvm"
+    );
 
   inherit (pkgs.python3Packages) supervisor;
   supervisord = lib.getExe' supervisor "supervisord";
