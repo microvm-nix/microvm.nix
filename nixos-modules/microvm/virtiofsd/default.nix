@@ -1,8 +1,10 @@
 { config, lib, pkgs, ... }:
 
 let
-  virtiofsShares = builtins.filter ({ proto, ... }:
-    proto == "virtiofs"
+  virtiofsShares = builtins.filter ({ proto, dax, ... }:
+    proto == "virtiofs" &&
+    # DAX shares on crosvm are served by crosvm's built-in device
+    !(dax && config.microvm.hypervisor == "crosvm")
   ) config.microvm.shares;
 
   requiresVirtiofsd = virtiofsShares != [] && config.microvm.hypervisor != "vfkit";

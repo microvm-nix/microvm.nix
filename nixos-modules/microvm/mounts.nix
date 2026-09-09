@@ -117,12 +117,15 @@ lib.mkIf config.microvm.guest.enable {
       }) {} (withDriveLetters config.microvm)
   ) (
     # 9p/virtiofs Shares
-    builtins.foldl' (result: { mountPoint, tag, proto, source, ... }: result // {
+    builtins.foldl' (result: { mountPoint, tag, proto, source, dax, ... }: result // {
       "${mountPoint}" = {
         device = tag;
         fsType = proto;
         options = {
-          "virtiofs" = [ "defaults" "x-systemd.after=systemd-modules-load.service" ];
+          "virtiofs" = [ "defaults" "x-systemd.after=systemd-modules-load.service" ]
+            # The kernel defaults to per-inode DAX; request it for the
+            # whole mount, which also fails loudly without a DAX window.
+            ++ lib.optional dax "dax=always";
           "9p" = [ "trans=virtio" "version=9p2000.L" "msize=65536" "x-systemd.after=systemd-modules-load.service" ];
         }.${proto};
       } // lib.optionalAttrs (source == "/nix/store" || mountPoint == config.microvm.writableStoreOverlay) {
