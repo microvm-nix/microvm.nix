@@ -24,6 +24,11 @@
 * Per-share virtiofsd options: `microvm.shares.*.posixAcl` and
   `.extraArgs`, enabling per-share UID/GID remapping via
   `--translate-uid` / `--translate-gid`.
+* Per-share **DAX** for virtiofs shares: `microvm.shares.*.dax` and
+  `.daxWindowSize`, supported on **alioth** and **crosvm**. On crosvm
+  such a share bypasses virtiofsd and is served by crosvm's own
+  built-in virtio-fs device, so `microvm.virtiofsd.warnOnIgnoredExtraArgs`
+  warns about `extraArgs` that no longer apply.
 * Add the [alioth VMM](https://github.com/google/alioth)
 * Fixes for the stratovirt VMM
 * New volume image files will be created with `truncate` instead of

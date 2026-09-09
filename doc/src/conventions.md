@@ -16,6 +16,10 @@ MicroVM deployments using the information on this page.
 | `microvm.shares.*.socket`    | `share/microvm/virtiofs/${tag}/socket` | `microvm-virtiofsd@.service`        | **virtiofsd** socket path by tag                                                              |
 | `microvm.systemSymlink`      | `share/microvm/system`                 |                                     | `config.system.build.toplevel` symlink, used for comparing versions when running `microvm -l` |
 
+The `share/microvm/virtiofs/${tag}/` entries only exist for shares
+served by virtiofsd. A [`dax = true`](shares.md#dax) share on **crosvm**
+runs no virtiofsd, so it gets no directory here.
+
 
 ## Generating custom operating system hypervisor packages
 
