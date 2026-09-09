@@ -58,10 +58,17 @@ in {
           ]
       ) volumes
       ++
-      builtins.concatMap ({ proto, socket, tag, ... }:
+      builtins.concatMap ({ proto, socket, tag, dax, daxWindowSize, ... }:
         if proto == "virtiofs"
         then [
-          "--fs" (lib.escapeShellArg "vu,socket=${socket},tag=${tag}")
+          "--fs" (lib.escapeShellArg (lib.concatStringsSep "," ([
+            "vu"
+            "socket=${socket}"
+            "tag=${tag}"
+          ] ++ lib.optional dax
+            # dax_window is in bytes; omitting it means no DAX.
+            "dax_window=${toString (daxWindowSize * 1024 * 1024)}"
+          )))
         ] else throw "9p shares not implemented for alioth"
       ) shares
       ++
