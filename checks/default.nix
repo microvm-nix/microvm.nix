@@ -116,6 +116,23 @@ let
           ];
         };
       }) ];
+    } {
+      id = "virtiofs-dax";
+      modules = [ ({ config, ... }: {
+        microvm = {
+          shares = [ {
+            proto = "virtiofs";
+            tag = "test-dax";
+            source = "/nix/store";
+            mountPoint = "/nix/.ro-store";
+            dax = true;
+          } ];
+          testing.enableTest = builtins.elem config.microvm.hypervisor [
+            # Hypervisors that support DAX
+            "alioth" "crosvm"
+          ];
+        };
+      }) ];
     } ]
     # rw-store
     [ {
