@@ -382,10 +382,14 @@ in
           socket = mkOption {
             type = nullOr str;
             default =
-              if config.proto == "virtiofs"
+              if config.proto == "virtiofs" && !(config.dax && cfg.hypervisor == "crosvm")
               then "${hostName}-virtiofs-${config.tag}.sock"
               else null;
-            description = "Socket for communication with virtiofs daemon";
+            description = ''
+              Socket for communication with virtiofs daemon.
+
+              `null` for a DAX share on crosvm, which runs no virtiofsd.
+            '';
           };
           source = mkOption {
             type = nonEmptyStr;
@@ -428,6 +432,31 @@ in
             type = listOf str;
             default = [];
             description = "Extra arguments passed to virtiofsd for this share.";
+          };
+          dax = mkOption {
+            type = bool;
+            default = false;
+            description = ''
+              Enable DAX for this virtiofs share, letting the guest map file
+              contents directly from the host's page cache. Ignored unless
+              `proto` is `"virtiofs"`.
+
+              Only `alioth` and `crosvm` support this. virtiofsd cannot do
+              DAX, so on crosvm the share is served by crosvm's own built-in
+              virtio-fs device instead: it gets no `socket`, ignores
+              `extraArgs`, and cannot be `readOnly`.
+            '';
+          };
+          daxWindowSize = mkOption {
+            type = types.ints.positive;
+            default = 8192;
+            example = 4096;
+            description = ''
+              Size of the DAX window in megabytes, used when `dax = true`.
+
+              Only `alioth` honors this. The default matches the 8GiB
+              window that crosvm hard-codes.
+            '';
           };
         };
       }));
@@ -992,6 +1021,15 @@ in
       default = [];
       description = ''
         Extra command-line switch to pass to virtiofsd.
+      '';
+    };
+
+    virtiofsd.warnOnIgnoredExtraArgs = mkOption {
+      type = types.bool;
+      default = true;
+      description = ''
+        Warn about `extraArgs` that have no effect because a `dax = true`
+        share on crosvm runs no virtiofsd (see `microvm.shares.*.dax`).
       '';
     };
 
