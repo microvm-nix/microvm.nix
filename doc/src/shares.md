@@ -73,6 +73,42 @@ microvm.shares = [ {
 `[HOST_UID, HOST_UID+COUNT)` on the host.
 
 
+## DAX
+
+DAX lets the guest map file contents straight from the host's page
+cache instead of copying them through the virtqueue, which helps for
+frequently accessed files. See the [virtio-fs design
+doc](https://virtio-fs.gitlab.io/design.html) for details.
+
+Only **alioth** and **crosvm** support it; `dax = true` on any other
+hypervisor is an evaluation error.
+
+```nix
+microvm.shares = [ {
+  proto = "virtiofs";
+  tag = "assets";
+  source = "/var/lib/microvms/example/assets";
+  mountPoint = "/assets";
+  dax = true;
+} ];
+```
+
+The guest mounts with `-o dax=always`, so the mount fails loudly
+instead of silently falling back if there is no DAX window.
+
+`daxWindowSize` sets the window size in megabytes. Only alioth honors
+it; crosvm hard-codes 8GiB, which is the default.
+
+On **alioth** nothing else changes: the window is requested on the
+same vhost-user device, and virtiofsd still serves the share.
+
+On **crosvm** virtiofsd cannot do DAX, so the share is handed to
+crosvm's own built-in virtio-fs device instead. That share therefore
+has no `socket` and runs no virtiofsd, which means `extraArgs` and
+`microvm.virtiofsd.extraArgs` are ignored (warned about, silence with
+`microvm.virtiofsd.warnOnIgnoredExtraArgs = false`), and `readOnly` is
+rejected.
+
 ## Sharing a host's `/nix/store`
 
 If a share with `source = "/nix/store"` is defined, size and build
