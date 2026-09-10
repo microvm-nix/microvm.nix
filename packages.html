@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-fde9734b.js";
+            window.path_to_searchindex_js = "searchindex-58b03e69.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-9fefae61.js"></script>
@@ -183,7 +183,7 @@
 to interact with its console.</p>
 <p>There are drawbacks: no preparation for TAP network interfaces is done
 and no virtiofsd is started. These can be worked around by relying on
-9p shares and using qemu’s <code>host</code> network interfaces.</p>
+9p shares and using qemu’s <code>user</code> network interfaces.</p>
 <h2 id="immediately-running-a-nixosconfiguration"><a class="header" href="#immediately-running-a-nixosconfiguration">Immediately running a nixosConfiguration</a></h2>
 <p>To run a <code>nixosConfiguration</code> off your Flake directly use:</p>
 <pre><code class="language-bash">nix run .#nixosConfigurations.my-microvm.config.microvm.declaredRunner
