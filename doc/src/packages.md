@@ -5,7 +5,7 @@ to interact with its console.
 
 There are drawbacks: no preparation for TAP network interfaces is done
 and no virtiofsd is started. These can be worked around by relying on
-9p shares and using qemu's `host` network interfaces.
+9p shares and using qemu's `user` network interfaces.
 
 ## Immediately running a nixosConfiguration
 
