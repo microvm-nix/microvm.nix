@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-7de34996.js";
+            window.path_to_searchindex_js = "searchindex-fde9734b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-9fefae61.js"></script>
@@ -434,6 +434,33 @@ arguments for this share, appended after the global
 <p><code>--translate-uid guest:GUEST_UID:HOST_UID:COUNT</code> remaps
 <code>[GUEST_UID, GUEST_UID+COUNT)</code> in the guest to
 <code>[HOST_UID, HOST_UID+COUNT)</code> on the host.</p>
+<h2 id="dax"><a class="header" href="#dax">DAX</a></h2>
+<p>DAX lets the guest map file contents straight from the host’s page
+cache instead of copying them through the virtqueue, which helps for
+frequently accessed files. See the <a href="https://virtio-fs.gitlab.io/design.html">virtio-fs design
+doc</a> for details.</p>
+<p>Only <strong>alioth</strong> and <strong>crosvm</strong> support it; <code>dax = true</code> on any other
+hypervisor is an evaluation error.</p>
+<pre><code class="language-nix">microvm.shares = [ {
+  proto = "virtiofs";
+  tag = "assets";
+  source = "/var/lib/microvms/example/assets";
+  mountPoint = "/assets";
+  dax = true;
+} ];
+</code></pre>
+<p>The guest mounts with <code>-o dax=always</code>, so the mount fails loudly
+instead of silently falling back if there is no DAX window.</p>
+<p><code>daxWindowSize</code> sets the window size in megabytes. Only alioth honors
+it; crosvm hard-codes 8GiB, which is the default.</p>
+<p>On <strong>alioth</strong> nothing else changes: the window is requested on the
+same vhost-user device, and virtiofsd still serves the share.</p>
+<p>On <strong>crosvm</strong> virtiofsd cannot do DAX, so the share is handed to
+crosvm’s own built-in virtio-fs device instead. That share therefore
+has no <code>socket</code> and runs no virtiofsd, which means <code>extraArgs</code> and
+<code>microvm.virtiofsd.extraArgs</code> are ignored (warned about, silence with
+<code>microvm.virtiofsd.warnOnIgnoredExtraArgs = false</code>), and <code>readOnly</code> is
+rejected.</p>
 <h2 id="sharing-a-hosts-nixstore"><a class="header" href="#sharing-a-hosts-nixstore">Sharing a host’s <code>/nix/store</code></a></h2>
 <p>If a share with <code>source = "/nix/store"</code> is defined, size and build
 time of the stage1 squashfs for <code>/dev/vda</code> will be reduced
@@ -1701,6 +1728,39 @@ one of “auto”, “always”, “metadata”, “never”</p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
 </ul>
+<h2 id="microvmsharesdax"><a class="header" href="#microvmsharesdax">microvm.shares.*.dax</a></h2>
+<p>Enable DAX for this virtiofs share, letting the guest map file
+contents directly from the host’s page cache. Ignored unless
+<code>proto</code> is <code>"virtiofs"</code>.</p>
+<p>Only <code>alioth</code> and <code>crosvm</code> support this. virtiofsd cannot do
+DAX, so on crosvm the share is served by crosvm’s own built-in
+virtio-fs device instead: it gets no <code>socket</code>, ignores
+<code>extraArgs</code>, and cannot be <code>readOnly</code>.</p>
+<p><em>Type:</em>
+boolean</p>
+<p><em>Default:</em></p>
+<pre><code class="language-nix">false
+</code></pre>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmsharesdaxwindowsize"><a class="header" href="#microvmsharesdaxwindowsize">microvm.shares.*.daxWindowSize</a></h2>
+<p>Size of the DAX window in megabytes, used when <code>dax = true</code>.</p>
+<p>Only <code>alioth</code> honors this. The default matches the 8GiB
+window that crosvm hard-codes.</p>
+<p><em>Type:</em>
+positive integer, meaning &gt;0</p>
+<p><em>Default:</em></p>
+<pre><code class="language-nix">8192
+</code></pre>
+<p><em>Example:</em></p>
+<pre><code class="language-nix">4096
+</code></pre>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
 <h2 id="microvmsharesextraargs"><a class="header" href="#microvmsharesextraargs">microvm.shares.*.extraArgs</a></h2>
 <p>Extra arguments passed to virtiofsd for this share.</p>
 <p><em>Type:</em>
@@ -1767,7 +1827,8 @@ one of “passthrough”, “none”, “mapped”, “mapped-file”</p>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
 </ul>
 <h2 id="microvmsharessocket"><a class="header" href="#microvmsharessocket">microvm.shares.*.socket</a></h2>
-<p>Socket for communication with virtiofs daemon</p>
+<p>Socket for communication with virtiofs daemon.</p>
+<p><code>null</code> for a DAX share on crosvm, which runs no virtiofsd.</p>
 <p><em>Type:</em>
 null or string</p>
 <p><em>Default:</em></p>
@@ -2036,6 +2097,18 @@ string <code>\</code>nproc`` which spawns as many threads as the host has cores.
 string or (unsigned integer, meaning &gt;=0)</p>
 <p><em>Default:</em></p>
 <pre><code class="language-nix">"`nproc`"
+</code></pre>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvmvirtiofsdwarnonignoredextraargs"><a class="header" href="#microvmvirtiofsdwarnonignoredextraargs">microvm.virtiofsd.warnOnIgnoredExtraArgs</a></h2>
+<p>Warn about <code>extraArgs</code> that have no effect because a <code>dax = true</code>
+share on crosvm runs no virtiofsd (see <code>microvm.shares.*.dax</code>).</p>
+<p><em>Type:</em>
+boolean</p>
+<p><em>Default:</em></p>
+<pre><code class="language-nix">true
 </code></pre>
 <p><em>Declared by:</em></p>
 <ul>
@@ -3090,6 +3163,9 @@ MicroVM deployments using the information on this page.</p>
 </tbody>
 </table>
 </div>
+<p>The <code>share/microvm/virtiofs/${tag}/</code> entries only exist for shares
+served by virtiofsd. A <a href="#dax"><code>dax = true</code></a> share on <strong>crosvm</strong>
+runs no virtiofsd, so it gets no directory here.</p>
 <h2 id="generating-custom-operating-system-hypervisor-packages"><a class="header" href="#generating-custom-operating-system-hypervisor-packages">Generating custom operating system hypervisor packages</a></h2>
 <p>Because a microvm.nix runner package completely defines how to run the
 Hypervisor, it is possible to define independent packages that

@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-7de34996.js";
+            window.path_to_searchindex_js = "searchindex-fde9734b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-9fefae61.js"></script>
@@ -199,6 +199,9 @@ MicroVM deployments using the information on this page.</p>
 </tbody>
 </table>
 </div>
+<p>The <code>share/microvm/virtiofs/${tag}/</code> entries only exist for shares
+served by virtiofsd. A <a href="shares.html#dax"><code>dax = true</code></a> share on <strong>crosvm</strong>
+runs no virtiofsd, so it gets no directory here.</p>
 <h2 id="generating-custom-operating-system-hypervisor-packages"><a class="header" href="#generating-custom-operating-system-hypervisor-packages">Generating custom operating system hypervisor packages</a></h2>
 <p>Because a microvm.nix runner package completely defines how to run the
 Hypervisor, it is possible to define independent packages that

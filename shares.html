@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-7de34996.js";
+            window.path_to_searchindex_js = "searchindex-fde9734b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-9fefae61.js"></script>
@@ -242,6 +242,33 @@ arguments for this share, appended after the global
 <p><code>--translate-uid guest:GUEST_UID:HOST_UID:COUNT</code> remaps
 <code>[GUEST_UID, GUEST_UID+COUNT)</code> in the guest to
 <code>[HOST_UID, HOST_UID+COUNT)</code> on the host.</p>
+<h2 id="dax"><a class="header" href="#dax">DAX</a></h2>
+<p>DAX lets the guest map file contents straight from the host’s page
+cache instead of copying them through the virtqueue, which helps for
+frequently accessed files. See the <a href="https://virtio-fs.gitlab.io/design.html">virtio-fs design
+doc</a> for details.</p>
+<p>Only <strong>alioth</strong> and <strong>crosvm</strong> support it; <code>dax = true</code> on any other
+hypervisor is an evaluation error.</p>
+<pre><code class="language-nix">microvm.shares = [ {
+  proto = "virtiofs";
+  tag = "assets";
+  source = "/var/lib/microvms/example/assets";
+  mountPoint = "/assets";
+  dax = true;
+} ];
+</code></pre>
+<p>The guest mounts with <code>-o dax=always</code>, so the mount fails loudly
+instead of silently falling back if there is no DAX window.</p>
+<p><code>daxWindowSize</code> sets the window size in megabytes. Only alioth honors
+it; crosvm hard-codes 8GiB, which is the default.</p>
+<p>On <strong>alioth</strong> nothing else changes: the window is requested on the
+same vhost-user device, and virtiofsd still serves the share.</p>
+<p>On <strong>crosvm</strong> virtiofsd cannot do DAX, so the share is handed to
+crosvm’s own built-in virtio-fs device instead. That share therefore
+has no <code>socket</code> and runs no virtiofsd, which means <code>extraArgs</code> and
+<code>microvm.virtiofsd.extraArgs</code> are ignored (warned about, silence with
+<code>microvm.virtiofsd.warnOnIgnoredExtraArgs = false</code>), and <code>readOnly</code> is
+rejected.</p>
 <h2 id="sharing-a-hosts-nixstore"><a class="header" href="#sharing-a-hosts-nixstore">Sharing a host’s <code>/nix/store</code></a></h2>
 <p>If a share with <code>source = "/nix/store"</code> is defined, size and build
 time of the stage1 squashfs for <code>/dev/vda</code> will be reduced
