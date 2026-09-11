@@ -20,13 +20,10 @@ let
     ];
   });
 
-  minimizeQemuClosureSize = pkg: pkg.override (oa: {
+  minimizeQemuClosureSize = pkg: pkg.override {
     # standin for disabling everything guilike by hand
-    nixosTestRunner =
-      if graphics.enable
-      then oa.nixosTestRunner or false
-      else true;
-  });
+    minimal = !graphics.enable;
+  };
 
   overrideQemu = x: lib.pipe x (
     lib.optional requireUsb enableLibusb
