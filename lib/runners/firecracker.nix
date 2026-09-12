@@ -12,7 +12,7 @@ let
     vcpu mem balloon initialBalloonMem hotplugMem hotpluggedMem
     interfaces volumes shares devices
     kernel initrdPath
-    storeDisk credentialFiles vsock;
+    storeDisk storeDiskDirect credentialFiles vsock;
   inherit (microvmConfig.firecracker) cpu;
 
   kernelPath = {
@@ -98,6 +98,8 @@ in {
     then throw "hotpluggedMem not implemented for Firecracker"
     else if credentialFiles != {}
     then throw "credentialFiles are not implemented for Firecracker"
+    else if storeDiskDirect
+    then throw "storeDiskDirect is not implemented for Firecracker"
     else lib.escapeShellArgs ([
       "${firecrackerPkg}/bin/firecracker"
       "--config-file" configFile

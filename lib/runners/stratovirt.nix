@@ -16,7 +16,7 @@ let
     hostName
     vcpu mem balloon initialBalloonMem hotplugMem hotpluggedMem interfaces shares socket forwardPorts devices
     kernel initrdPath credentialFiles
-    storeOnDisk storeDisk;
+    storeOnDisk storeDisk storeDiskDirect;
 
   tapMultiQueue = vcpu > 1;
 
@@ -103,7 +103,9 @@ in {
       "-device" "virtio-rng-${devType 1},rng=rng,id=rng_dev"
     ] ++
     lib.optionals storeOnDisk [
-      "-drive" "id=store,format=raw,readonly=on,file=${storeDisk},if=none,aio=io_uring,direct=false"
+      "-drive" "id=store,format=raw,readonly=on,file=${storeDisk},if=none,aio=io_uring,direct=${
+        lib.boolToString storeDiskDirect
+      }"
       "-device" "virtio-blk-${devType 2},drive=store,id=blk_store"
     ] ++
     lib.optionals (socket != null) [ "-qmp" "unix:${socket},server,nowait" ] ++

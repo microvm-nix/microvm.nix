@@ -9,7 +9,7 @@
 
 let
   inherit (pkgs) lib;
-  inherit (microvmConfig) vcpu mem balloon initialBalloonMem deflateOnOOM hotplugMem hotpluggedMem user interfaces volumes shares socket devices hugepageMem graphics storeDisk storeOnDisk kernel initrdPath credentialFiles vsock;
+  inherit (microvmConfig) vcpu mem balloon initialBalloonMem deflateOnOOM hotplugMem hotpluggedMem user interfaces volumes shares socket devices hugepageMem graphics storeDisk storeOnDisk storeDiskDirect kernel initrdPath credentialFiles vsock;
   inherit (microvmConfig.cloud-hypervisor) platformOEMStrings extraArgs;
 
   # extract all the extra args that we merge with up front
@@ -233,7 +233,11 @@ in {
         lib.optional storeOnDisk (opsMapped ({
           path = toString storeDisk;
           readonly = "on";
-        } // mqOps))
+        } //
+        lib.optionalAttrs storeDiskDirect {
+          direct = "on";
+        } //
+        mqOps))
         ++
         map ({ image, serial, direct, readOnly, imageType, ... }:
           opsMapped (

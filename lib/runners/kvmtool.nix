@@ -13,7 +13,7 @@ let
     hostName preStart user
     vcpu mem balloon initialBalloonMem hotplugMem hotpluggedMem interfaces volumes shares devices vsock
     kernel initrdPath credentialFiles
-    storeDisk storeOnDisk;
+    storeDisk storeOnDisk storeDiskDirect;
 in {
   preStart = ''
     ${preStart}
@@ -45,7 +45,9 @@ in {
       ]
       ++
       lib.optionals storeOnDisk [
-        "-d" (lib.escapeShellArg "${storeDisk},ro")
+        "-d" (lib.escapeShellArg "${storeDisk}${
+          lib.optionalString storeDiskDirect ",direct"
+        },ro")
       ]
       ++
       lib.optionals balloon [ "--balloon" ]
