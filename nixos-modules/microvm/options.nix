@@ -516,6 +516,23 @@ in
               '';
             };
           };
+          crosvm = {
+            iommu = mkOption {
+              type = nullOr (enum [ "off" "viommu" "coiommu" "pkvm-iommu" ]);
+              default = null;
+              description = ''
+                IOMMU type to use for this VFIO device (optional)
+              '';
+            };
+            guestAddress = mkOption {
+              type = nullOr str;
+              default = null;
+              description = ''
+                PCI address to use for the VFIO device in the guest.
+                If not specified, defaults to mirroring the host PCI address.
+              '';
+            };
+          };
         };
       });
     };
@@ -858,6 +875,18 @@ in
       type = types.package;
       default = cfg.vmHostPackages.crosvm;
       defaultText = lib.literalExpression "config.microvm.vmHostPackages.crosvm";
+    };
+
+    crosvm.vfioIommu = mkOption {
+      type = with types; enum [ "off" "viommu" "coiommu" "pkvm-iommu" ];
+      default = "viommu";
+      description = ''
+        IOMMU type to use by default for VFIO devices.
+
+        This setting will be used as the default for all crosvm microvm.devices definitions.
+        The IOMMU type can be set independently for each device via the crosvm.iommu attribute,
+        in which case it will take precedence over this option.
+      '';
     };
 
     firecracker.cpu = mkOption {
