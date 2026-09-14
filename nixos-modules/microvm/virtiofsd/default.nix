@@ -11,7 +11,6 @@ let
 
   inherit (pkgs.python3Packages) supervisor;
   supervisord = lib.getExe' supervisor "supervisord";
-  supervisorctl = lib.getExe' supervisor "supervisorctl";
 in
 {
   microvm.binScripts = lib.mkIf requiresVirtiofsd {
