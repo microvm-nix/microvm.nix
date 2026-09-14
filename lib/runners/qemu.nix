@@ -20,15 +20,8 @@ let
     ];
   });
 
-  minimizeQemuClosureSize = pkg: pkg.override {
-    # standin for disabling everything guilike by hand
-    minimal = !graphics.enable;
-    enableBlobs = true; # contains files like linuxboot_dma.bin which are required to boot
-  };
-
   overrideQemu = x: lib.pipe x (
     lib.optional requireUsb enableLibusb
-    ++ lib.optional microvmConfig.optimize.enable minimizeQemuClosureSize
   );
   qemu = overrideQemu microvmConfig.qemu.package;
 
