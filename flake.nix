@@ -154,9 +154,12 @@
       };
 
       defaultTemplate = self.templates.microvm;
-      templates.microvm = {
-        path = ./flake-template;
-        description = "Flake with MicroVMs";
+      templates = {
+        default = self.templates.microvm;
+        microvm = {
+          path = ./flake-template;
+          description = "Flake with MicroVMs";
+        };
       };
 
       nixosConfigurations =
