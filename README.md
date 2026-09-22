@@ -58,8 +58,8 @@ imperatively with the provided `microvm` command.
 | [firecracker](https://firecracker-microvm.github.io/)                   | Rust     | no 9p/virtiofs shares                                 |
 | [crosvm](https://github.com/google/crosvm) | Rust     | 9p shares broken                                      |
 | [kvmtool](https://github.com/kvmtool/kvmtool)                           | C        | no virtiofs shares, no control socket                 |
-| [stratovirt](https://github.com/openeuler-mirror/stratovirt)            | Rust     | no 9p/virtiofs shares, no control socket              |
-| [alioth](https://github.com/google/alioth)                              | Rust     | no virtiofs shares, no control socket                 |
+| [stratovirt](https://github.com/openeuler-mirror/stratovirt)            | Rust     | no 9p shares, no control socket                       |
+| [alioth](https://github.com/google/alioth)                              | Rust     | no 9p shares, no control socket                       |
 | [vfkit](https://github.com/crc-org/vfkit)                               | Go       | macOS only, no 9p shares, no tap/bridge networking    |
 
 
