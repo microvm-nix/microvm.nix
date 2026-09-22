@@ -14,6 +14,7 @@ in
           name = "machined-${hypervisor}";
           nodes.host = {
             imports = [ self.nixosModules.host ];
+            systemd.enableStrictShellChecks = true;
 
             boot.kernelModules = [ "kvm" ];
 

@@ -6,6 +6,7 @@ nixpkgs.lib.optionalAttrs (builtins.elem hypervisor self.lib.hypervisorsWithNetw
     name = "vm-${hypervisor}-iperf";
     nodes.vm = {
       imports = [ self.nixosModules.host ];
+      systemd.enableStrictShellChecks = true;
       microvm.vms."${hypervisor}-iperf-server".flake = nixpkgs.legacyPackages.${system}.runCommand "${hypervisor}-iperf-server.flake" {
         passthru.nixosConfigurations."${hypervisor}-iperf-server" = nixpkgs.lib.nixosSystem {
           inherit system;
