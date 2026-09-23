@@ -11,6 +11,7 @@
 
     nodes.host = {
       imports = [ self.nixosModules.host ];
+      systemd.enableStrictShellChecks = true;
       microvm.host.enable = true;
     };
 

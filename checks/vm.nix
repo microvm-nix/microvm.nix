@@ -6,6 +6,7 @@
     name = "vm-${hypervisor}";
     nodes.vm = {
       imports = [ self.nixosModules.host ];
+      systemd.enableStrictShellChecks = true;
 
       virtualisation.qemu.options = [
         "-cpu"

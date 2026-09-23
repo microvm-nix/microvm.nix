@@ -267,7 +267,7 @@ in
         };
         script = ''
           rm -f booted
-          ln -s $(readlink current) booted
+          ln -s "$(readlink current)" booted
         '';
       };
 
