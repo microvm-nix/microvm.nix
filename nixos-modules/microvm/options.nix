@@ -534,6 +534,24 @@ in
       '';
     };
 
+    instance.enable = mkOption {
+      type = types.bool;
+      default = false;
+      description = ''
+        Let several MicroVMs share this runner, each with its own memory,
+        vCPUs, network interfaces, VSOCK CID and systemd credentials.
+
+        At every start the runner reads these from the `instance/`
+        directory of the MicroVM's state directory (see
+        [Instances](https://microvm-nix.github.io/microvm.nix/instances.html)).
+        A new instance therefore needs no build: create it with
+        `microvm -c <name> -i <existing-microvm>`.
+
+        Only supported with qemu. Declare no tap/macvtap `interfaces` and no
+        `vsock.cid`: they come from the instance.
+      '';
+    };
+
     registerWithMachined = mkOption {
       type = types.bool;
       default = false;

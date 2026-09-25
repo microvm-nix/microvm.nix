@@ -194,6 +194,7 @@ in
           Type = "oneshot";
           RemainAfterExit = true;
           SyslogIdentifier = "microvm-tap-interfaces@%i";
+          WorkingDirectory = "${stateDir}/%i";
           ExecStart = "${stateDir}/%i/current/bin/tap-up";
           ExecStop = "${stateDir}/%i/booted/bin/tap-down";
         };

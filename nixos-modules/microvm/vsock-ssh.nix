@@ -20,8 +20,8 @@ in
 
   config = lib.mkIf cfg.ssh.enable {
     assertions = [{
-      assertion = cfg.cid != null;
-      message = "microvm.vsock.ssh.enable requires microvm.vsock.cid to be set";
+      assertion = cfg.cid != null || config.microvm.instance.enable;
+      message = "microvm.vsock.ssh.enable requires microvm.vsock.cid to be set (or microvm.instance.enable)";
     }];
 
     services.openssh.enable = true;

@@ -144,7 +144,20 @@ let
     then "console=ttyAMA0"
     else "";
 
-  systemdCredentialStrings = lib.mapAttrsToList (name: path: "name=opt/io.systemd.credentials/${name},file=${path}" ) credentialFiles;
+  # systemd credentials are passed through fw_cfg
+  fwCfgCredential = name: path: "name=opt/io.systemd.credentials/${name},file=${path}";
+  systemdCredentialStrings = lib.mapAttrsToList fwCfgCredential credentialFiles;
+
+  # With microvm.instance.enable, memory and vCPUs come from the instance at
+  # start (instanceArgs), so every argument derived from them is generated there.
+  instance = microvmConfig.instance.enable;
+  memArgs = mem: [
+    "-m" "${mem}M${lib.optionalString useHotPlugMemory ",maxmem=$((${mem} + ${toString hotplugMem}))M"}"
+  ];
+  sharedMemArgs = mem: lib.optionals (shares != [] && vmHostPackages.stdenv.hostPlatform.isLinux) [
+    "-numa" "node,memdev=mem"
+    "-object" "memory-backend-memfd,id=mem,size=${mem}M,share=on"
+  ];
   fwCfgOptions = systemdCredentialStrings;
 
 in
@@ -165,8 +178,10 @@ lib.warnIf (mem == 2048 && machine == "microvm") ''
       "${qemu}/bin/qemu-system-${arch}"
       "-name" hostName
       "-M" machineConfig
+    ] ++ lib.optionals (!instance) [
       "-m" "${toString mem}M${lib.optionalString useHotPlugMemory ",maxmem=${toString (mem + hotplugMem)}M"}"
       "-smp" (toString vcpu)
+    ] ++ [
       "-nodefaults" "-no-user-config"
       # qemu just hangs after shutdown, allow to exit by rebooting
       "-no-reboot"
@@ -275,7 +290,7 @@ lib.warnIf (mem == 2048 && machine == "microvm") ''
       ]
     ) volumes ++
     lib.optionals (shares != []) (
-      (lib.optionals vmHostPackages.stdenv.hostPlatform.isLinux [
+      (lib.optionals (vmHostPackages.stdenv.hostPlatform.isLinux && !instance) [
         "-numa" "node,memdev=mem"
         "-object" "memory-backend-memfd,id=mem,size=${toString mem}M,share=on"
       ]) ++
@@ -409,4 +424,59 @@ lib.warnIf (mem == 2048 && machine == "microvm") ''
     else null;
 
   requiresMacvtapAsFds = true;
+
+  # microvm.instance.enable: arguments read at every start from instance/ in
+  # the MicroVM's state directory (the working directory). Missing files keep
+  # the configured values; invalid ones stop the start with a clear message.
+  instanceArgs = ''
+    invalid() {
+      echo "MicroVM ''${PWD##*/}: invalid instance/$1: $2" >&2
+      exit 1
+    }
+    value() {
+      if [ -f "instance/$1" ]; then cat "instance/$1"; else echo "$2"; fi
+    }
+
+    mem=$(value mem ${toString mem})
+    [[ "$mem" =~ ^[1-9][0-9]*$ ]] || invalid mem "expected a positive number of MB, got '$mem'"
+    ${lib.optionalString (machine == "microvm") ''
+      [ "$mem" != 2048 ] || invalid mem "QEMU hangs if memory is exactly 2GB (https://github.com/microvm-nix/microvm.nix/issues/171)"
+    ''}
+    vcpu=$(value vcpu ${toString vcpu})
+    [[ "$vcpu" =~ ^[1-9][0-9]*$ ]] || invalid vcpu "expected a positive integer, got '$vcpu'"
+    printf '%s ' ${lib.concatMapStringsSep " " (arg: ''"${arg}"'') (memArgs "\${mem}" ++ [ "-smp" "\${vcpu}" ] ++ sharedMemArgs "\${mem}")}
+
+    if [ -f instance/interfaces ]; then
+      while read -r id mac; do
+        [ -n "$id" ] || continue
+        [[ "$id" =~ ^[A-Za-z0-9_.-]{1,15}$ ]] || invalid interfaces "'$id' is not an interface name of up to 15 characters"
+        [[ "$mac" =~ ^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$ ]] || invalid interfaces "'$mac' is not a MAC address"
+        queues=
+        [ "$vcpu" -le 1 ] || queues=",queues=$vcpu"
+        printf '%s ' -netdev "tap,id=$id,ifname=$id,script=no,downscript=no$queues" \
+          -device "virtio-net-${devType},netdev=$id,mac=$mac${
+            lib.optionalString (
+              requirePci ||
+              (microvmConfig.cpu == null && system != "x86_64-linux")
+            ) ",romfile="
+          }${
+            lib.optionalString requirePci "\${queues:+,mq=on,vectors=$((2 * vcpu + 2))}"
+          }"
+      done < instance/interfaces
+    fi
+
+    if [ -f instance/vsock-cid ]; then
+      cid=$(< instance/vsock-cid)
+      [[ "$cid" =~ ^[0-9]+$ ]] && [ "$cid" -ge 3 ] || invalid vsock-cid "expected a number of at least 3, got '$cid'"
+      printf '%s ' -device "vhost-vsock-${devType},guest-cid=$cid"
+    fi
+
+    for credential in instance/credentials/*; do
+      [ -f "$credential" ] || continue
+      name=''${credential##*/}
+      # fw_cfg names are limited to 55 characters
+      [[ "$name" =~ ^[A-Za-z0-9_.@-]{1,28}$ ]] || invalid credentials "'$name' must be up to 28 characters of A-Z a-z 0-9 _ . @ -"
+      printf '%s ' -fw_cfg "${fwCfgCredential "$name" "$credential"}"
+    done
+  '';
 }

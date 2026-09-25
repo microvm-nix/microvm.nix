@@ -57,6 +57,27 @@ lib.mkIf config.microvm.guest.enable {
       }
     ) config.microvm.interfaces
     ++
+    # per-instance values must not be fixed in a shared runner
+    lib.optionals config.microvm.instance.enable [ {
+      assertion = !builtins.any ({ type, ... }: type == "tap" || type == "macvtap") config.microvm.interfaces;
+      message = ''
+        MicroVM ${hostName}: with microvm.instance.enable, tap and macvtap
+        interfaces come from each instance's instance/interfaces file.
+      '';
+    } {
+      assertion = config.microvm.vsock.cid == null;
+      message = ''
+        MicroVM ${hostName}: with microvm.instance.enable, the VSOCK CID comes
+        from each instance's instance/vsock-cid file.
+      '';
+    } {
+      assertion = !config.microvm.registerWithMachined;
+      message = ''
+        MicroVM ${hostName}: microvm.instance.enable does not support
+        registerWithMachined yet.
+      '';
+    } ]
+    ++
     # check for interface name length
     map ({ id, ... }: {
       assertion = builtins.stringLength id <= 15;

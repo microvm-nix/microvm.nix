@@ -25,6 +25,12 @@ let
   preStart = hypervisorConfig.preStart or microvmConfig.preStart;
   tapMultiQueue = hypervisorConfig.tapMultiQueue or false;
   setBalloonScript = hypervisorConfig.setBalloonScript or null;
+  instanceArgs =
+    if !microvmConfig.instance.enable
+    then null
+    else hypervisorConfig.instanceArgs or (
+      throw "microvm.instance.enable is not supported with ${microvmConfig.hypervisor}"
+    );
 
   execArg = lib.optionalString microvmConfig.prettyProcnames ''-a "microvm@${hostName}"'';
 
@@ -181,6 +187,11 @@ let
             $(${microvmConfig.extraArgsScript})
           ''
         }
+        ${lib.optionalString (instanceArgs != null) ''
+          runtime_args="''${runtime_args:-} $(
+            ${instanceArgs}
+          )"
+        ''}
 
         exec ${execArg} ${command} ''${runtime_args:-}
       '';
