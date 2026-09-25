@@ -16,6 +16,12 @@ MicroVM deployments using the information on this page.
 | `microvm.shares.*.socket`    | `share/microvm/virtiofs/${tag}/socket` | `microvm-virtiofsd@.service`        | **virtiofsd** socket path by tag                                                              |
 | `microvm.systemSymlink`      | `share/microvm/system`                 |                                     | `config.system.build.toplevel` symlink, used for comparing versions when running `microvm -l` |
 
+With `microvm.instance.enable`, several MicroVMs share one package.
+Their per-instance values are files in `instance/` of each MicroVM's
+state directory, the working directory of `microvm@.service` and
+`microvm-tap-interfaces@.service` (see [Instances](instances.md)):
+`mem`, `vcpu`, `interfaces`, `vsock-cid` and `credentials/<name>`.
+
 The `share/microvm/virtiofs/${tag}/` entries only exist for shares
 served by virtiofsd. A [`dax = true`](shares.md#dax) share on **crosvm**
 runs no virtiofsd, so it gets no directory here.

@@ -2,6 +2,11 @@
 
 ## Unreleased: `main` branch
 
+* **Instances of a shared runner** (qemu): with
+  `microvm.instance.enable`, `microvm -c <name> -i <existing>` creates
+  a MicroVM on an existing runner in seconds, without a build. Memory,
+  vCPUs, tap interfaces, VSOCK CID and systemd credentials are read from
+  `/var/lib/microvms/<name>/instance/` at every start.
 * Shell scripts to setup virtiofsd, interfaces, and PCI devices for
   pass-through have moved from systemd units in the host to the `bin/`
   subdirectory of MicroVM packages. That means you can actually use

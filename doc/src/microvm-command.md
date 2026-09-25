@@ -20,6 +20,13 @@ relative path (including `.`) will not resolve against your shell's
 current working directory and the flake will not be found. Use
 `-f $(pwd)` or a full path instead, e.g. `-f /path/to/flake`.
 
+To create another MicroVM that shares an existing MicroVM's runner,
+without a build, see [Instances of a shared runner](./instances.md):
+
+```bash
+microvm -c my-microvm-2 -i my-microvm
+```
+
 ### Enabling MicroVM autostart
 
 Extension of the host's systemd units must happen declaratively in the

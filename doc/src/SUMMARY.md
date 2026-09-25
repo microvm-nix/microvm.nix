@@ -20,5 +20,6 @@
 - [Declarative MicroVMs](./declarative.md)
 - [Imperative MicroVM management](./microvm-command.md)
   - [Deploy via SSH](./ssh-deploy.md)
+  - [Instances of a shared runner](./instances.md)
 - [Conventions](./conventions.md)
 - [Frequently Asked Questions](./faq.md)
