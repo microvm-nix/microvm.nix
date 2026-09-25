@@ -29,9 +29,10 @@ writeShellScriptBin "microvm" ''
   ACTION=help
   FLAKE=git+file:///etc/nixos
   RESTART=n
+  SOURCE=
 
   OPTERR=1
-  while getopts ":c:C:f:uRr:s:l" arg; do
+  while getopts ":c:C:f:i:uRr:s:l" arg; do
     case $arg in
       c)
         ACTION=create
@@ -61,6 +62,10 @@ writeShellScriptBin "microvm" ''
         FLAKE=$OPTARG
         ;;
 
+      i)
+        SOURCE=$OPTARG
+        ;;
+
       R)
         RESTART=y
         ;;
@@ -83,8 +88,11 @@ writeShellScriptBin "microvm" ''
     fi
 
     FLAKE=$(cat flake)
+    # Instances (-i) build the configuration they were created from
+    CONFIG=$NAME
+    [ ! -f config ] || CONFIG=$(cat config)
 
-    nix build -o current "$FLAKE"#nixosConfigurations."$NAME".config.microvm.declaredRunner >/dev/null
+    nix build -o current "$FLAKE"#nixosConfigurations."$CONFIG".config.microvm.declaredRunner >/dev/null
     chmod -R u+rwX .
   }
 
@@ -104,14 +112,36 @@ writeShellScriptBin "microvm" ''
   Flags:
           -f <flake>  Create using another flake than $FLAKE
                       (a local path must be absolute)
+          -i <name>   Create as an instance of MicroVM <name>'s runner,
+                      without building (needs microvm.instance.enable)
           -R          Restart after update
   EOF
       ;;
     create)
       TEMP=$(mktemp -d)
       pushd "$TEMP" > /dev/null
-      echo -n "$FLAKE" > flake
-      build "$NAME"
+      if [ -n "$SOURCE" ]; then
+        # Share the runner of an existing MicroVM
+        if [ ! -L "$STATE_DIR/$SOURCE/current" ]; then
+          echo "MicroVM $SOURCE not found."
+          exit 1
+        fi
+        ln -s "$(readlink "$STATE_DIR/$SOURCE/current")" current
+        if [ -e "$STATE_DIR/$SOURCE/flake" ]; then
+          cp "$STATE_DIR/$SOURCE/flake" flake
+        else
+          echo "MicroVM $SOURCE has no flake: microvm -u cannot rebuild $NAME."
+        fi
+        if [ -e "$STATE_DIR/$SOURCE/config" ]; then
+          cp "$STATE_DIR/$SOURCE/config" config
+        else
+          echo -n "$SOURCE" > config
+        fi
+        mkdir instance
+      else
+        echo -n "$FLAKE" > flake
+        build "$NAME"
+      fi
 
       popd > /dev/null
       if [ -e "$DIR" ]; then
@@ -129,6 +159,9 @@ writeShellScriptBin "microvm" ''
       rm -f "/nix/var/nix/gcroots/microvm/booted-$NAME"
       ln -s "$DIR/booted" "/nix/var/nix/gcroots/microvm/booted-$NAME"
 
+      if [ -n "$SOURCE" ]; then
+        echo "Set its values in $DIR/instance/ (see the Instances documentation)."
+      fi
       echo -e "${colored "green" "Created MicroVM $NAME."} Start with: ${colored "boldCyan" "systemctl start microvm@$NAME.service"}"
       ;;
 
@@ -179,7 +212,9 @@ writeShellScriptBin "microvm" ''
             NEW_SYSTEM=$(readlink "$DIR/toplevel")
           else
             FLAKE=$(cat "$DIR/flake")
-            NEW_SYSTEM=$(nix --option narinfo-cache-negative-ttl 10 eval --raw "$FLAKE#nixosConfigurations.$NAME.config.system.build.toplevel" || echo error)
+            CONFIG=$NAME
+            [ ! -f "$DIR/config" ] || CONFIG=$(cat "$DIR/config")
+            NEW_SYSTEM=$(nix --option narinfo-cache-negative-ttl 10 eval --raw "$FLAKE#nixosConfigurations.$CONFIG.config.system.build.toplevel" || echo error)
           fi
           NEW=''${NEW_SYSTEM#*-}
 
@@ -227,7 +262,9 @@ writeShellScriptBin "microvm" ''
       fi
 
       VSOCK_CID=""
-      if [ -f "$DIR/current/share/microvm/vsock-cid" ]; then
+      if [ -f "$DIR/instance/vsock-cid" ]; then
+        VSOCK_CID=$(cat "$DIR/instance/vsock-cid")
+      elif [ -f "$DIR/current/share/microvm/vsock-cid" ]; then
         VSOCK_CID=$(cat "$DIR/current/share/microvm/vsock-cid")
       fi
 
