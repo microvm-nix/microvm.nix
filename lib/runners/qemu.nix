@@ -148,7 +148,7 @@ let
   fwCfgOptions = systemdCredentialStrings;
 
 in
-lib.warnIf (mem == 2048) ''
+lib.warnIf (mem == 2048 && machine == "microvm") ''
   QEMU hangs if memory is exactly 2GB
 
   <https://github.com/microvm-nix/microvm.nix/issues/171>
