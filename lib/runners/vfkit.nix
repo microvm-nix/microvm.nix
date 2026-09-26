@@ -14,7 +14,7 @@ let
 
   inherit (microvmConfig)
     vcpu mem user interfaces shares socket
-    storeOnDisk storeDisk kernel initrdPath kernelParams
+    storeOnDisk storeDisk storeDiskDirect kernel initrdPath kernelParams
     balloon devices credentialFiles vsock graphics;
 
   inherit (microvmConfig.vfkit) extraArgs logLevel rosetta;
@@ -117,6 +117,8 @@ in
     then throw "vfkit does not support credentialFiles"
     else if vsock.cid != null
     then throw "vfkit vsock support not yet implemented in microvm.nix"
+    else if storeDiskDirect
+    then throw "vfkit does not support storeDiskDirect"
     else
       let
         baseCmd = lib.escapeShellArgs allArgsWithoutSocket;
