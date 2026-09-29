@@ -79,7 +79,7 @@ let
   // lib.optionalAttrs (!useVirtiofs && !graphics.enable) {
     mergeable = "on";
   }
-  # add ballooning options and override 'size' key
+  # add ballooning options
   // lib.optionalAttrs useHotPlugMemory {
     hotplug_method = "virtio-mem";
     hotplug_size = "${toString hotplugMem}M";
