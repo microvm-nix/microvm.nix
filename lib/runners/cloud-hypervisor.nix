@@ -81,7 +81,6 @@ let
   }
   # add ballooning options and override 'size' key
   // lib.optionalAttrs useHotPlugMemory {
-    size = "${toString hotplugMem}M";
     hotplug_method = "virtio-mem";
     hotplug_size = "${toString hotplugMem}M";
     hotplugged_size = "${toString hotpluggedMem}M";
