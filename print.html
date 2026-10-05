@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-6735a27a.js";
+            window.path_to_searchindex_js = "searchindex-4dedc010.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-9fefae61.js"></script>
@@ -722,7 +722,13 @@ package</p>
 memory amount and reclaim it for itself.
 When “deflating” or decreasing the balloon the host can give the memory
 back to the VM.</p>
-<p>virtio-mem is recommended over ballooning if supported by the hypervisor.</p>
+<p>On QEMU, cloud-hypervisor and crosvm this also enables free page
+reporting, so the guest hands memory it isn’t using back to the host
+even if the balloon is never inflated.</p>
+<p>virtio-mem (see <code>hotplugMem</code>) is the better way to resize guest memory
+where the hypervisor supports it (cloud-hypervisor, and QEMU with a
+machine type other than <code>microvm</code>), but it doesn’t replace free page
+reporting, so the two are useful together.</p>
 <p><em>Type:</em>
 boolean</p>
 <p><em>Default:</em></p>
