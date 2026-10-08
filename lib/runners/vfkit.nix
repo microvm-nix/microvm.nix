@@ -96,7 +96,9 @@ in
 {
   tapMultiQueue = false;
 
-  preStart = lib.optionalString (socket != null) ''
+  preStart = ''
+    ${microvmConfig.preStart}
+  '' + lib.optionalString (socket != null) ''
     rm -f ${socket}
   '';
 
