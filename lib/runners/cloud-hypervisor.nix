@@ -232,6 +232,7 @@ in {
         lib.optional storeOnDisk (opsMapped ({
           path = toString storeDisk;
           readonly = "on";
+          image_type = "raw";
         } //
         lib.optionalAttrs storeDiskDirect {
           direct = "on";
