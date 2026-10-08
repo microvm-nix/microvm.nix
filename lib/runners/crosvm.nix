@@ -70,8 +70,8 @@ in {
         "${crosvmPkg}/bin/crosvm" "run"
         "-m" (toString mem)
         "-c" (toString vcpu)
-        "--serial" "type=stdout,console=true,stdin=true"
-        "-p" "console=ttyS0 reboot=k panic=1 ${toString microvmConfig.kernelParams}"
+        "--serial" "type=stdout,stdin=true"
+        "-p" "console=ttyS0,115200 reboot=k panic=1 ${toString microvmConfig.kernelParams}"
       ]
       ++
       (
