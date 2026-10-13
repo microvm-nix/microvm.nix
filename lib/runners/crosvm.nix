@@ -12,7 +12,8 @@ let
     vcpu mem balloon initialBalloonMem hotplugMem hotpluggedMem user volumes shares
     socket devices vsock graphics credentialFiles
     kernel initrdPath storeDisk storeOnDisk storeDiskDirect;
-  inherit (microvmConfig.crosvm) pivotRoot extraArgs;
+  inherit (microvmConfig.crosvm)
+    pivotRoot extraArgs deviceTreeOverlays memoryBase platformMmio;
 
   crosvmPkg = microvmConfig.crosvm.package;
 
@@ -33,6 +34,28 @@ let
     egl = true;
     vulkan = true;
   };
+
+  formatAddress = value: "0x${lib.toLower (lib.toHexString value)}";
+
+  vfioDeviceArgs = { bus, path, crosvm, ... }: [
+    "--vfio"
+    (lib.concatStringsSep "," {
+      pci = [
+        "/sys/bus/pci/devices/${path}"
+        "iommu=${crosvm.iommu}"
+      ]
+      ++ lib.optional (crosvm.guestAddress != null) "guest-address=${crosvm.guestAddress}"
+      ++ lib.optional (crosvm.dtSymbol != null) "dt-symbol=${crosvm.dtSymbol}";
+      platform = [
+        "/sys/bus/platform/devices/${path}"
+        "iommu=${crosvm.iommu}"
+        "dt-symbol=${crosvm.dtSymbol}"
+      ]
+      ++ lib.optional (crosvm.mmioBase != null) "mmio-base=${formatAddress crosvm.mmioBase}"
+      ++ lib.optional crosvm.mapEarly "map-early=true";
+      usb = throw "USB passthrough is not supported on crosvm";
+    }.${bus})
+  ];
 
 in {
 
@@ -68,7 +91,8 @@ in {
     else lib.escapeShellArgs (
       [
         "${crosvmPkg}/bin/crosvm" "run"
-        "-m" (toString mem)
+        (if memoryBase == null then "-m" else "--mem")
+        (if memoryBase == null then toString mem else "size=${toString mem},base=${formatAddress memoryBase}")
         "-c" (toString vcpu)
         "--serial" "type=stdout,console=true,stdin=true"
         "-p" "console=ttyS0 reboot=k panic=1 ${toString microvmConfig.kernelParams}"
@@ -150,16 +174,22 @@ in {
         "--vsock" (toString vsock.cid)
       ]
       ++
+      lib.optionals (platformMmio != null) [
+        "--platform-mmio"
+        "base=${formatAddress platformMmio.base},size=${formatAddress platformMmio.size}"
+      ]
+      ++
+      builtins.concatMap (overlay: [
+        "--device-tree-overlay" overlay
+      ]) deviceTreeOverlays
+      ++
       [
         "--initrd" initrdPath
         kernelPath
       ]
     )
-    + " " + # Move vfio-pci outside of
-      lib.concatStringsSep " " (lib.concatMap ({ bus, path, ... }: {
-        pci = [ "--vfio" "/sys/bus/pci/devices/${path},iommu=viommu" ];
-        usb = throw "USB passthrough is not supported on crosvm";
-      }.${bus}) devices)
+    + " " + # Keep host device paths outside of the Nix store.
+      lib.escapeShellArgs (lib.concatMap vfioDeviceArgs devices)
     + " " + lib.escapeShellArgs extraArgs;
 
   canShutdown = socket != null;
@@ -167,7 +197,7 @@ in {
   shutdownCommand =
     if socket != null
     then ''
-        ${crosvmPkg}/bin/crosvm powerbtn ${socket}
+        ${crosvmPkg}/bin/crosvm ${if pkgs.stdenv.hostPlatform.isAarch64 then "stop" else "powerbtn"} ${socket}
       ''
     else throw "Cannot shutdown without socket";
 
