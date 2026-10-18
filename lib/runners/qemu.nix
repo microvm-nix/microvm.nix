@@ -215,10 +215,7 @@ lib.warnIf (mem == 2048 && machine == "microvm") ''
     cpuArgs ++
     lib.optionals (system == "x86_64-linux") [
       "-device" "i8042"
-
-      "-append" "${kernelConsole} reboot=t panic=-1 ${toString microvmConfig.kernelParams}"
-    ] ++
-    lib.optionals (system == "aarch64-linux") [
+    ] ++ lib.optionals (system == "aarch64-linux" || system == "x86_64-linux") [
       "-append" "${kernelConsole} reboot=t panic=-1 ${toString microvmConfig.kernelParams}"
     ] ++
     lib.optionals storeOnDisk [
