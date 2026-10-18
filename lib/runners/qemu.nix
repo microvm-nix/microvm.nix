@@ -77,7 +77,6 @@ let
           pit = "off";
           pic = "off";
           pcie = if requirePci then "on" else "off";
-          rtc = "on";
           usb = if requireUsb then "on" else "off";
         };
       in
