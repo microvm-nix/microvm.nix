@@ -373,6 +373,19 @@ in
               Requires the vhost_net kernel module on the host.
             '';
           };
+          offload = mkOption {
+            type = types.bool;
+            default = false;
+            description = ''
+              Enable the checksum and segmentation offloads
+              (`offload_csum`, `offload_tso`, `offload_ufo`) on the
+              cloud-hypervisor network device.
+
+              When false, cloud-hypervisor's default applies: on up to
+              v53, off since v54 because of CVE-2026-99999. Only enable
+              them on a host kernel with the fix for it.
+            '';
+          };
         };
       });
     };

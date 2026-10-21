@@ -101,6 +101,13 @@ let
 
   tapMultiQueue = vcpu > 1;
 
+  # cloud-hypervisor >= 54.0 turns these off by default
+  offloadOps = offload: lib.optionalAttrs offload {
+    offload_csum = "on";
+    offload_tso = "on";
+    offload_ufo = "on";
+  };
+
   # Multi-queue options
   mqOps = lib.optionalAttrs tapMultiQueue {
     num_queues = toString vcpu;
@@ -271,19 +278,19 @@ in {
       ++
       lib.optionals (socket != null) [ "--api-socket" socket ]
       ++
-      arg "--net" (map ({ type, id, mac, ... }:
+      arg "--net" (map ({ type, id, mac, offload ? false, ... }:
         if type == "tap"
         then opsMapped ({
           tap = id;
           inherit mac;
-        } // lib.optionalAttrs tapMultiQueue {
+        } // offloadOps offload // lib.optionalAttrs tapMultiQueue {
           num_queues = toString (2 * vcpu);
         })
         else if type == "macvtap"
         then opsMapped ({
           fd = "[${lib.concatMapStringsSep "," toString macvtapFds.${id}}]";
           inherit mac;
-        } // lib.optionalAttrs tapMultiQueue {
+        } // offloadOps offload // lib.optionalAttrs tapMultiQueue {
           num_queues = toString (2 * vcpu);
         })
         else throw "Unsupported interface type ${type} for Cloud-Hypervisor"
