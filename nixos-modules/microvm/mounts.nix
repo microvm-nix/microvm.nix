@@ -135,7 +135,7 @@ lib.mkIf config.microvm.guest.enable {
   ) ];
 
   # Fix unmounting in qemu on shutdown for /nix/store
-  systemd.mounts = lib.mkIf (config.boot.initrd.systemd.enable && !storeOnDisk && writableStoreOverlay == null) [ {
+  systemd.mounts = lib.mkIf (!storeOnDisk && writableStoreOverlay == null) [ {
     what = "store";
     where = "/nix/store";
     overrideStrategy = "asDropin";

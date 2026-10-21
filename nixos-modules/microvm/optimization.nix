@@ -18,18 +18,7 @@ lib.mkIf (cfg.guest.enable && cfg.optimize.enable) {
   documentation.enable = lib.mkDefault false;
 
   boot = {
-    initrd.systemd = {
-      # Use systemd initrd for startup speed.
-      # TODO: error mounting /nix/store on crosvm, kvmtool
-      enable = lib.mkDefault (
-        builtins.elem cfg.hypervisor [
-          "qemu"
-          "cloud-hypervisor"
-          "firecracker"
-          "stratovirt"
-        ]);
-      tpm2.enable = lib.mkDefault false;
-    };
+    initrd.systemd.tpm2.enable = lib.mkDefault false;
     kernelParams = [
       # we only need one serial console
       "8250.nr_uarts=1"

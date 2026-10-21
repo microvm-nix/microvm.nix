@@ -151,19 +151,6 @@ let
         } ];
       }) ];
     } ]
-    # boot.systemd
-    [ {
-      # no
-      id = null;
-      modules = [ {
-        boot.initrd.systemd.enable = false;
-      } ];
-    } {
-      id = "systemd";
-      modules = [ {
-        boot.initrd.systemd.enable = true;
-      } ];
-    } ]
     # hardened profile
     [ {
       # no
