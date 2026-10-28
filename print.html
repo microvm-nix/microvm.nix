@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-4dedc010.js";
+            window.path_to_searchindex_js = "searchindex-fd16fffe.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-9fefae61.js"></script>
@@ -338,6 +338,20 @@ processing to the kernel instead of QEMU userspace:</p>
 improvement is significant for workloads with many concurrent connections
 or high bandwidth requirements.</p>
 <p><strong>Note:</strong> Currently only supported with the <code>qemu</code> hypervisor.</p>
+<h3 id="network-offloads-cloud-hypervisor"><a class="header" href="#network-offloads-cloud-hypervisor">Network offloads (cloud-hypervisor)</a></h3>
+<p>cloud-hypervisor v54 turns the virtio-net checksum and segmentation
+offloads off by default, because of CVE-2026-99999 in the host kernel.
+On a host kernel with the fix, enable them per interface:</p>
+<pre><code class="language-nix">{
+  microvm.interfaces = [ {
+    type = "tap";
+    id = "vm-a1";
+    mac = "02:00:00:00:00:01";
+    offload = true;
+  } ];
+}
+</code></pre>
+<p><strong>Note:</strong> Currently only supported with the <code>cloud-hypervisor</code> hypervisor.</p>
 <p>Extend the generated script in the guest configuration like this:</p>
 <pre><code class="language-nix">microvm.binScripts.tap-up = lib.mkAfter ''
   ${lib.getExe' pkgs.iproute2 "ip"} link set dev 'vm-ixp-as11201p' master 'ixp-peering'
@@ -1391,6 +1405,22 @@ string</p>
 <p>The MACVLAN mode to use</p>
 <p><em>Type:</em>
 one of “private”, “vepa”, “bridge”, “passthru”, “source”</p>
+<p><em>Declared by:</em></p>
+<ul>
+<li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
+</ul>
+<h2 id="microvminterfacesoffload"><a class="header" href="#microvminterfacesoffload">microvm.interfaces.*.offload</a></h2>
+<p>Enable the checksum and segmentation offloads
+(<code>offload_csum</code>, <code>offload_tso</code>, <code>offload_ufo</code>) on the
+cloud-hypervisor network device.</p>
+<p>When false, cloud-hypervisor’s default applies: on up to
+v53, off since v54 because of CVE-2026-99999. Only enable
+them on a host kernel with the fix for it.</p>
+<p><em>Type:</em>
+boolean</p>
+<p><em>Default:</em></p>
+<pre><code class="language-nix">false
+</code></pre>
 <p><em>Declared by:</em></p>
 <ul>
 <li><a href="https://github.com/microvm-nix/microvm.nix/tree/main/nixos-modules/microvm/options.nix">microvm.nix/nixos-modules/microvm/options.nix</a></li>
