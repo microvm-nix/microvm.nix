@@ -124,6 +124,24 @@ let
 
   useHotPlugMemory = hotplugMem > 0;
 
+  # virtiofsd maps guest memory in its own process, so QEMU only hands
+  # vhost-user backends RAM that is fd-backed and MAP_SHARED, silently
+  # dropping everything else from the memory table. With a plain ram
+  # backend, virtiofsd dies with "no memory region for this address
+  # range" once the guest touches hot-plugged memory, and
+  # vhost-user-fs cannot reconnect. Base RAM already is a shared memfd
+  # whenever there are shares; hot-plugged memory needs the same
+  # treatment, hence one condition for both.
+  useSharedMemory =
+    shares != [] &&
+    vmHostPackages.stdenv.hostPlatform.isLinux;
+
+  # reserve= stays at its default (on), as with base RAM
+  hotplugMemBackend =
+    if useSharedMemory
+    then "memory-backend-memfd,id=vmem0,size=${toString hotplugMem}M,share=on"
+    else "memory-backend-ram,id=vmem0,size=${toString hotplugMem}M";
+
   forwardingOptions = lib.concatMapStrings ({ proto, from, host, guest }: {
     host = "hostfwd=${proto}:${host.address}:${toString host.port}-" +
            "${guest.address}:${toString guest.port},";
@@ -262,7 +280,7 @@ lib.warnIf (mem == 2048 && machine == "microvm") ''
 	    "-device" ("virtio-balloon-${devType},free-page-reporting=on,id=balloon0" + lib.optionalString (deflateOnOOM) ",deflate-on-oom=on")
     ] ++
     lib.optionals useHotPlugMemory [
-      "-object" "memory-backend-ram,id=vmem0,size=${toString hotplugMem}M"
+      "-object" hotplugMemBackend
       "-device" "virtio-mem-pci,id=vm0,memdev=vmem0,requested-size=${toString hotpluggedMem}M"
     ] ++
     builtins.concatMap ({ image, letter, serial, direct, readOnly, ... }:
@@ -276,22 +294,20 @@ lib.warnIf (mem == 2048 && machine == "microvm") ''
         }"
       ]
     ) volumes ++
-    lib.optionals (shares != []) (
-      (lib.optionals vmHostPackages.stdenv.hostPlatform.isLinux [
-        "-numa" "node,memdev=mem"
-        "-object" "memory-backend-memfd,id=mem,size=${toString mem}M,share=on"
-      ]) ++
-      builtins.concatMap ({ proto, index, socket, source, tag, securityModel, readOnly, ... }: {
-        "virtiofs" = [
-          "-chardev" "socket,id=fs${toString index},path=${socket}"
-          "-device" "vhost-user-fs-${devType},chardev=fs${toString index},tag=${tag}"
-        ];
-        "9p" = [
-          "-fsdev" "local,id=fs${toString index},path=${source},security_model=${securityModel},readonly=${lib.boolToString readOnly}"
-          "-device" "virtio-9p-${devType},fsdev=fs${toString index},mount_tag=${tag}"
-        ];
-      }.${proto}) (enumerate 0 shares)
-    )
+    lib.optionals useSharedMemory [
+      "-numa" "node,memdev=mem"
+      "-object" "memory-backend-memfd,id=mem,size=${toString mem}M,share=on"
+    ] ++
+    builtins.concatMap ({ proto, index, socket, source, tag, securityModel, readOnly, ... }: {
+      "virtiofs" = [
+        "-chardev" "socket,id=fs${toString index},path=${socket}"
+        "-device" "vhost-user-fs-${devType},chardev=fs${toString index},tag=${tag}"
+      ];
+      "9p" = [
+        "-fsdev" "local,id=fs${toString index},path=${source},security_model=${securityModel},readonly=${lib.boolToString readOnly}"
+        "-device" "virtio-9p-${devType},fsdev=fs${toString index},mount_tag=${tag}"
+      ];
+    }.${proto}) (enumerate 0 shares)
     ++
     lib.warnIf (
       forwardPorts != [] &&
