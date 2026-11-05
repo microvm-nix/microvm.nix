@@ -2,6 +2,14 @@
 
 ## Unreleased: `main` branch
 
+* Root units of declarative MicroVMs (`microvm-tap-interfaces@`,
+  `-macvtap-interfaces@`, `-pci-devices@`, `-virtiofsd@` and the
+  machined hooks of `microvm@`) now execute the declared runner's store
+  path instead of the `current`/`booted` links in the state directory,
+  which the `microvm` user can rewrite (#628). `/var/lib/microvms`
+  itself is root-owned, and supervisord keeps its log and pid file in
+  `/run/microvm-virtiofsd/<name>`.
+
 * Shell scripts to setup virtiofsd, interfaces, and PCI devices for
   pass-through have moved from systemd units in the host to the `bin/`
   subdirectory of MicroVM packages. That means you can actually use
