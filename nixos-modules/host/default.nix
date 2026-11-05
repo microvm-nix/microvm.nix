@@ -75,6 +75,13 @@ in
                 inherit user group;
                 mode = "0775";
               };
+              # `current` is kept alive by the system closure, but the runner
+              # a VM booted from, which microvm@ stops it through, is not once
+              # a newer generation has replaced it (#633). Root it indirectly,
+              # under the name `microvm create` uses for imperative VMs; while
+              # the VM is stopped `booted` is absent and the link is ignored.
+              "/nix/var/nix/gcroots/microvm/booted-${name}"."L+".argument =
+                "${stateDir}/${name}/booted";
             } guestConfig.microvm.shares
           )
         )
