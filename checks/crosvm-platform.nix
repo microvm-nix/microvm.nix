@@ -79,6 +79,20 @@ let
     macvtapFds = { };
     linuxTarget = pkgs.linux.target or pkgs.stdenv.hostPlatform.linux-kernel.target;
   };
+  readonlyDax = makeConfig [{ microvm.shares = [{
+    proto = "virtiofs";
+    tag = "readonly";
+    source = "/tmp/readonly";
+    socket = "readonly.sock";
+    dax = true;
+    readOnly = true;
+  }]; }];
+  readonlyDaxRunner = import ../lib/runners/crosvm.nix {
+    inherit pkgs;
+    microvmConfig = readonlyDax.config.microvm;
+    macvtapFds = { };
+    linuxTarget = pkgs.linux.target or pkgs.stdenv.hostPlatform.linux-kernel.target;
+  };
   missingSymbol = makeConfig [
     {
       microvm = {
@@ -147,6 +161,7 @@ lib.optionalAttrs (lib.hasSuffix "-linux" system) {
     assert lib.hasInfix (
       if pkgs.stdenv.hostPlatform.isAarch64 then "crosvm stop" else "crosvm powerbtn"
     ) runner.shutdownCommand;
+    assert !(builtins.tryEval (builtins.deepSeq readonlyDaxRunner.command true)).success;
     assert assertionsPass valid;
     assert assertionsPass layout;
     assert !assertionsPass missingSymbol;
