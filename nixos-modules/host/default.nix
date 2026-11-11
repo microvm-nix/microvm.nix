@@ -54,9 +54,16 @@ in
             in
             builtins.foldl' (
               result: share:
+              let
+                source =
+                  if lib.hasPrefix "/" share.source then
+                    share.source
+                  else
+                    "${stateDir}/${name}/${share.source}";
+              in
               result
-              // lib.optionalAttrs (share.source != "/nix/store") {
-                "${share.source}".d = {
+              // lib.optionalAttrs (source != "/nix/store") {
+                "${source}".d = {
                   # Only adjust permissions if directory doesn't exist
                   user = ":${user}";
                   group = ":${group}";
