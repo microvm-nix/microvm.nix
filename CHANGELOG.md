@@ -47,6 +47,11 @@
   in both the host and the guest. Set the new
   `microvm.storeDiskDirect = false` to restore buffered reads.
   Enabling it on an unsupported VMM is an error.
+* QEMU: fix guests with both `hotplugMem` and virtiofs shares freezing
+  after a while. QEMU only hands fd-backed MAP_SHARED RAM to vhost-user
+  backends, so virtiofsd could not see hot-plugged memory and eventually
+  exited with "no memory region for this address range". The virtio-mem
+  backend is now a shared memfd when shares are in use, like base RAM.
 
 ## 0.5.0 (2024-04-06)
 
