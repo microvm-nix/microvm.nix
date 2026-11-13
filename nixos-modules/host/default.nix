@@ -79,9 +79,12 @@ in
           )
         )
         {
+          # Root-owned: the VMM user must not be able to replace a VM's
+          # directory, which root units chdir into, with a symlink (#628).
           "${stateDir}".d = {
-            inherit user group;
-            mode = "0775";
+            user = "root";
+            group = "root";
+            mode = "0755";
           };
         }
         (builtins.attrNames config.microvm.vms);
@@ -118,6 +121,20 @@ in
                         then microvmConfig.evaluatedConfig.config
                         else microvmConfig.config.config;
         runner = guestConfig.microvm.declaredRunner;
+        # Whether this host's configuration decides the runner. Flake VMs with
+        # updateFlake are updated by `microvm -u`, which moves `current`
+        # outside of NixOS.
+        declaresRunner = !(isFlake && updateFlake != null);
+        # Root units otherwise execute through `current`/`booted`, links the
+        # VMM user can retarget (#628). Point them at the store path instead.
+        runRootHelper = { up, down ? null }: lib.optionalAttrs declaresRunner {
+          unitConfig.ConditionPathExists = [ "" "${runner}/bin/${up}" ];
+          serviceConfig = {
+            ExecStart = [ "" "${runner}/bin/${up}" ];
+          } // lib.optionalAttrs (down != null) {
+            ExecStop = [ "" "${runner}/bin/${down}" ];
+          };
+        };
       in
     {
       "install-microvm-${name}" = {
@@ -157,7 +174,7 @@ in
           WorkingDirectory = "${stateDir}/${name}";
         };
       };
-      "microvm@${name}" = {
+      "microvm@${name}" = lib.recursiveUpdate {
         # restartIfChanged is opt-out, so we have to include the definition unconditionally
         serviceConfig.X-RestartIfChanged = [ "" microvmConfig.restartIfChanged ];
         path = lib.mkForce [];
@@ -178,22 +195,33 @@ in
         after = lib.optionals runner.registerWithMachined [
           "systemd-machined.service"
         ];
-      };
-      "microvm-tap-interfaces@${name}" = {
+      } (lib.optionalAttrs declaresRunner {
+        # The template runs these as root from `current`, if present there.
+        serviceConfig.ExecStartPost = [ "" ] ++ lib.optional runner.registerWithMachined
+          "+${runner}/bin/microvm-register $MAINPID";
+        serviceConfig.ExecStopPost = [ "" ] ++ lib.optional runner.registerWithMachined
+          "+${runner}/bin/microvm-unregister";
+      });
+      "microvm-tap-interfaces@${name}" = lib.recursiveUpdate {
         serviceConfig.X-RestartIfChanged = [ "" microvmConfig.restartIfChanged ];
         path = lib.mkForce [];
         overrideStrategy = "asDropin";
-      };
-      "microvm-pci-devices@${name}" = {
+      } (runRootHelper { up = "tap-up"; down = "tap-down"; });
+      "microvm-macvtap-interfaces@${name}" = lib.recursiveUpdate {
         serviceConfig.X-RestartIfChanged = [ "" microvmConfig.restartIfChanged ];
         path = lib.mkForce [];
         overrideStrategy = "asDropin";
-      };
-      "microvm-virtiofsd@${name}" = {
+      } (runRootHelper { up = "macvtap-up"; down = "macvtap-down"; });
+      "microvm-pci-devices@${name}" = lib.recursiveUpdate {
         serviceConfig.X-RestartIfChanged = [ "" microvmConfig.restartIfChanged ];
         path = lib.mkForce [];
         overrideStrategy = "asDropin";
-      };
+      } (runRootHelper { up = "pci-setup"; });
+      "microvm-virtiofsd@${name}" = lib.recursiveUpdate {
+        serviceConfig.X-RestartIfChanged = [ "" microvmConfig.restartIfChanged ];
+        path = lib.mkForce [];
+        overrideStrategy = "asDropin";
+      } (runRootHelper { up = "virtiofsd-run"; });
     })) {
       "microvm-tap-interfaces@" = {
         description = "Setup MicroVM '%i' TAP interfaces";
@@ -258,6 +286,10 @@ in
             Restart = "always";
             RestartSec = "5s";
             SyslogIdentifier = "microvm-virtiofsd@%i";
+            # supervisord's log and pid file, which it would otherwise create
+            # as root in the VMM-writable state directory (#628).
+            RuntimeDirectory = "microvm-virtiofsd/%i";
+            RuntimeDirectoryMode = "0700";
             Type = "notify";
             KillMode = "mixed";
           };

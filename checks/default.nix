@@ -260,6 +260,7 @@ import ./imperative-template.nix args //
 import ./startup-shutdown.nix args //
 import ./shutdown-command.nix args //
 import ./relative-share-source.nix args //
+import ./root-helpers.nix args //
 
 builtins.foldl' (result: hypervisor:
   let

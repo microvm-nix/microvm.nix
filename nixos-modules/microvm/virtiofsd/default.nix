@@ -75,6 +75,12 @@ in
           );
 
       in ''
+        # Under microvm-virtiofsd@.service, keep supervisord's own files in
+        # its root-owned runtime directory rather than the working directory.
+        if [ -n "''${RUNTIME_DIRECTORY:-}" ]; then
+          set -- --logfile "$RUNTIME_DIRECTORY/supervisord.log" \
+            --pidfile "$RUNTIME_DIRECTORY/supervisord.pid" "$@"
+        fi
         exec ${supervisord} --configuration ${supervisordConfigFile} "$@"
       '';
   };
