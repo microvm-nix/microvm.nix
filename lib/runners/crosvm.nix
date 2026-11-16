@@ -130,7 +130,7 @@ in {
         ];
       }.${proto}) shares
       ++
-      (builtins.concatMap ({ id, type, mac, ... }: [
+      (builtins.concatMap ({ id, type, mac, tap ? {}, ... }: [
         "--net"
         (lib.concatStringsSep "," ([
           ( if type == "tap"
@@ -142,7 +142,7 @@ in {
           "mac=${mac}"
         # ] ++ lib.optionals (vcpu > 1) [
         #   "vq-pairs=${toString vcpu}"
-        ]))
+        ] ++ lib.optional (type == "tap" && tap.vhost or false) "vhost-net"))
       ]) microvmConfig.interfaces)
       # ++
       # lib.optionals (vcpu > 1) [

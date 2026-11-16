@@ -369,10 +369,11 @@ in
               Enable vhost-net for TAP interfaces.
 
               When enabled, packet processing is offloaded to the kernel's
-              vhost-net module instead of QEMU userspace, significantly
+              vhost-net module instead of hypervisor userspace, significantly
               improving network throughput (~10 Gbps vs ~1.5 Gbps).
 
-              Requires the vhost_net kernel module on the host.
+              Supported by QEMU and crosvm. Requires the vhost_net kernel
+              module and access to /dev/vhost-net on the host.
             '';
           };
           offload = mkOption {

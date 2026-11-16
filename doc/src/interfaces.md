@@ -51,7 +51,7 @@ interfaces are created through a systemd service dependency.
 ### vhost-net acceleration
 
 For high-throughput workloads, enable vhost-net to offload packet
-processing to the kernel instead of QEMU userspace:
+processing to the kernel instead of hypervisor userspace:
 
 ```nix
 {
@@ -68,7 +68,8 @@ This requires the `vhost_net` kernel module on the host. The performance
 improvement is significant for workloads with many concurrent connections
 or high bandwidth requirements.
 
-**Note:** Currently only supported with the `qemu` hypervisor.
+**Note:** Supported with the `qemu` and `crosvm` hypervisors.
+The hypervisor must have access to `/dev/vhost-net`.
 
 ### Network offloads (cloud-hypervisor)
 
