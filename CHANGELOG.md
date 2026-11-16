@@ -2,6 +2,10 @@
 
 ## Unreleased: `main` branch
 
+* Runner scripts now forward command-line arguments to the hypervisor,
+  allowing extra VMM options for a single invocation with
+  `nix run .#my-microvm -- <args>`.
+
 * Shell scripts to setup virtiofsd, interfaces, and PCI devices for
   pass-through have moved from systemd units in the host to the `bin/`
   subdirectory of MicroVM packages. That means you can actually use

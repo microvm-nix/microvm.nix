@@ -23,3 +23,9 @@ packages.x86_64-linux.my-microvm = self.nixosConfigurations.my-microvm.config.mi
 ```
 
 You can then run the MicroVM with a simple `nix run .#my-microvm`
+
+## Pass extra hypervisor arguments
+
+Use `nix run .#my-microvm -- <args>` to pass extra arguments to the
+hypervisor for a single run. The runner appends them after the configured
+hypervisor arguments and any arguments from `microvm.extraArgsScript`.

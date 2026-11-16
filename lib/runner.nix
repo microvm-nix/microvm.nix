@@ -182,7 +182,7 @@ let
           ''
         }
 
-        exec ${execArg} ${command} ''${runtime_args:-}
+        exec ${execArg} ${command} ''${runtime_args:-} "$@"
       '';
     }
     // lib.optionalAttrs canShutdown {
