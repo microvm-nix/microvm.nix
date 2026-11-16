@@ -36,8 +36,9 @@ let
 
 in {
 
-  preStart = ''
-    rm -f ${socket}
+  preStart = lib.optionalString (socket != null) ''
+    rm -f '${socket}'
+  '' + ''
     ${microvmConfig.preStart}
     ${lib.optionalString (pivotRoot != null) ''
       mkdir -p ${pivotRoot}
