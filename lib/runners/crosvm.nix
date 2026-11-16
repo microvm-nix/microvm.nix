@@ -10,7 +10,7 @@ let
   inherit (pkgs.stdenv.hostPlatform) system;
   inherit (microvmConfig)
     vcpu mem balloon initialBalloonMem hotplugMem hotpluggedMem user volumes shares
-    socket devices vsock graphics credentialFiles
+    socket devices vsock graphics credentialFiles hugepageMem
     kernel initrdPath storeDisk storeOnDisk storeDiskDirect;
   inherit (microvmConfig.crosvm) pivotRoot extraArgs;
 
@@ -74,6 +74,8 @@ in {
         "--serial" "type=stdout,stdin=true"
         "-p" "console=ttyS0,115200 reboot=k panic=1 ${toString microvmConfig.kernelParams}"
       ]
+      ++
+      lib.optionals hugepageMem [ "--hugepages" ]
       ++
       (
         if balloon

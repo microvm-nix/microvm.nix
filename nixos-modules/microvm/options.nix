@@ -118,7 +118,9 @@ in
       default = false;
       description = ''
         Whether to use hugepages as memory backend.
-        (Currently only respected if using cloud-hypervisor)
+        Supported by cloud-hypervisor and crosvm. On crosvm this only advises
+        the host kernel to use transparent hugepages; it does not reserve
+        hugepages or guarantee runtime usage of hugepages.
       '';
     };
 
