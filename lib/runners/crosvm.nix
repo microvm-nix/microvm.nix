@@ -58,8 +58,8 @@ in {
   command =
     if user != null
     then throw "crosvm will not change user"
-    else if initialBalloonMem != 0
-    then throw "crosvm does not support initialBalloonMem"
+    else if initialBalloonMem > mem
+    then throw "crosvm initialBalloonMem must not exceed mem"
     else if hotplugMem != 0
     then throw "crosvm does not support hotplugMem"
     else if hotpluggedMem != 0
@@ -82,6 +82,10 @@ in {
         then [ "--balloon-page-reporting" ]
         else [ "--no-balloon" ]
       )
+      ++
+      lib.optionals (initialBalloonMem != 0) [
+        "--init-mem" (toString (mem - initialBalloonMem))
+      ]
       ++
       lib.optionals storeOnDisk [
         "--block" "${storeDisk},o_direct=${lib.boolToString storeDiskDirect},ro=true"
