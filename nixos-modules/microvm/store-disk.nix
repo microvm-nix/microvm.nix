@@ -5,23 +5,6 @@ let
     rootPaths = [ config.system.build.toplevel ];
   };
 
-  erofs-utils =
-    # Is deduplication option specified?
-    if lib.elem "-Ededupe" config.microvm.storeDiskErofsFlags
-    then
-      # If specified, stick to the single-threaded erofs-utils
-      # to not scare anyone with warning messages. mkfs.erofs
-      # has no multi-threaded -Ededupe, so it forces
-      # single-threaded compression.
-      pkgs.buildPackages.erofs-utils
-    else
-      # Otherwise rebuild mkfs.erofs with multi-threading.
-      pkgs.buildPackages.erofs-utils.overrideAttrs (attrs: {
-        configureFlags = attrs.configureFlags ++ [
-          "--enable-multithreading"
-        ];
-      });
-
   erofsFlags = builtins.concatStringsSep " " config.microvm.storeDiskErofsFlags;
   squashfsFlags = builtins.concatStringsSep " " config.microvm.storeDiskSquashfsFlags;
 
