@@ -10,7 +10,7 @@ let
   inherit (pkgs.stdenv.hostPlatform) system;
   inherit (microvmConfig)
     vcpu mem balloon initialBalloonMem hotplugMem hotpluggedMem user volumes shares
-    socket devices vsock graphics credentialFiles
+    socket devices vsock graphics credentialFiles hugepageMem
     kernel initrdPath storeDisk storeOnDisk storeDiskDirect;
   inherit (microvmConfig.crosvm) pivotRoot extraArgs;
 
@@ -36,8 +36,9 @@ let
 
 in {
 
-  preStart = ''
-    rm -f ${socket}
+  preStart = lib.optionalString (socket != null) ''
+    rm -f '${socket}'
+  '' + ''
     ${microvmConfig.preStart}
     ${lib.optionalString (pivotRoot != null) ''
       mkdir -p ${pivotRoot}
@@ -57,8 +58,8 @@ in {
   command =
     if user != null
     then throw "crosvm will not change user"
-    else if initialBalloonMem != 0
-    then throw "crosvm does not support initialBalloonMem"
+    else if initialBalloonMem > mem
+    then throw "crosvm initialBalloonMem must not exceed mem"
     else if hotplugMem != 0
     then throw "crosvm does not support hotplugMem"
     else if hotpluggedMem != 0
@@ -74,11 +75,17 @@ in {
         "-p" "console=ttyS0,115200 reboot=k panic=1 ${toString microvmConfig.kernelParams}"
       ]
       ++
+      lib.optionals hugepageMem [ "--hugepages" ]
+      ++
       (
         if balloon
         then [ "--balloon-page-reporting" ]
         else [ "--no-balloon" ]
       )
+      ++
+      lib.optionals (initialBalloonMem != 0) [
+        "--init-mem" (toString (mem - initialBalloonMem))
+      ]
       ++
       lib.optionals storeOnDisk [
         "--block" "${storeDisk},o_direct=${lib.boolToString storeDiskDirect},ro=true"
@@ -127,7 +134,7 @@ in {
         ];
       }.${proto}) shares
       ++
-      (builtins.concatMap ({ id, type, mac, ... }: [
+      (builtins.concatMap ({ id, type, mac, tap ? {}, ... }: [
         "--net"
         (lib.concatStringsSep "," ([
           ( if type == "tap"
@@ -139,7 +146,7 @@ in {
           "mac=${mac}"
         # ] ++ lib.optionals (vcpu > 1) [
         #   "vq-pairs=${toString vcpu}"
-        ]))
+        ] ++ lib.optional (type == "tap" && tap.vhost or false) "vhost-net"))
       ]) microvmConfig.interfaces)
       # ++
       # lib.optionals (vcpu > 1) [
