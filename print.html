@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-fd16fffe.js";
+            window.path_to_searchindex_js = "searchindex-df28a51e.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-9fefae61.js"></script>
@@ -324,7 +324,7 @@ with more than one CPU core.</p>
 interfaces are created through a systemd service dependency.</p>
 <h3 id="vhost-net-acceleration"><a class="header" href="#vhost-net-acceleration">vhost-net acceleration</a></h3>
 <p>For high-throughput workloads, enable vhost-net to offload packet
-processing to the kernel instead of QEMU userspace:</p>
+processing to the kernel instead of hypervisor userspace:</p>
 <pre><code class="language-nix">{
   microvm.interfaces = [ {
     type = "tap";
@@ -337,7 +337,8 @@ processing to the kernel instead of QEMU userspace:</p>
 <p>This requires the <code>vhost_net</code> kernel module on the host. The performance
 improvement is significant for workloads with many concurrent connections
 or high bandwidth requirements.</p>
-<p><strong>Note:</strong> Currently only supported with the <code>qemu</code> hypervisor.</p>
+<p><strong>Note:</strong> Supported with the <code>qemu</code> and <code>crosvm</code> hypervisors.
+The hypervisor must have access to <code>/dev/vhost-net</code>.</p>
 <h3 id="network-offloads-cloud-hypervisor"><a class="header" href="#network-offloads-cloud-hypervisor">Network offloads (cloud-hypervisor)</a></h3>
 <p>cloud-hypervisor v54 turns the virtio-net checksum and segmentation
 offloads off by default, because of CVE-2026-99999 in the host kernel.
@@ -1311,7 +1312,9 @@ unsigned integer, meaning &gt;=0</p>
 </ul>
 <h2 id="microvmhugepagemem"><a class="header" href="#microvmhugepagemem">microvm.hugepageMem</a></h2>
 <p>Whether to use hugepages as memory backend.
-(Currently only respected if using cloud-hypervisor)</p>
+Supported by cloud-hypervisor and crosvm. On crosvm this only advises
+the host kernel to use transparent hugepages; it does not reserve
+hugepages or guarantee runtime usage of hugepages.</p>
 <p><em>Type:</em>
 boolean</p>
 <p><em>Default:</em></p>
@@ -1428,9 +1431,10 @@ boolean</p>
 <h2 id="microvminterfacestapvhost"><a class="header" href="#microvminterfacestapvhost">microvm.interfaces.*.tap.vhost</a></h2>
 <p>Enable vhost-net for TAP interfaces.</p>
 <p>When enabled, packet processing is offloaded to the kernel’s
-vhost-net module instead of QEMU userspace, significantly
+vhost-net module instead of hypervisor userspace, significantly
 improving network throughput (~10 Gbps vs ~1.5 Gbps).</p>
-<p>Requires the vhost_net kernel module on the host.</p>
+<p>Supported by QEMU and crosvm. Requires the vhost_net kernel
+module and access to /dev/vhost-net on the host.</p>
 <p><em>Type:</em>
 boolean</p>
 <p><em>Default:</em></p>
