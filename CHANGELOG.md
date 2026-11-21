@@ -2,6 +2,11 @@
 
 ## Unreleased: `main` branch
 
+* Declarative MicroVMs root their `booted` runner under
+  `/nix/var/nix/gcroots/microvm/booted-<name>`, as `microvm create`
+  already does for imperative ones, so garbage collection can no longer
+  remove `microvm-shutdown` from under a running VM (#633).
+
 * Shell scripts to setup virtiofsd, interfaces, and PCI devices for
   pass-through have moved from systemd units in the host to the `bin/`
   subdirectory of MicroVM packages. That means you can actually use

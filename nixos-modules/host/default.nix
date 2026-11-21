@@ -75,6 +75,9 @@ in
                 inherit user group;
                 mode = "0775";
               };
+              # mirror `microvm create` symlink so that the booted config cannot be nix gc'ed
+              "/nix/var/nix/gcroots/microvm/booted-${name}"."L+".argument =
+                "${stateDir}/${name}/booted";
             } guestConfig.microvm.shares
           )
         )
