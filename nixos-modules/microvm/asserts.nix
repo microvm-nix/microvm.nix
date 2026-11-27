@@ -1,6 +1,6 @@
 { config, lib, ... }:
 let
-  inherit (config.networking) hostName;
+  inherit (config.networking) fqdnOrHostName;
 
   # DAX shares served by crosvm's built-in device instead of virtiofsd
   daxBypassShares = builtins.filter ({ proto, dax, ... }:
@@ -18,7 +18,7 @@ lib.mkIf config.microvm.guest.enable {
     map (volumes: {
       assertion = builtins.length volumes == 1;
       message = ''
-        MicroVM ${hostName}: volume image "${(builtins.head volumes).image}" is used ${toString (builtins.length volumes)} > 1 times.
+        MicroVM ${fqdnOrHostName}: volume image "${(builtins.head volumes).image}" is used ${toString (builtins.length volumes)} > 1 times.
       '';
     }) (
       builtins.attrValues (
@@ -30,7 +30,7 @@ lib.mkIf config.microvm.guest.enable {
     map (interfaces: {
       assertion = builtins.length interfaces == 1;
       message = ''
-        MicroVM ${hostName}: interface id "${(builtins.head interfaces).id}" is used ${toString (builtins.length interfaces)} > 1 times.
+        MicroVM ${fqdnOrHostName}: interface id "${(builtins.head interfaces).id}" is used ${toString (builtins.length interfaces)} > 1 times.
       '';
     }) (
       builtins.attrValues (
@@ -44,14 +44,14 @@ lib.mkIf config.microvm.guest.enable {
       then {
         assertion = bridge != null;
         message = ''
-          MicroVM ${hostName}: interface ${id} is of type "bridge"
+          MicroVM ${fqdnOrHostName}: interface ${id} is of type "bridge"
           but doesn't have a bridge to attach to defined.
         '';
       }
       else {
         assertion = bridge == null;
         message = ''
-          MicroVM ${hostName}: interface ${id} is not of type "bridge"
+          MicroVM ${fqdnOrHostName}: interface ${id} is not of type "bridge"
           and therefore shouldn't have a "bridge" option defined.
         '';
       }
@@ -61,7 +61,7 @@ lib.mkIf config.microvm.guest.enable {
     map ({ id, ... }: {
       assertion = builtins.stringLength id <= 15;
       message = ''
-        MicroVM ${hostName}: interface name ${id} is longer than the
+        MicroVM ${fqdnOrHostName}: interface name ${id} is longer than the
         the maximum length of 15 characters on Linux.
       '';
     }) config.microvm.interfaces
@@ -70,7 +70,7 @@ lib.mkIf config.microvm.guest.enable {
     map (shares: {
       assertion = builtins.length shares == 1;
       message = ''
-        MicroVM ${hostName}: share tag "${(builtins.head shares).tag}" is used ${toString (builtins.length shares)} > 1 times.
+        MicroVM ${fqdnOrHostName}: share tag "${(builtins.head shares).tag}" is used ${toString (builtins.length shares)} > 1 times.
       '';
     }) (
       builtins.attrValues (
@@ -82,7 +82,7 @@ lib.mkIf config.microvm.guest.enable {
     map (shares: {
       assertion = builtins.length shares == 1;
       message = ''
-        MicroVM ${hostName}: share socket "${(builtins.head shares).socket}" is used ${toString (builtins.length shares)} > 1 times.
+        MicroVM ${fqdnOrHostName}: share socket "${(builtins.head shares).socket}" is used ${toString (builtins.length shares)} > 1 times.
       '';
     }) (
       builtins.attrValues (
@@ -97,7 +97,7 @@ lib.mkIf config.microvm.guest.enable {
     map ({ tag, socket, dax, ... }: {
       assertion = socket != null || (dax && config.microvm.hypervisor == "crosvm");
       message = ''
-        MicroVM ${hostName}: virtiofs share with tag "${tag}" is missing a `socket` path.
+        MicroVM ${fqdnOrHostName}: virtiofs share with tag "${tag}" is missing a `socket` path.
       '';
     }) (
       builtins.filter ({ proto, ... }: proto == "virtiofs")
@@ -108,7 +108,7 @@ lib.mkIf config.microvm.guest.enable {
     map ({ tag, ... }: {
       assertion = builtins.elem config.microvm.hypervisor [ "alioth" "crosvm" ];
       message = ''
-        MicroVM ${hostName}: virtiofs share "${tag}" has dax=true, but DAX is
+        MicroVM ${fqdnOrHostName}: virtiofs share "${tag}" has dax=true, but DAX is
         only supported with the alioth and crosvm hypervisors
         (currently: ${config.microvm.hypervisor}).
       '';
@@ -121,7 +121,7 @@ lib.mkIf config.microvm.guest.enable {
     map ({ tag, ... }: {
       assertion = false;
       message = ''
-        MicroVM ${hostName}: virtiofs share "${tag}" combines dax=true with
+        MicroVM ${fqdnOrHostName}: virtiofs share "${tag}" combines dax=true with
         readOnly=true, which crosvm's built-in DAX device cannot do.
       '';
     }) (
@@ -140,7 +140,7 @@ lib.mkIf config.microvm.guest.enable {
           (config.microvm.virtiofsd.extraArgs ++ extraArgs)
       ));
       message = ''
-        MicroVM ${hostName}: virtiofs share "${tag}" has posixAcl=true but
+        MicroVM ${fqdnOrHostName}: virtiofs share "${tag}" has posixAcl=true but
         extraArgs (per-share or global microvm.virtiofsd.extraArgs) contains
         --translate-uid/--translate-gid, which conflict with --posix-acl.
         Set posixAcl=false on this share to use UID/GID remapping.
@@ -158,7 +158,7 @@ lib.mkIf config.microvm.guest.enable {
           builtins.any ({ type, ... }: type == "user") config.microvm.interfaces
         );
       message = ''
-        MicroVM ${hostName}: `config.microvm.forwardPorts` works only with qemu and one network interface with `type = "user"`
+        MicroVM ${fqdnOrHostName}: `config.microvm.forwardPorts` works only with qemu and one network interface with `type = "user"`
       '';
     } ]
     ++
@@ -166,7 +166,7 @@ lib.mkIf config.microvm.guest.enable {
     lib.optionals (config.microvm.hypervisor == "cloud-hypervisor") [ {
       assertion = ! (lib.any (str: lib.hasInfix "oem_strings" str) config.microvm.cloud-hypervisor.platformOEMStrings);
       message = ''
-        MicroVM ${hostName}: `config.microvm.cloud-hypervisor.platformOEMStrings` items must not contain `oem_strings`
+        MicroVM ${fqdnOrHostName}: `config.microvm.cloud-hypervisor.platformOEMStrings` items must not contain `oem_strings`
       '';
     } ];
 
@@ -174,14 +174,14 @@ lib.mkIf config.microvm.guest.enable {
   warnings =
     # 32 MB is just an optimistic guess, not based on experience
     lib.optional (config.microvm.mem < 32) ''
-      MicroVM ${hostName}: ${toString config.microvm.mem} MB of RAM is uncomfortably narrow.
+      MicroVM ${fqdnOrHostName}: ${toString config.microvm.mem} MB of RAM is uncomfortably narrow.
     ''
     ++ lib.optional config.nix.optimise.automatic ''
       Optimising the nix store is not recommended as it either uses lots of file handles with virtiofsd or as it doesn't do what you expect with a block device.
     ''
     ++ lib.optionals config.microvm.virtiofsd.warnOnIgnoredExtraArgs (
       map ({ tag, ... }: ''
-        MicroVM ${hostName}: `extraArgs` of virtiofs share "${tag}" are ignored:
+        MicroVM ${fqdnOrHostName}: `extraArgs` of virtiofs share "${tag}" are ignored:
         dax=true on crosvm runs no virtiofsd.
         Set `microvm.virtiofsd.warnOnIgnoredExtraArgs = false` to silence this.
       '') (builtins.filter ({ extraArgs, ... }: extraArgs != []) daxBypassShares)
@@ -191,7 +191,7 @@ lib.mkIf config.microvm.guest.enable {
         daxBypassShares != [] &&
         !anyVirtiofsdShares
       ) ''
-        MicroVM ${hostName}: `microvm.virtiofsd.extraArgs` has no effect: every
+        MicroVM ${fqdnOrHostName}: `microvm.virtiofsd.extraArgs` has no effect: every
         virtiofs share has dax=true on crosvm, so no virtiofsd runs.
         Set `microvm.virtiofsd.warnOnIgnoredExtraArgs = false` to silence this.
       ''
